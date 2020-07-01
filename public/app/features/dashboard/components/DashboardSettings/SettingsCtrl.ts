@@ -16,6 +16,7 @@ import locationUtil from 'app/core/utils/location_util';
 
 export class SettingsCtrl {
   dashboard: DashboardModel;
+  datasourceOptions: string[];
   isOpen: boolean;
   viewId: string;
   json: string;
@@ -31,6 +32,7 @@ export class SettingsCtrl {
   /** @ngInject */
   constructor(
     private $scope: IScope & Record<string, any>,
+    private datasourceSrv: any,
     private $route: any,
     private $location: ILocationService,
     private $rootScope: GrafanaRootScope,
@@ -39,6 +41,58 @@ export class SettingsCtrl {
     // temp hack for annotations and variables editors
     // that rely on inherited scope
     $scope.dashboard = this.dashboard;
+
+    /* eslint-disable */
+    /* tslint:disable */
+    this.datasourceOptions = [];
+    const datasourcesPointer = this.datasourceOptions;
+    const availableDatasources = this.datasourceSrv
+      .getMetricSources()
+      .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
+      .map((ds: any) => ds.name);
+    getHostGroups(availableDatasources, this.datasourceSrv);
+
+    function getZabbix(availableDatasources: string[], datasourceSrv: any) {
+      return new Promise<any>((resolve: any, reject: any) => {
+        if (availableDatasources.length > 0) {
+          datasourceSrv
+            .get(availableDatasources[0])
+            .then((datasource: any) => {
+              if (datasource.zabbix) {
+                resolve(datasource.zabbix);
+              } else {
+                reject('');
+              }
+            })
+            .catch((err: any) => {
+              reject(err);
+            });
+          } else {
+            reject('');
+          }
+      }) as any;
+    }
+
+    function getHostGroups(availableDatasources: string[], datasourceSrv: any) {
+      return new Promise<any>((resolve: any, reject: any) => {
+        getZabbix(availableDatasources, datasourceSrv)
+          .then((zabbix: any) => {
+            // Get all host group ids
+            zabbix.getAllGroups()
+              .then((groups: any) => {
+                groups.map((group: any) => datasourcesPointer.push(group.name));
+                resolve(groups.map((group: any) => group.name));
+              })
+              .catch((err: any) => {
+                reject(err);
+              });
+          })
+          .catch((err: any) => {
+            reject(err);
+          });
+      }) as any;
+    }
+    /* eslint-enable */
 
     this.$scope.$on('$destroy', () => {
       this.dashboard.updateSubmenuVisibility();

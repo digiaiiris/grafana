@@ -25,6 +25,9 @@ export interface CloneOptions {
 }
 
 export class DashboardModel {
+  maintenanceHostGroup: string;
+  serviceInfoWikiUrl: string;
+  serviceInfoWikiUrlIsExternal: boolean;
   id: any;
   uid: string;
   title: string;
@@ -81,6 +84,9 @@ export class DashboardModel {
     this.uid = data.uid || null;
     this.revision = data.revision;
     this.title = data.title || 'No Title';
+    this.maintenanceHostGroup = data.maintenanceHostGroup;
+    this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
+    this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
     this.tags = data.tags || [];

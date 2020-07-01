@@ -1,0 +1,349 @@
+$iiris-priority-label-height: 25px;
+$iiris-priority-label-width: 110px;
+$iiris-table-vertical-padding: 6px;
+$iiris-table-horizontal-padding: 10px;
+
+.iiris-table-container {
+    height: 100%;
+}
+
+.iiris-event-table {
+    height: calc(100% - 50px);
+    overflow-y: scroll;
+    .table {
+        width: 100%;
+        tr {
+            border-bottom: 1px solid #cccccc;
+        }
+        td {
+            padding: $iiris-table-vertical-padding $iiris-table-horizontal-padding;
+            &.iiris-no-data-message {
+                text-align: center;
+                font-weight: 600;
+            }
+            &.iiris-colored-row {
+                background-color: #F6D5D5;
+            }
+            &.iiris-table-cell-single-line {
+                max-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            &.iiris-table-cell-no-wrap {
+                white-space: nowrap;
+            }
+            &.iiris-cell-width-10 {
+                width: 10%;
+            }
+            &.iiris-cell-width-20 {
+                width: 20%;
+            }
+            &.iiris-cell-width-30 {
+                width: 30%;
+            }
+            &.iiris-cell-width-40 {
+                width: 40%;
+            }
+            &.iiris-cell-width-50 {
+                width: 50%;
+            }
+            &.iiris-cell-width-60 {
+                width: 60%;
+            }
+            &.iiris-cell-width-70 {
+                width: 70%;
+            }
+            &.iiris-cell-width-80 {
+                width: 80%;
+            }
+            &.iiris-cell-width-90 {
+                width: 90%;
+            }
+        }
+        th {
+            padding: 5px 10px;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            .priority-label-title {
+                width: 110px;
+            }
+        }
+        td, th {
+            .iiris-table-cell-right-align {
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+            &.iiris-table-type-icon {
+                padding: 2px 15px;
+                font-size: 20px;
+            }
+        }
+        .iiris-button-cell {
+            display: flex;
+            justify-content: flex-end;
+            height: $iiris-priority-label-height + ($iiris-table-vertical-padding * 2);
+            border-bottom: none;
+        }
+    }
+}
+
+.modal-content .iiris-table-container .table .iiris-button-cell {
+    padding: 6px 10px 4px 0;
+}
+
+.iiris-button {
+    &.iiris-table-button {
+        height: 100%;
+    }
+    &.iiris-table-icon-button {
+        width: 24px;
+        height: 24px;
+        min-width: auto;
+        display: inline-block;
+        padding: 4px;
+        margin-right: 5px;
+    }
+    &.iiris-table-icon-button:last-child {
+        margin-right: 0;
+    }
+    &.iiris-icon-link-button {
+        padding: 5px 4px 3px 4px;
+    }
+}
+
+.sort-arrows-container {
+    display: inline-block;
+}
+
+.sort-arrows-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 7px;
+    svg {
+        width: 9px;
+        height: 12px;
+        fill: #b3b3b3;
+    }
+    &.sort-arrow-down svg,
+    &.sort-arrow-up svg {
+        fill: #337AB7;
+    }
+}
+
+.iiris-table-filters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 5px 0 10px 0;
+}
+
+.iiris-table-filter {
+    display: flex;
+    cursor: pointer;
+    margin-bottom: 10px;
+    &:not(:last-child):not(.filter-single-line) {
+        margin-right: 15px;
+    }
+    .gf-form-select-wrapper {
+        margin-right: 0;
+    }
+    &.filter-single-line {
+        flex-basis: 100%;
+        justify-content: center;
+        .iiris-filter-label {
+            background: none;
+            font-weight: 600;
+            padding: 0;
+            margin-left: 2px;
+        }
+    }
+    label {
+        align-self: center;
+        margin-right: 10px;
+    }
+    select {
+        width: auto;
+        padding: 2px 30px 2px 6px;
+        height: 25px;
+        border-radius: 3px;
+        border-color: #979797;
+    }
+    .iiris-filter-icon {
+        font-size: 16px;
+        color: #505050;
+        margin-right: 5px;
+        &.icon-large {
+            font-size: 24px;
+            transform: rotate(180deg);
+            &.icon-selected {
+                color: #337AB7;
+                transform: none;
+            }
+        }
+    }
+    .iiris-filter-label {
+        font-size: 12px;
+        border-radius: 6px;
+        color: #000000;
+        padding: 3px 10px;
+        user-select: none;
+        background-color: #D3D3D3;
+        &.priority-1 {
+            background-color: #C9E7C5;
+        }
+        &.priority-2 {
+            background-color: #FFEEA0;
+        }
+        &.priority-3 {
+            background-color: #FFD4B8;
+        }
+        &.priority-4 {
+            background-color: #F9A7A7;
+        }
+        &.priority-5 {
+            background-color: #ED7E7E;
+        }
+    }
+    .iiris-filter-container {
+        display: flex;
+        flex-direction: row;
+        &.filter-disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        &.filter-single-line {
+            align-items: center;
+        }
+    }
+}
+
+.iiris-table-paging {
+    margin: 20px 10px 10px 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    .iiris-table-paging-container {
+        display: flex;
+        margin-left: 30px;
+    }
+    .iiris-paging-btn {
+        color: #ffffff;
+        background-color: #505050;
+        width: 24px;
+        height: 24px;
+        margin-left: 1px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        &.iiris-paging-btn-active {
+            background-color: #337AB7;
+        }
+    }
+    .iiris-paging-arrow-left {
+        border-radius: 2px 0 0 2px;
+        font-size: 16px;
+        padding-bottom: 2px;
+    }
+    .iiris-paging-arrow-right {
+        border-radius: 0 2px 2px 0;
+        font-size: 16px;
+        padding-bottom: 2px;
+    }
+}
+
+.iiris-priority-label {
+    width: $iiris-priority-label-width;
+    height: $iiris-priority-label-height;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &.priority-0,
+    &.priority-1 {
+        background-color: #559F4C;
+        color: #FFFFFF;
+    }
+    &.priority-2 {
+        background-color: #FFD350;
+        color: #000000;
+    }
+    &.priority-3 {
+        background-color: #FF914A;
+        color: #000000;
+    }
+    &.priority-4 {
+        background-color: #D53A3A;
+        color: #FFFFFF;
+    }
+    &.priority-5 {
+        background-color: #99023B;
+        color: #FFFFFF;
+    }
+}
+
+.iiris-time-interval-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+}
+
+.iiris-time-interval-text {
+    margin-right: 20px;
+}
+
+.iiris-time-interval-title {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.iiris-button {
+    min-width: 140px;
+    min-height: 30px;
+    background-color: #505050;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.1;
+    cursor: pointer;
+    text-align: center;
+    &.iiris-button-condensed {
+        min-height: 24px;
+        border-radius: 2px;
+        padding: 4px 10px;
+    }
+    &.iiris-table-button {
+        height: 100%;
+    }
+    &.iiris-table-icon-button {
+        width: 24px;
+        height: 24px;
+        min-width: auto;
+        display: inline-block;
+        padding: 4px;
+        margin-right: 5px;
+    }
+    &.iiris-table-icon-button:last-child {
+        margin-right: 0;
+    }
+    &.iiris-icon-link-button {
+        padding: 6px 4px 2px 4px;
+    }
+    &.active {
+        background-color: #337AB7;
+    }
+    &.primary {
+        background-color: #D01D04;
+    }
+}

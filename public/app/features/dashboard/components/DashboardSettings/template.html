@@ -24,6 +24,16 @@
   </h3>
 
   <div class="gf-form-group">
+    <div class='gf-form'>
+      <label class='gf-form-label width-12'>Maintenance Host Group</label>
+      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.maintenanceHostGroup' bs-typeahead='ctrl.datasourceOptions' data-min-length='0' data-items='100'></input>
+    </div>
+    <div class='gf-form'>
+      <label class='gf-form-label width-12'>Service Info Wiki URL</label>
+      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.serviceInfoWikiUrl'></input>
+      <input type='checkbox' ng-model='ctrl.dashboard.serviceInfoWikiUrlIsExternal' id='externalcb' style='align-self:center;margin:0 0 2px 20px;'></input>
+      <label for='externalcb' style='background:none;border:none;' class='gf-form-label width-12'>External link</label>
+    </div>
     <div class="gf-form">
       <label class="gf-form-label width-7">Name</label>
       <input type="text" class="gf-form-input width-30" ng-model='ctrl.dashboard.title'></input>
