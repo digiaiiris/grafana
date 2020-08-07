@@ -364,6 +364,7 @@ export class DashNav extends PureComponent<Props> {
             .then((answer: any) => {
               setTimeout(() => {
                 this.getMaintenanceList(this.hostIds, this.groupId);
+                document.dispatchEvent(new Event('iiris-maintenance-update'));
               }, 1000);
             })
             .catch((err: any) => {
@@ -391,6 +392,7 @@ export class DashNav extends PureComponent<Props> {
             .then((answer: any) => {
               setTimeout(() => {
                 this.getMaintenanceList(this.hostIds, this.groupId);
+                document.dispatchEvent(new Event('iiris-maintenance-update'));
               }, 1000);
             }).catch((err: any) => {
               this.handleError(err);
@@ -456,6 +458,7 @@ export class DashNav extends PureComponent<Props> {
           .then((answer: any) => {
             setTimeout(() => {
               this.getMaintenanceList(this.hostIds, this.groupId);
+              document.dispatchEvent(new Event('iiris-maintenance-update'));
             }, 1000);
           })
           .catch((err: any) => {
