@@ -67,6 +67,7 @@ export class DashNav extends PureComponent<Props> {
     this.user = contextSrv.user.name;
     this.selectedMaintenanceId = '';
     this.maintenanceIconStyle = '';
+    document.dispatchEvent(new Event('iiris-maintenance-update'));
     this.availableDatasources = this.datasourceSrv
       .getMetricSources()
       .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
