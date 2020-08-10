@@ -190,7 +190,7 @@ export function replaceMacros(eventList: any, userMacros: any, attributeKey: str
  */
 export function getMaintenances(
   hostIds: string[],
-  groupId: string,
+  groupIds: string[],
   availableDatasources: string[],
   datasourceSrv: any
 ) {
@@ -200,7 +200,7 @@ export function getMaintenances(
         zabbix.zabbixAPI
           .request('maintenance.get', {
             hostids: hostIds,
-            groupids: [groupId],
+            groupids: groupIds,
             output: 'extend',
             selectGroups: 'extend',
             selectHosts: 'extend',
@@ -409,6 +409,7 @@ export function addMaintenanceToList(
   newItem.endTimeString = moment(new Date(newItem.endTime * 1000)).format('DD.MM.YYYY HH:mm');
   newItem.durationString = getDurationString(duration);
   newItem.hosts = maintenance.hosts;
+  newItem.groups = maintenance.groups;
   newItem.id = maintenance.maintenanceid;
   newItem.maintenanceType = parseInt(timeperiod.timeperiod_type, 10);
   newItem.internalId = handledMaintenances.length + 1;
@@ -449,4 +450,34 @@ export function getDurationString(duration: number) {
     durationString = durationSeconds + 's';
   }
   return durationString;
+}
+
+/**
+ * Is maintenance ongoing
+ * @param {any} maintenance
+ * @returns {boolean}
+ */
+export function isOngoingMaintenance(maintenance: any) {
+  let isOngoing = false;
+  if (maintenance) {
+    if (maintenance.startTime) {
+      const curTime = (new Date()).getTime() / 1000;
+      if (curTime >= maintenance.startTime && curTime <= maintenance.endTime &&
+        curTime >= maintenance.activeSince && curTime <= maintenance.activeTill) {
+        isOngoing = true;
+      }
+    }
+  }
+  return isOngoing;
+}
+
+/**
+ * Parse given Date object to string
+ * @param {Date} newDate
+ * @returns {string}
+ */
+export function parseDateToString(newDate: Date) {
+  const leadingZero = newDate.getMinutes() < 10 ? '0' : '';
+  return (newDate.getDate() + '.' + (newDate.getMonth() + 1) + '.' + newDate.getFullYear() +
+    ' ' + newDate.getHours() + ':' + leadingZero + newDate.getMinutes());
 }
