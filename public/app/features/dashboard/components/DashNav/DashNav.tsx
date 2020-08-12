@@ -167,7 +167,7 @@ export class DashNav extends PureComponent<Props> {
    * @param {string} groupid Get maintenances from specified group
    */
   getMaintenanceList = (hostIds: string[], groupId: string) => {
-    getMaintenances(hostIds, groupId, this.availableDatasources, this.datasourceSrv)
+    getMaintenances(hostIds, [groupId], this.availableDatasources, this.datasourceSrv)
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
           this.ongoingMaintenances = [];
@@ -364,6 +364,7 @@ export class DashNav extends PureComponent<Props> {
             .then((answer: any) => {
               setTimeout(() => {
                 this.getMaintenanceList(this.hostIds, this.groupId);
+                document.dispatchEvent(new Event('iiris-maintenance-update'));
               }, 1000);
             })
             .catch((err: any) => {
@@ -391,6 +392,7 @@ export class DashNav extends PureComponent<Props> {
             .then((answer: any) => {
               setTimeout(() => {
                 this.getMaintenanceList(this.hostIds, this.groupId);
+                document.dispatchEvent(new Event('iiris-maintenance-update'));
               }, 1000);
             }).catch((err: any) => {
               this.handleError(err);
@@ -456,6 +458,7 @@ export class DashNav extends PureComponent<Props> {
           .then((answer: any) => {
             setTimeout(() => {
               this.getMaintenanceList(this.hostIds, this.groupId);
+              document.dispatchEvent(new Event('iiris-maintenance-update'));
             }, 1000);
           })
           .catch((err: any) => {
