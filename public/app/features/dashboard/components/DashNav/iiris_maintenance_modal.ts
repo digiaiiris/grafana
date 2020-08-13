@@ -364,6 +364,15 @@ export class IirisMaintenanceModalCtrl {
           }
         }
       }
+      // Set host selection based on selected maintenance
+      const maintenanceHostIds: string[] = this.scope.selectedMaintenance.hosts.map((host: any) => host.hostid);
+      this.scope.hosts.options.map((option: any, index: number) => {
+        if (maintenanceHostIds.indexOf(option.value) === -1) {
+          this.scope.hosts.options[index].checked = false;
+          this.scope.hosts.selected[index] = false;
+          this.scope.hosts.allSelected = false;
+        }
+      });
     }
   }
 
