@@ -257,12 +257,63 @@
           </div>
         </div>
       </div>
-      <div class="gf-form-group maintenance-row-container">
+      <div class="gf-form-group maintenance-row-container" ng-if="!ctrl.scope.strictEndTimeSelected">
         <label class="gf-form-label">Huollon kesto</label>
         <div class="gf-form-select-wrapper">
           <select class="gf-form-input" ng-model="ctrl.durationInput.value" ng-options="v.value as v.text for v in ctrl.durationInput.options" ng-change="ctrl.onDurationValueChanged()">
             <option value="" ng-hide="ctrl.durationInput.value">{{ctrl.durationInput.text}}</option>
           </select>
+        </div>
+      </div>
+      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='0'">
+        <div class="iiris-checkbox">
+          <input id="strict_end_time" type="checkbox" ng-model="ctrl.scope.strictEndTimeSelected" ng-change="ctrl.selectStrictEndTime()" />
+          <label class="checkbox-label" for="strict_end_time">Määritä tarkka päättymisajankohta</label>
+        </div>
+      </div>
+      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.scope.strictEndTimeSelected">
+        <label class="gf-form-label">Huollon päättymisajankohta</label>
+        <div class="date-selection-row">
+          <div class="date-selection-container">
+            <div>Päivä</div>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.strictEndDayInput.value" ng-options="v.value as v.text for v in ctrl.strictEndDayInput.options">
+                <option value="" ng-hide="ctrl.strictEndDayInput.value">{{ctrl.strictEndDayInput.text}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="date-selection-container">
+            <div>Kuukausi</div>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.strictEndMonthInput.value" ng-options="v.value as v.text for v in ctrl.strictEndMonthInput.options" ng-change="ctrl.onStrictEndMonthValueChanged()">
+                <option value="" ng-hide="ctrl.strictEndMonthInput.value">{{ctrl.strictEndMonthInput.text}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="date-selection-container">
+            <div>Vuosi</div>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.strictEndYearInput.value" ng-options="v.value as v.text for v in ctrl.strictEndYearInput.options" ng-change="ctrl.onStrictEndYearValueChanged()">
+                <option value="" ng-hide="ctrl.strictEndYearInput.value">{{ctrl.strictEndYearInput.text}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="date-selection-container hour-input">
+            <div>Tunti</div>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.strictEndHourInput.value" ng-options="v.value as v.text for v in ctrl.strictEndHourInput.options">
+                <option value="" ng-hide="ctrl.strictEndHourInput.value">{{ctrl.strictEndHourInput.text}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="date-selection-container">
+            <div>Minuutti</div>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.strictEndMinuteInput.value" ng-options="v.value as v.text for v in ctrl.strictEndMinuteInput.options">
+                <option value="" ng-hide="ctrl.strictEndMinuteInput.value">{{ctrl.strictEndMinuteInput.text}}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
       <div class="maintenance-config-error-text">{{ctrl.scope.errorText}}</div>
