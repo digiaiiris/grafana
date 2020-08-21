@@ -120,6 +120,7 @@ export class IirisMaintenanceModalCtrl {
     };
     this.scope.dayOfMonth = 1;
     this.scope.errorText = '';
+    this.scope.strictEndTimeSelected = false;
     this.scope.weekdays = {
       monday: false,
       tuesday: false,
@@ -685,7 +686,7 @@ export class IirisMaintenanceModalCtrl {
    * Callback for selecting strict end time
    */
   selectStrictEndTime() {
-    this.scope.strictEndTimeSelected = !this.scope.strictEndTimeSelected;
+    // this.scope.strictEndTimeSelected = !this.scope.strictEndTimeSelected;
   }
 
   /**
