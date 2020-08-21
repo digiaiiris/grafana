@@ -324,10 +324,14 @@ export class IirisMaintenanceModalCtrl {
         this.mTypeInput.options[0];
       this.mTypeInput.value = typeObj.value;
       this.mTypeInput.text = typeObj.text;
-      const durObj =
-        this.durationInput.options.find((item: any) => item.value === m.duration) || this.durationInput.options[0];
-      this.durationInput.value = durObj.value;
-      this.durationInput.text = durObj.text;
+      // Check if selected maintenances duration is one of the presets
+      let durObj = this.durationInput.options.find((item: any) => item.value === m.duration);
+      if (durObj) {
+        this.durationInput.value = durObj.value;
+        this.durationInput.text = durObj.text;
+      } else {
+        this.scope.strictEndTimeSelected = true;
+      }
       if (m.maintenanceType === 2) {
         this.scope.everyNDays = m.every;
       } else if (m.maintenanceType === 3) {
@@ -467,6 +471,7 @@ export class IirisMaintenanceModalCtrl {
       }
     }
     const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
+    const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
       this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
     } else if (maintenanceName.length > 128) {
@@ -476,7 +481,7 @@ export class IirisMaintenanceModalCtrl {
       this.onCreateMaintenance()(
         maintenanceType,
         maintenanceName,
-        this.durationInput.value,
+        duration,
         hostIds,
         options,
         startDate,
@@ -680,13 +685,6 @@ export class IirisMaintenanceModalCtrl {
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
       this.populateDaySelector(null, true);
     }
-  }
-
-  /**
-   * Callback for selecting strict end time
-   */
-  selectStrictEndTime() {
-    // this.scope.strictEndTimeSelected = !this.scope.strictEndTimeSelected;
   }
 
   /**
