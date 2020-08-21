@@ -396,7 +396,6 @@ export class IirisMaintenanceModalCtrl {
         }
       });
     }
-    this.scope.strictEndTimeSelected = false;
   }
 
   /**
