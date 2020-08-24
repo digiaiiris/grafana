@@ -77,6 +77,31 @@ export class IirisMaintenanceModalCtrl {
     value: number;
     text: string;
   };
+  strictEndHourInput: {
+    options: any;
+    value: string;
+    text: string;
+  };
+  strictEndMinuteInput: {
+    options: any;
+    value: string;
+    text: string;
+  };
+  strictEndYearInput: {
+    options: any;
+    value: number;
+    text: string;
+  };
+  strictEndMonthInput: {
+    options: any;
+    value: number;
+    text: string;
+  };
+  strictEndDayInput: {
+    options: any;
+    value: number;
+    text: string;
+  };
 
   /**
    * Maintenance Modal class constructor
@@ -95,6 +120,7 @@ export class IirisMaintenanceModalCtrl {
     };
     this.scope.dayOfMonth = 1;
     this.scope.errorText = '';
+    this.scope.strictEndTimeSelected = false;
     this.scope.weekdays = {
       monday: false,
       tuesday: false,
@@ -194,6 +220,31 @@ export class IirisMaintenanceModalCtrl {
       text: '',
       options: [],
     };
+    this.strictEndHourInput = {
+      value: '',
+      text: '',
+      options: [],
+    };
+    this.strictEndMinuteInput = {
+      value: '',
+      text: '',
+      options: [],
+    };
+    this.strictEndYearInput = {
+      value: 0,
+      text: '',
+      options: [],
+    };
+    this.strictEndMonthInput = {
+      value: 0,
+      text: '',
+      options: [],
+    };
+    this.strictEndDayInput = {
+      value: 0,
+      text: '',
+      options: [],
+    };
     this.everyDayOfWeekInput = {
       value: 1,
       text: 'Ensimmäinen',
@@ -221,50 +272,14 @@ export class IirisMaintenanceModalCtrl {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
     const currentDay = currentDate.getDate();
-    this.yearInput.value = currentYear;
-    this.yearInput.text = '' + currentYear;
-    for (let i = currentYear; i < currentYear + 2; i++) {
-      this.yearInput.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
-    this.monthInput.value = currentMonth;
-    this.monthInput.text = '' + currentMonth;
-    for (let i = 1; i < 13; i++) {
-      this.monthInput.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
+    this.populateYearSelector(this.yearInput, currentYear);
+    this.populateMonthSelector(this.monthInput, currentMonth);
     this.dayInput.value = currentDay;
     this.dayInput.text = '' + currentDay;
     this.populateDaySelector();
-    for (let i = 0; i < 24; i++) {
-      this.hourInput.options.push({
-        text: '' + i,
-        value: '' + i,
-      });
-    }
-    if (this.hourInput.options.findIndex((item: any) => item.value === currentHours + '')) {
-      this.hourInput.value = currentHours + '';
-    } else {
-      this.hourInput.value = this.hourInput.options[0].value;
-    }
-    this.hourInput.text = '' + currentHours;
-    for (let i = 0; i < 60; i++) {
-      this.minuteInput.options.push({
-        text: i < 10 ? '0' + i : '' + i,
-        value: i < 10 ? '0' + i : '' + i,
-      });
-    }
-    const givenMinutes = currentMinutes < 10 ? '0' + currentMinutes : '' + currentMinutes;
-    if (this.minuteInput.options.findIndex((item: any) => item.value === givenMinutes)) {
-      this.minuteInput.value = givenMinutes;
-    } else {
-      this.minuteInput.value = this.minuteInput.options[0].value;
-    }
-    this.minuteInput.text = givenMinutes;
+    this.populateHourSelector(this.hourInput, currentHours);
+    this.populateMinuteSelector(this.minuteInput, currentMinutes);
+    // Stop repeat date selector
     let stopDate = moment(currentDate)
       .add(1, 'day')
       .toDate();
@@ -278,25 +293,28 @@ export class IirisMaintenanceModalCtrl {
     const stopYear = stopDate.getFullYear();
     const stopMonth = stopDate.getMonth() + 1;
     const stopDay = stopDate.getDate();
-    this.yearStopInput.value = stopYear;
-    this.yearStopInput.text = '' + stopYear;
-    for (let i = stopYear; i < stopYear + 2; i++) {
-      this.yearStopInput.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
-    this.monthStopInput.value = stopMonth;
-    this.monthStopInput.text = '' + stopMonth;
-    for (let i = 1; i < 13; i++) {
-      this.monthStopInput.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
+    this.populateYearSelector(this.yearStopInput, stopYear);
+    this.populateMonthSelector(this.monthStopInput, stopMonth);
     this.dayStopInput.value = stopDay;
     this.dayStopInput.text = '' + stopDay;
     this.populateDaySelector(true);
+    // Set strict end time selector
+    const duration = this.scope.selectedMaintenance ? this.scope.selectedMaintenance.duration : this.durationInput.value;
+    let strictEndTimeDate = moment(currentDate)
+      .add(duration, 'second')
+      .toDate();
+    const strictEndTimeHours = strictEndTimeDate.getHours();
+    const strictEndTimeMinutes = strictEndTimeDate.getMinutes();
+    const strictEndTimeYear = strictEndTimeDate.getFullYear();
+    const strictEndTimeMonth = strictEndTimeDate.getMonth() + 1;
+    const strictEndTimeDay = strictEndTimeDate.getDate();
+    this.populateYearSelector(this.strictEndYearInput, strictEndTimeYear);
+    this.populateMonthSelector(this.strictEndMonthInput, strictEndTimeMonth);
+    this.strictEndDayInput.value = strictEndTimeDay;
+    this.strictEndDayInput.text = '' + strictEndTimeDay;
+    this.populateDaySelector(null, true);
+    this.populateHourSelector(this.strictEndHourInput, strictEndTimeHours);
+    this.populateMinuteSelector(this.strictEndMinuteInput, strictEndTimeMinutes);
     // Populate form with preselected maintenance values
     if (this.scope.selectedMaintenance) {
       const m = this.scope.selectedMaintenance;
@@ -306,10 +324,14 @@ export class IirisMaintenanceModalCtrl {
         this.mTypeInput.options[0];
       this.mTypeInput.value = typeObj.value;
       this.mTypeInput.text = typeObj.text;
-      const durObj =
-        this.durationInput.options.find((item: any) => item.value === m.duration) || this.durationInput.options[0];
-      this.durationInput.value = durObj.value;
-      this.durationInput.text = durObj.text;
+      // Check if selected maintenances duration is one of the presets
+      let durObj = this.durationInput.options.find((item: any) => item.value === m.duration);
+      if (durObj) {
+        this.durationInput.value = durObj.value;
+        this.durationInput.text = durObj.text;
+      } else {
+        this.scope.strictEndTimeSelected = true;
+      }
       if (m.maintenanceType === 2) {
         this.scope.everyNDays = m.every;
       } else if (m.maintenanceType === 3) {
@@ -448,6 +470,7 @@ export class IirisMaintenanceModalCtrl {
       }
     }
     const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
+    const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
       this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
     } else if (maintenanceName.length > 128) {
@@ -457,7 +480,7 @@ export class IirisMaintenanceModalCtrl {
       this.onCreateMaintenance()(
         maintenanceType,
         maintenanceName,
-        this.durationInput.value,
+        duration,
         hostIds,
         options,
         startDate,
@@ -480,9 +503,37 @@ export class IirisMaintenanceModalCtrl {
   }
 
   /**
+   * Set contents of year selector
+   */
+  populateYearSelector(yearInputObject: any, yearValue: number) {
+    yearInputObject.value = yearValue;
+    yearInputObject.text = '' + yearValue;
+    for (let i = yearValue; i < yearValue + 2; i++) {
+      yearInputObject.options.push({
+        text: '' + i,
+        value: i,
+      });
+    }
+  }
+
+  /**
+   * Set contents of month selector
+   */
+  populateMonthSelector(monthInputObject: any, monthValue: number) {
+    monthInputObject.value = monthValue;
+    monthInputObject.text = '' + monthValue;
+    for (let i = 1; i < 13; i++) {
+      monthInputObject.options.push({
+        text: '' + i,
+        value: i,
+      });
+    }
+  }
+
+  /**
    * Set contents of day selector based on selected month and year
    */
-  populateDaySelector(isStopDate?: boolean) {
+  populateDaySelector(isStopDate?: boolean, isStrictEndDate?: boolean) {
     let maxAmount = 0;
     let m = 0;
     let y = 0;
@@ -491,6 +542,10 @@ export class IirisMaintenanceModalCtrl {
       m = this.monthStopInput.value;
       y = this.yearStopInput.value;
       dayInputObject = this.dayStopInput;
+    } else if (isStrictEndDate) {
+      m = this.strictEndMonthInput.value;
+      y = this.strictEndYearInput.value;
+      dayInputObject = this.strictEndDayInput;
     } else {
       m = this.monthInput.value;
       y = this.yearInput.value;
@@ -516,6 +571,65 @@ export class IirisMaintenanceModalCtrl {
       dayInputObject.value = maxAmount;
       dayInputObject.text = '' + maxAmount;
     }
+  }
+
+  /**
+   * Set contents of month selector
+   */
+  populateHourSelector(hourInputObject: any, hourValue: number) {
+    for (let i = 0; i < 24; i++) {
+      hourInputObject.options.push({
+        text: '' + i,
+        value: '' + i,
+      });
+    }
+    if (hourInputObject.options.findIndex((item: any) => item.value === hourValue + '')) {
+      hourInputObject.value = hourValue + '';
+    } else {
+      hourInputObject.value = hourInputObject.options[0].value;
+    }
+    hourInputObject.text = '' + hourValue;
+  }
+
+  /**
+   * Set contents of month selector
+   */
+  populateMinuteSelector(minuteInputObject: any, minuteValue: number) {
+    for (let i = 0; i < 60; i++) {
+      minuteInputObject.options.push({
+        text: i < 10 ? '0' + i : '' + i,
+        value: i < 10 ? '0' + i : '' + i,
+      });
+    }
+    const givenMinutes = minuteValue < 10 ? '0' + minuteValue : '' + minuteValue;
+    if (minuteInputObject.options.findIndex((item: any) => item.value === givenMinutes)) {
+      minuteInputObject.value = givenMinutes;
+    } else {
+      minuteInputObject.value = minuteInputObject.options[0].value;
+    }
+    minuteInputObject.text = givenMinutes;
+  }
+
+  /**
+   * Count maintenance duration if strict end time is selected
+   */
+  getStrictEndTimeDuration() {
+    const startDate = new Date(
+      this.yearInput.value,
+      this.monthInput.value - 1,
+      this.dayInput.value,
+      parseInt(this.hourInput.value, 10),
+      parseInt(this.minuteInput.value, 10)
+    );
+    const stopDate = new Date(
+      this.strictEndYearInput.value,
+      this.strictEndMonthInput.value - 1,
+      this.strictEndDayInput.value,
+      parseInt(this.strictEndHourInput.value, 10),
+      parseInt(this.strictEndMinuteInput.value, 10)
+    );
+    const duration = Math.round((stopDate.getTime() - startDate.getTime()) / 1000);
+    return duration;
   }
 
   /**
@@ -551,6 +665,24 @@ export class IirisMaintenanceModalCtrl {
     const y = this.yearStopInput.value;
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
       this.populateDaySelector(true);
+    }
+  }
+
+  /**
+   * Callback for select strict end month
+   */
+  onStrictEndMonthValueChanged() {
+    this.populateDaySelector(null, true);
+  }
+
+  /**
+   * Callback for select strict year
+   */
+  onStrictEndYearValueChanged() {
+    const m = this.strictEndMonthInput.value;
+    const y = this.strictEndYearInput.value;
+    if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
+      this.populateDaySelector(null, true);
     }
   }
 
@@ -686,6 +818,10 @@ export class IirisMaintenanceModalCtrl {
         valid = false;
         this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
       }
+    }
+    if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
+      valid = false;
+      this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
     }
     if (valid) {
       this.scope.wizardPhase = 2;
