@@ -135,6 +135,8 @@ export class PanelModel {
   cachedPluginOptions?: any;
   legend?: { show: boolean; sort?: string; sortDesc?: boolean };
   plugin?: PanelPlugin;
+  isTabPanel?: boolean;
+  allTabsCollapsed?: boolean;
 
   private queryRunner?: PanelQueryRunner;
 

@@ -13,6 +13,7 @@ export class ChangeTracker {
   original: any;
   next: any;
   $window: any;
+  dashboard: any;
 
   /** @ngInject */
   constructor(
@@ -27,7 +28,7 @@ export class ChangeTracker {
   ) {
     this.$location = $location;
     this.$window = $window;
-
+    this.dashboard = dashboard;
     this.current = dashboard;
     this.originalPath = $location.path();
     this.scope = scope;
@@ -81,6 +82,18 @@ export class ChangeTracker {
   // for some dashboards and users
   // changes should be ignored
   ignoreChanges() {
+    // If tab row is in display mode we need to ignore changes to dashboard panels
+    let tabRowInDisplayMode = false;
+    this.dashboard.panels.map((panel: any) => {
+      if (panel.type === 'iiris-tab-row-panel') {
+        if (panel.options.isInDisplayMode) {
+          tabRowInDisplayMode = true;
+        }
+      }
+    });
+    if (tabRowInDisplayMode) {
+      return true;
+    }
     if (!this.original) {
       return true;
     }

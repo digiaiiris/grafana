@@ -187,7 +187,7 @@ export class DashboardModel {
 
     // get panel save models
     copy.panels = _.chain(this.panels)
-      .filter((panel: PanelModel) => panel.type !== 'add-panel')
+      .filter((panel: PanelModel) => panel.type !== 'add-panel' && !panel.isTabPanel)
       .map((panel: PanelModel) => panel.getSaveModel())
       .value();
 
