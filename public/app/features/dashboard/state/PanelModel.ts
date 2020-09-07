@@ -78,6 +78,8 @@ const mustKeepProps: { [str: string]: boolean } = {
   pluginVersion: true,
   queryRunner: true,
   transformations: true,
+  isTabPanel: true,
+  allTabsCollapsed: true,
 };
 
 const defaults: any = {
@@ -124,6 +126,8 @@ export class PanelModel {
   description?: string;
   links?: DataLink[];
   transparent: boolean;
+  isTabPanel: boolean;
+  allTabsCollapsed: boolean;
 
   // non persisted
   fullscreen: boolean;
@@ -135,8 +139,6 @@ export class PanelModel {
   cachedPluginOptions?: any;
   legend?: { show: boolean; sort?: string; sortDesc?: boolean };
   plugin?: PanelPlugin;
-  isTabPanel?: boolean;
-  allTabsCollapsed?: boolean;
 
   private queryRunner?: PanelQueryRunner;
 

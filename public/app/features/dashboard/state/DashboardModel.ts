@@ -856,10 +856,16 @@ export class DashboardModel {
       return;
     }
 
-    const rowPanels = this.getRowPanels(rowIndex);
+    let rowPanels = this.getRowPanels(rowIndex);
 
     // remove panels
     _.pull(this.panels, ...rowPanels);
+
+    // Filter out tab panels under regular row
+    if (row.type === 'row') {
+      rowPanels = rowPanels.filter((panel: any) => !panel.isTabPanel);
+    }
+
     // save panel models inside row panel
     row.panels = _.map(rowPanels, (panel: PanelModel) => panel.getSaveModel());
     row.collapsed = true;
