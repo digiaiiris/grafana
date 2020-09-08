@@ -187,7 +187,7 @@ export class DashboardModel {
 
     // get panel save models
     copy.panels = _.chain(this.panels)
-      .filter((panel: PanelModel) => panel.type !== 'add-panel')
+      .filter((panel: PanelModel) => panel.type !== 'add-panel' && !panel.isTabPanel)
       .map((panel: PanelModel) => panel.getSaveModel())
       .value();
 
@@ -856,10 +856,16 @@ export class DashboardModel {
       return;
     }
 
-    const rowPanels = this.getRowPanels(rowIndex);
+    let rowPanels = this.getRowPanels(rowIndex);
 
     // remove panels
     _.pull(this.panels, ...rowPanels);
+
+    // Filter out tab panels under regular row
+    if (row.type === 'row') {
+      rowPanels = rowPanels.filter((panel: any) => !panel.isTabPanel);
+    }
+
     // save panel models inside row panel
     row.panels = _.map(rowPanels, (panel: PanelModel) => panel.getSaveModel());
     row.collapsed = true;
