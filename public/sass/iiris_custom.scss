@@ -1,3 +1,4 @@
+// sass-lint:disable-all
 $text-font-family: "Titillium Web";
 $page-background-color: #dfdfdf;
 $dashboard-title-color: #000000;
@@ -180,7 +181,7 @@ button, input, select, textarea {
     border-radius: 0;
     &.panel-transparent, &.panel-container--transparent {
         background-color: transparent;
-        & .panel-title-container, .panel-info-corner {
+        & .panel-title-container, .panel-info-corner, .panel-header:hover {
             background-color: transparent;
         }
     }
