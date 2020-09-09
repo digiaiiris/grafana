@@ -789,14 +789,20 @@ panel-plugin-organisations {
 }
 
 // PictureIt panel
+@mixin pictureit-background-style() {
+    height: 100% !important;
+    background-position: center;
+    background-size: contain;
+}
 panel-plugin-bessler-pictureit-panel {
     .panel-content {
         padding: 0 10px 10px 10px;
         & > .panel-height-helper > div {
-            height: 100% !important;
-            background-position: center;
-            background-size: contain;
+            @include pictureit-background-style();
         }
+    }
+    grafana-panel div {
+        @include pictureit-background-style();
     }
 }
 
