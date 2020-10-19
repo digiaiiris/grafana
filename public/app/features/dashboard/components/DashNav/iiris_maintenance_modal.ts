@@ -854,6 +854,7 @@ export function iirisMaintenanceModalDirective() {
       hosts: '=',
       selectedMaintenance: '=',
       user: '=',
+      openAllMaintenancesModal: '&',
     },
   };
 }

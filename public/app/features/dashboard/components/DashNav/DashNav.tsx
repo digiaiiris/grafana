@@ -481,13 +481,15 @@ export class DashNav extends PureComponent<Props> {
     this.modalScope.getCurrentTimeEpoch = this.getCurrentTimeEpoch.bind(this);
     this.modalScope.hosts = this.hosts;
     this.modalScope.user = this.user;
+    this.modalScope.openAllMaintenancesModal = this.openAllMaintenancesModal.bind(this);
     if (maintenanceID) {
       this.modalScope.selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     }
     const template =
       '<iiris-maintenance-modal hosts="hosts" on-create-maintenance="onCreateMaintenance" ' +
       'selected-maintenance="selectedMaintenance" user="user" ' +
-      'get-current-time-epoch="getCurrentTimeEpoch"></iiris-maintenance-modal>';
+      'get-current-time-epoch="getCurrentTimeEpoch" open-all-maintenances-modal="openAllMaintenancesModal"' +
+      '></iiris-maintenance-modal>';
     appEvents.emit('show-modal', {
       templateHtml: template,
       scope: this.modalScope,
