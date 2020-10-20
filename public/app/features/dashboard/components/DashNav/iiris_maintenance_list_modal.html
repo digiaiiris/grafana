@@ -15,8 +15,8 @@
         selected-maintenance-id="ctrl.selectedMaintenanceId"
       ></iiris-maintenance-modal-table>
       <div class="gf-form-button-row">
+        <a class="btn btn-primary" ng-click="ctrl.dismiss()">Peruuta</a>
         <a class="btn btn-secondary" ng-click="ctrl.openMaintenanceModal()()">Luo uusi huolto</a>
-        <a class="btn btn-primary" ng-click="ctrl.dismiss()">Sulje valikko</a>
       </div>
     </div>
     <div ng-if="ctrl.confirmIsVisible">
