@@ -352,7 +352,7 @@ export class DashboardModel {
         max = panel.id;
       }
 
-      if (panel.collapsed) {
+      if (panel.collapsed || (panel.type === 'iiris-tab-row-panel' && panel.panels)) {
         for (const rowPanel of panel.panels) {
           if (rowPanel.id > max) {
             max = rowPanel.id;
