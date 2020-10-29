@@ -344,15 +344,15 @@ export class DashboardModel {
     return data;
   }
 
-  getNextPanelId() {
-    let max = 0;
+  getNextPanelId(previousMaxId?: number) {
+    let max = previousMaxId || 0;
 
     for (const panel of this.panels) {
       if (panel.id > max) {
         max = panel.id;
       }
 
-      if (panel.collapsed) {
+      if (panel.collapsed || (panel.type === 'iiris-tab-row-panel' && panel.panels)) {
         for (const rowPanel of panel.panels) {
           if (rowPanel.id > max) {
             max = rowPanel.id;
@@ -388,7 +388,14 @@ export class DashboardModel {
   }
 
   addPanel(panelData: any) {
-    panelData.id = this.getNextPanelId();
+    let nextPanelId = this.getNextPanelId();
+    panelData.id = nextPanelId;
+    if (panelData.type === 'iiris-tab-row-panel' && panelData.panels && panelData.panels.length > 0) {
+      panelData.panels.map((tabRowPanel: any, index: number) => {
+        nextPanelId = this.getNextPanelId(nextPanelId);
+        panelData.panels[index].id = nextPanelId;
+      });
+    }
 
     const panel = new PanelModel(panelData);
 
