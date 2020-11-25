@@ -14,9 +14,49 @@ import { AppEvents } from '@grafana/data';
 import { promiseToDigest } from '../../../../core/utils/promiseToDigest';
 import locationUtil from 'app/core/utils/location_util';
 
+/* eslint-disable */
+/* tslint:disable */
+function getZabbix(availableDatasources: string[], datasourceSrv: any) {
+  return new Promise<any>((resolve: any, reject: any) => {
+    if (availableDatasources.length > 0) {
+      datasourceSrv
+        .get(availableDatasources[0])
+        .then((datasource: any) => {
+          if (datasource.zabbix) {
+            resolve(datasource.zabbix);
+          } else {
+            reject('');
+          }
+        })
+        .catch((err: any) => {
+          reject(err);
+        });
+      } else {
+        reject('');
+      }
+  }) as any;
+}
+
+function getHostGroups(availableDatasources: string[], datasourceSrv: any) {
+  return new Promise<any>((resolve: any, reject: any) => {
+    getZabbix(availableDatasources, datasourceSrv)
+      .then((zabbix: any) => {
+        // Get all host group ids
+        zabbix.getAllGroups()
+          .then((groups: any) => {
+            resolve(groups.map((group: any) => group.name));
+          });
+      })
+      .catch((err: any) => {
+        reject(err);
+      });
+  }) as any;
+}
+
 export class SettingsCtrl {
   dashboard: DashboardModel;
   datasourceOptions: string[];
+  hostGroupOptions: string[];
   isOpen: boolean;
   viewId: string;
   json: string;
@@ -42,57 +82,15 @@ export class SettingsCtrl {
     // that rely on inherited scope
     $scope.dashboard = this.dashboard;
 
-    /* eslint-disable */
-    /* tslint:disable */
     this.datasourceOptions = [];
-    const datasourcesPointer = this.datasourceOptions;
+    this.hostGroupOptions = [];
+    this.datasourceSrv.getMetricSources().map((datasource: any) => this.datasourceOptions.push(datasource.name));
     const availableDatasources = this.datasourceSrv
       .getMetricSources()
       .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
       .map((ds: any) => ds.name);
-    getHostGroups(availableDatasources, this.datasourceSrv);
-
-    function getZabbix(availableDatasources: string[], datasourceSrv: any) {
-      return new Promise<any>((resolve: any, reject: any) => {
-        if (availableDatasources.length > 0) {
-          datasourceSrv
-            .get(availableDatasources[0])
-            .then((datasource: any) => {
-              if (datasource.zabbix) {
-                resolve(datasource.zabbix);
-              } else {
-                reject('');
-              }
-            })
-            .catch((err: any) => {
-              reject(err);
-            });
-          } else {
-            reject('');
-          }
-      }) as any;
-    }
-
-    function getHostGroups(availableDatasources: string[], datasourceSrv: any) {
-      return new Promise<any>((resolve: any, reject: any) => {
-        getZabbix(availableDatasources, datasourceSrv)
-          .then((zabbix: any) => {
-            // Get all host group ids
-            zabbix.getAllGroups()
-              .then((groups: any) => {
-                groups.map((group: any) => datasourcesPointer.push(group.name));
-                resolve(groups.map((group: any) => group.name));
-              })
-              .catch((err: any) => {
-                reject(err);
-              });
-          })
-          .catch((err: any) => {
-            reject(err);
-          });
-      }) as any;
-    }
-    /* eslint-enable */
+    const dsPointer = this.dashboard.selectedDatasource ? [this.dashboard.selectedDatasource] : availableDatasources;
+    getHostGroups(dsPointer, this.datasourceSrv).then((groups: string[]) => this.hostGroupOptions = groups);
 
     this.$scope.$on('$destroy', () => {
       this.dashboard.updateSubmenuVisibility();
@@ -116,6 +114,16 @@ export class SettingsCtrl {
 
     this.selectors = e2e.pages.Dashboard.Settings.General.selectors;
     this.useAngularTemplating = !getConfig().featureToggles.newVariables;
+  }
+
+  datasourceChanged() {
+    if (this.datasourceOptions.indexOf(this.dashboard.selectedDatasource) > -1) {
+      getHostGroups([this.dashboard.selectedDatasource], this.datasourceSrv)
+        .then((groups: string[]) => this.hostGroupOptions = groups)
+        .catch((err: any) => {
+          this.hostGroupOptions = [];
+        });
+    }
   }
 
   buildSectionList() {
