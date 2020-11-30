@@ -89,6 +89,9 @@ export class SettingsCtrl {
       .getMetricSources()
       .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
       .map((ds: any) => ds.name);
+    if (!this.dashboard.selectedDatasource && availableDatasources.length > 0) {
+      this.dashboard.selectedDatasource = availableDatasources[0];
+    }
     const dsPointer = this.dashboard.selectedDatasource ? [this.dashboard.selectedDatasource] : availableDatasources;
     getHostGroups(dsPointer, this.datasourceSrv).then((groups: string[]) => this.hostGroupOptions = groups);
 
