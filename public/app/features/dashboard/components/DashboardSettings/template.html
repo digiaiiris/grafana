@@ -25,8 +25,12 @@
 
   <div class="gf-form-group">
     <div class='gf-form'>
+      <label class='gf-form-label width-12'>Maintenance Datasource</label>
+      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.selectedDatasource' ng-change='ctrl.datasourceChanged()' bs-typeahead='ctrl.datasourceOptions' data-min-length='0' data-items='100'></input>
+    </div>
+    <div class='gf-form'>
       <label class='gf-form-label width-12'>Maintenance Host Group</label>
-      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.maintenanceHostGroup' bs-typeahead='ctrl.datasourceOptions' data-min-length='0' data-items='100'></input>
+      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.maintenanceHostGroup' bs-typeahead='ctrl.hostGroupOptions' data-min-length='0' data-items='100'></input>
     </div>
     <div class='gf-form'>
       <label class='gf-form-label width-12'>Service Info Wiki URL</label>
