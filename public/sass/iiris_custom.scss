@@ -404,38 +404,6 @@ panel-plugin-breadcrumb .breadcrumb > li > svg {
     margin: 0;
 }
 
-.date-selection-row {
-    display: flex;
-    flex-direction: row;
-    & .hour-input {
-        margin-left: 20px;
-    }
-    & .date-selection-container {
-        margin-right: 10px;
-        display: flex;
-        flex-direction: column;
-    }
-}
-
-.checkbox-block {
-    display: flex;
-    flex-direction: row;
-    &.checkbox-top-spacer {
-        margin-top: 10px;
-    }
-}
-
-.checkbox-column {
-    display: flex;
-    flex-direction: column;
-}
-
-.checkbox-container {
-    display: flex;
-    flex-direction: row;
-    margin: 0 10px 0 0;
-}
-
 .maintenance-config-error-text {
     color: #E60F0F;
 }
