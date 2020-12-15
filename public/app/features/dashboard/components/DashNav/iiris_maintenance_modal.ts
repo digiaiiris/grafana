@@ -312,7 +312,7 @@ export class IirisMaintenanceModalCtrl {
     this.populateMonthSelector(this.strictEndMonthInput, strictEndTimeMonth);
     this.strictEndDayInput.value = strictEndTimeDay;
     this.strictEndDayInput.text = '' + strictEndTimeDay;
-    this.populateDaySelector(null, true);
+    this.populateDaySelector(undefined, true);
     this.populateHourSelector(this.strictEndHourInput, strictEndTimeHours);
     this.populateMinuteSelector(this.strictEndMinuteInput, strictEndTimeMinutes);
     // Populate form with preselected maintenance values
@@ -672,7 +672,7 @@ export class IirisMaintenanceModalCtrl {
    * Callback for select strict end month
    */
   onStrictEndMonthValueChanged() {
-    this.populateDaySelector(null, true);
+    this.populateDaySelector(undefined, true);
   }
 
   /**
@@ -682,7 +682,7 @@ export class IirisMaintenanceModalCtrl {
     const m = this.strictEndMonthInput.value;
     const y = this.strictEndYearInput.value;
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
-      this.populateDaySelector(null, true);
+      this.populateDaySelector(undefined, true);
     }
   }
 

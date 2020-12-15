@@ -20,7 +20,6 @@ import { DashboardModel } from '../../state';
 import { CoreEvents, StoreState } from 'app/types';
 import { ShareModal } from 'app/features/dashboard/components/ShareModal';
 import { SaveDashboardModalProxy } from 'app/features/dashboard/components/SaveDashboard/SaveDashboardModalProxy';
-import { sanitizeUrl } from 'app/core/utils/text';
 
 export interface OwnProps {
   dashboard: DashboardModel;
@@ -375,7 +374,7 @@ class DashNav extends PureComponent<Props> {
             options['timeperiods'] = [
               {
                 timeperiod_type: 0,
-                period: endTime - selectedMaintenance.active_since,
+                period: (endTime || 0) - selectedMaintenance.active_since,
                 start_date: selectedMaintenance.active_since,
               },
             ];
