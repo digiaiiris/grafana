@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-xorm/xorm"
+	"xorm.io/xorm"
 )
 
 type Dialect interface {
@@ -45,21 +45,29 @@ type Dialect interface {
 	PostInsertId(table string, sess *xorm.Session) error
 
 	CleanDB() error
+	TruncateDBTables() error
 	NoOpSql() string
 
 	IsUniqueConstraintViolation(err error) bool
+	ErrorMessage(err error) string
 	IsDeadlock(err error) bool
+}
+
+type dialectFunc func(*xorm.Engine) Dialect
+
+var supportedDialects = map[string]dialectFunc{
+	MYSQL:                  NewMysqlDialect,
+	SQLITE:                 NewSqlite3Dialect,
+	POSTGRES:               NewPostgresDialect,
+	MYSQL + "WithHooks":    NewMysqlDialect,
+	SQLITE + "WithHooks":   NewSqlite3Dialect,
+	POSTGRES + "WithHooks": NewPostgresDialect,
 }
 
 func NewDialect(engine *xorm.Engine) Dialect {
 	name := engine.DriverName()
-	switch name {
-	case MYSQL:
-		return NewMysqlDialect(engine)
-	case SQLITE:
-		return NewSqlite3Dialect(engine)
-	case POSTGRES:
-		return NewPostgresDialect(engine)
+	if fn, exist := supportedDialects[name]; exist {
+		return fn(engine)
 	}
 
 	panic("Unsupported database type: " + name)
@@ -268,4 +276,8 @@ func (db *BaseDialect) CleanDB() error {
 
 func (db *BaseDialect) NoOpSql() string {
 	return "SELECT 0;"
+}
+
+func (db *BaseDialect) TruncateDBTables() error {
+	return nil
 }

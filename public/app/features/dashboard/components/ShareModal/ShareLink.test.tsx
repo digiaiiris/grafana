@@ -14,9 +14,11 @@ jest.mock('app/features/dashboard/services/TimeSrv', () => ({
 let fillVariableValuesForUrlMock = (params: any) => {};
 
 jest.mock('app/features/templating/template_srv', () => ({
-  fillVariableValuesForUrl: (params: any) => {
-    fillVariableValuesForUrlMock(params);
-  },
+  getTemplateSrv: () => ({
+    fillVariableValuesForUrl: (params: any) => {
+      fillVariableValuesForUrlMock(params);
+    },
+  }),
 }));
 
 function mockLocationHref(href: string) {
@@ -28,6 +30,7 @@ function mockLocationHref(href: string) {
     search = href.substring(searchPos);
   }
 
+  //@ts-ignore
   delete window.location;
   (window as any).location = {
     ...location,
@@ -45,6 +48,21 @@ function setUTCTimeZone() {
     };
   };
 }
+
+const mockUid = 'abc123';
+jest.mock('@grafana/runtime', () => {
+  const original = jest.requireActual('@grafana/runtime');
+
+  return {
+    ...original,
+    getBackendSrv: () => ({
+      post: jest.fn().mockResolvedValue({
+        uid: mockUid,
+        url: `http://localhost:3000/goto/${mockUid}`,
+      }),
+    }),
+  };
+});
 
 interface ScenarioContext {
   wrapper?: ShallowWrapper<Props, State, ShareLink>;
@@ -89,19 +107,19 @@ describe('ShareModal', () => {
         },
       };
       ctx.mount({
-        panel: { id: 22, options: {} },
+        panel: { id: 22, options: {}, fieldConfig: { defaults: {}, overrides: [] } },
       });
     });
 
     it('should generate share url absolute time', () => {
       const state = ctx.wrapper?.state();
-      expect(state?.shareUrl).toBe('http://server/#!/test?from=1000&to=2000&orgId=1&panelId=22&fullscreen');
+      expect(state?.shareUrl).toBe('http://server/#!/test?from=1000&to=2000&orgId=1&viewPanel=22');
     });
 
     it('should generate render url', () => {
       mockLocationHref('http://dashboards.grafana.com/d/abcdefghi/my-dash');
       ctx.mount({
-        panel: { id: 22, options: {} },
+        panel: { id: 22, options: {}, fieldConfig: { defaults: {}, overrides: [] } },
       });
 
       const state = ctx.wrapper?.state();
@@ -113,7 +131,7 @@ describe('ShareModal', () => {
     it('should generate render url for scripted dashboard', () => {
       mockLocationHref('http://dashboards.grafana.com/dashboard/script/my-dash.js');
       ctx.mount({
-        panel: { id: 22, options: {} },
+        panel: { id: 22, options: {}, fieldConfig: { defaults: {}, overrides: [] } },
       });
 
       const state = ctx.wrapper?.state();
@@ -139,25 +157,14 @@ describe('ShareModal', () => {
       expect(state?.shareUrl).toBe('http://server/#!/test?from=1000&to=2000&orgId=1&theme=light');
     });
 
-    it('should remove fullscreen from image url when is first param in querystring and modeSharePanel is true', () => {
-      mockLocationHref('http://server/#!/test?fullscreen&edit');
+    it('should remove editPanel from image url when is first param in querystring', () => {
+      mockLocationHref('http://server/#!/test?editPanel=1');
       ctx.mount({
-        panel: { id: 1, options: {} },
+        panel: { id: 1, options: {}, fieldConfig: { defaults: {}, overrides: [] } },
       });
 
       const state = ctx.wrapper?.state();
-      expect(state?.shareUrl).toContain('?fullscreen&edit&from=1000&to=2000&orgId=1&panelId=1');
-      expect(state?.imageUrl).toContain('?from=1000&to=2000&orgId=1&panelId=1&width=1000&height=500&tz=UTC');
-    });
-
-    it('should remove edit from image url when is first param in querystring and modeSharePanel is true', () => {
-      mockLocationHref('http://server/#!/test?edit&fullscreen');
-      ctx.mount({
-        panel: { id: 1, options: {} },
-      });
-
-      const state = ctx.wrapper?.state();
-      expect(state?.shareUrl).toContain('?edit&fullscreen&from=1000&to=2000&orgId=1&panelId=1');
+      expect(state?.shareUrl).toContain('?editPanel=1&from=1000&to=2000&orgId=1');
       expect(state?.imageUrl).toContain('?from=1000&to=2000&orgId=1&panelId=1&width=1000&height=500&tz=UTC');
     });
 
@@ -174,6 +181,20 @@ describe('ShareModal', () => {
       expect(state?.shareUrl).toContain(
         'http://server/#!/test?from=1000&to=2000&orgId=1&var-app=mupp&var-server=srv-01'
       );
+    });
+
+    it('should shorten url', () => {
+      mockLocationHref('http://server/#!/test');
+      fillVariableValuesForUrlMock = (params: any) => {
+        params['var-app'] = 'mupp';
+        params['var-server'] = 'srv-01';
+      };
+      ctx.mount();
+      ctx.wrapper?.setState({ includeTemplateVars: true, useShortUrl: true }, async () => {
+        await ctx.wrapper?.instance().buildUrl();
+        const state = ctx.wrapper?.state();
+        expect(state?.shareUrl).toContain(`/goto/${mockUid}`);
+      });
     });
   });
 });

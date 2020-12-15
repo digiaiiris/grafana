@@ -1,23 +1,26 @@
 import _ from 'lodash';
 import { TimeSrv } from 'app/features/dashboard/services/TimeSrv';
-import templateSrv, { TemplateSrv } from 'app/features/templating/template_srv';
+import { getTemplateSrv, TemplateSrv } from 'app/features/templating/template_srv';
 import coreModule from 'app/core/core_module';
-import { appendQueryToUrl, toUrlParams } from 'app/core/utils/url';
-import { sanitizeUrl } from 'app/core/utils/text';
 import { getConfig } from 'app/core/config';
-import locationUtil from 'app/core/utils/location_util';
-import { DataLinkBuiltInVars } from '@grafana/ui';
 import {
-  DataLink,
-  KeyValue,
-  deprecationWarning,
-  LinkModel,
   DataFrame,
-  ScopedVars,
-  FieldType,
+  DataLink,
+  DataLinkBuiltInVars,
+  DataLinkClickEvent,
+  deprecationWarning,
   Field,
-  VariableSuggestion,
+  FieldType,
+  getFieldDisplayName,
+  KeyValue,
+  LinkModel,
+  locationUtil,
+  PanelPlugin,
+  ScopedVars,
+  textUtil,
+  urlUtil,
   VariableOrigin,
+  VariableSuggestion,
   VariableSuggestionsScope,
 } from '@grafana/data';
 
@@ -73,15 +76,17 @@ const valueVars = [
 ];
 
 const buildLabelPath = (label: string) => {
-  return label.indexOf('.') > -1 ? `["${label}"]` : `.${label}`;
+  return label.includes('.') || label.trim().includes(' ') ? `["${label}"]` : `.${label}`;
 };
 
 export const getPanelLinksVariableSuggestions = (): VariableSuggestion[] => [
-  ...templateSrv.variables.map(variable => ({
-    value: variable.name as string,
-    label: variable.name,
-    origin: VariableOrigin.Template,
-  })),
+  ...getTemplateSrv()
+    .getVariables()
+    .map(variable => ({
+      value: variable.name as string,
+      label: variable.name,
+      origin: VariableOrigin.Template,
+    })),
   {
     value: `${DataLinkBuiltInVars.includeVars}`,
     label: 'All variables',
@@ -124,33 +129,35 @@ const getFieldVars = (dataFrames: DataFrame[]) => {
   ];
 };
 
-const getDataFrameVars = (dataFrames: DataFrame[]) => {
-  let numeric: Field = undefined;
-  let title: Field = undefined;
+export const getDataFrameVars = (dataFrames: DataFrame[]) => {
+  let numeric: Field | undefined = undefined;
+  let title: Field | undefined = undefined;
   const suggestions: VariableSuggestion[] = [];
   const keys: KeyValue<true> = {};
 
-  for (const df of dataFrames) {
-    for (const f of df.fields) {
-      if (keys[f.name]) {
+  for (const frame of dataFrames) {
+    for (const field of frame.fields) {
+      const displayName = getFieldDisplayName(field, frame, dataFrames);
+
+      if (keys[displayName]) {
         continue;
       }
 
       suggestions.push({
-        value: `__data.fields[${f.name}]`,
-        label: `${f.name}`,
-        documentation: `Formatted value for ${f.name} on the same row`,
+        value: `__data.fields${buildLabelPath(displayName)}`,
+        label: `${displayName}`,
+        documentation: `Formatted value for ${displayName} on the same row`,
         origin: VariableOrigin.Fields,
       });
 
-      keys[f.name] = true;
+      keys[displayName] = true;
 
-      if (!numeric && f.type === FieldType.number) {
-        numeric = f;
+      if (!numeric && field.type === FieldType.number) {
+        numeric = { ...field, name: displayName };
       }
 
-      if (!title && f.config.title && f.config.title !== f.name) {
-        title = f;
+      if (!title && field.config.displayName && field.config.displayName !== field.name) {
+        title = { ...field, name: displayName };
       }
     }
   }
@@ -166,13 +173,13 @@ const getDataFrameVars = (dataFrames: DataFrame[]) => {
 
   if (numeric) {
     suggestions.push({
-      value: `__data.fields[${numeric.name}].numeric`,
+      value: `__data.fields${buildLabelPath(numeric.name)}.numeric`,
       label: `Show numeric value`,
       documentation: `the numeric field value`,
       origin: VariableOrigin.Fields,
     });
     suggestions.push({
-      value: `__data.fields[${numeric.name}].text`,
+      value: `__data.fields${buildLabelPath(numeric.name)}.text`,
       label: `Show text value`,
       documentation: `the text value`,
       origin: VariableOrigin.Fields,
@@ -181,7 +188,7 @@ const getDataFrameVars = (dataFrames: DataFrame[]) => {
 
   if (title) {
     suggestions.push({
-      value: `__data.fields[${title.config.title}]`,
+      value: `__data.fields${buildLabelPath(title.name)}`,
       label: `Select by title`,
       documentation: `Use the title to pick the field`,
       origin: VariableOrigin.Fields,
@@ -231,8 +238,24 @@ export const getCalculationValueDataLinksVariableSuggestions = (dataFrames: Data
   return [...seriesVars, ...fieldVars, ...valueVars, valueCalcVar, ...getPanelLinksVariableSuggestions()];
 };
 
+export const getPanelOptionsVariableSuggestions = (plugin: PanelPlugin, data?: DataFrame[]): VariableSuggestion[] => {
+  const dataVariables = plugin.meta.skipDataQuery ? [] : getDataFrameVars(data || []);
+  return [
+    ...dataVariables, // field values
+    ...getTemplateSrv()
+      .getVariables()
+      .map(variable => ({
+        value: variable.name as string,
+        label: variable.name,
+        origin: VariableOrigin.Template,
+      })),
+  ];
+};
+
 export interface LinkService {
-  getDataLinkUIModel: <T>(link: DataLink, scopedVars: ScopedVars, origin: T) => LinkModel<T>;
+  getDataLinkUIModel: <T>(link: DataLink, scopedVars: ScopedVars | undefined, origin: T) => LinkModel<T>;
+  getAnchorInfo: (link: any) => any;
+  getLinkUrl: (link: any) => string;
 }
 
 export class LinkSrv implements LinkService {
@@ -253,8 +276,8 @@ export class LinkSrv implements LinkService {
       this.templateSrv.fillVariableValuesForUrl(params);
     }
 
-    url = appendQueryToUrl(url, toUrlParams(params));
-    return getConfig().disableSanitizeHtml ? url : sanitizeUrl(url);
+    url = urlUtil.appendQueryToUrl(url, urlUtil.toUrlParams(params));
+    return getConfig().disableSanitizeHtml ? url : textUtil.sanitizeUrl(url);
   }
 
   getAnchorInfo(link: any) {
@@ -267,9 +290,9 @@ export class LinkSrv implements LinkService {
   /**
    * Returns LinkModel which is basically a DataLink with all values interpolated through the templateSrv.
    */
-  getDataLinkUIModel = <T>(link: DataLink, scopedVars: ScopedVars, origin: T): LinkModel<T> => {
+  getDataLinkUIModel = <T>(link: DataLink, scopedVars: ScopedVars | undefined, origin: T): LinkModel<T> => {
     const params: KeyValue = {};
-    const timeRangeUrl = toUrlParams(this.timeSrv.timeRangeForUrl());
+    const timeRangeUrl = urlUtil.toUrlParams(this.timeSrv.timeRangeForUrl());
 
     let href = link.url;
 
@@ -280,15 +303,17 @@ export class LinkSrv implements LinkService {
       });
     }
 
-    let onClick: (e: any) => void = undefined;
+    let onClick: ((event: DataLinkClickEvent) => void) | undefined = undefined;
 
     if (link.onClick) {
-      onClick = (e: any) => {
-        link.onClick({
-          origin,
-          scopedVars,
-          e,
-        });
+      onClick = (e: DataLinkClickEvent) => {
+        if (link.onClick) {
+          link.onClick({
+            origin,
+            scopedVars,
+            e,
+          });
+        }
       };
     }
 
@@ -302,7 +327,7 @@ export class LinkSrv implements LinkService {
 
     this.templateSrv.fillVariableValuesForUrl(params, scopedVars);
 
-    const variablesQuery = toUrlParams(params);
+    const variablesQuery = urlUtil.toUrlParams(params);
 
     info.href = this.templateSrv.replace(info.href, {
       ...scopedVars,
@@ -316,7 +341,7 @@ export class LinkSrv implements LinkService {
       },
     });
 
-    info.href = getConfig().disableSanitizeHtml ? info.href : sanitizeUrl(info.href);
+    info.href = getConfig().disableSanitizeHtml ? info.href : textUtil.sanitizeUrl(info.href);
 
     return info;
   };

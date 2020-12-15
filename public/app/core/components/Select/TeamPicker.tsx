@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
-import { AsyncSelect } from '@grafana/ui';
+import { LegacyForms } from '@grafana/ui';
 import { debounce } from 'lodash';
 import { getBackendSrv } from '@grafana/runtime';
+const { AsyncSelect } = LegacyForms;
 
 export interface Team {
   id: number;
@@ -63,7 +64,7 @@ export class TeamPicker extends Component<Props, State> {
     const { onSelected, className } = this.props;
     const { isLoading } = this.state;
     return (
-      <div className="user-picker">
+      <div className="user-picker" data-testid="teamPicker">
         <AsyncSelect
           isLoading={isLoading}
           defaultOptions={true}

@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins"
-	"github.com/grafana/grafana/pkg/setting"
 
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/bus"
@@ -20,7 +20,7 @@ import (
 // POST /api/ds/query   DataSource query w/ expressions
 func (hs *HTTPServer) QueryMetricsV2(c *models.ReqContext, reqDto dtos.MetricRequest) Response {
 	if len(reqDto.Queries) == 0 {
-		return Error(500, "No queries found in query", nil)
+		return Error(400, "No queries found in query", nil)
 	}
 
 	request := &tsdb.TsdbQuery{
@@ -32,26 +32,29 @@ func (hs *HTTPServer) QueryMetricsV2(c *models.ReqContext, reqDto dtos.MetricReq
 	expr := false
 	var ds *models.DataSource
 	for i, query := range reqDto.Queries {
-		name, err := query.Get("datasource").String()
-		if err != nil {
-			return Error(500, "datasource missing name", err)
-		}
+		hs.log.Debug("Processing metrics query", "query", query)
+		name := query.Get("datasource").MustString("")
 		if name == "__expr__" {
 			expr = true
 		}
 
 		datasourceID, err := query.Get("datasourceId").Int64()
 		if err != nil {
-			return Error(500, "datasource missing ID", nil)
+			hs.log.Debug("Can't process query since it's missing data source ID")
+			return Error(400, "Query missing data source ID", nil)
 		}
 
 		if i == 0 && !expr {
 			ds, err = hs.DatasourceCache.GetDatasource(datasourceID, c.SignedInUser, c.SkipCache)
 			if err != nil {
-				if err == models.ErrDataSourceAccessDenied {
-					return Error(403, "Access denied to datasource", err)
+				hs.log.Debug("Encountered error getting data source", "err", err)
+				if errors.Is(err, models.ErrDataSourceAccessDenied) {
+					return Error(403, "Access denied to data source", err)
 				}
-				return Error(500, "Unable to load datasource meta data", err)
+				if errors.Is(err, models.ErrDataSourceNotFound) {
+					return Error(400, "Invalid data source ID", err)
+				}
+				return Error(500, "Unable to load data source metadata", err)
 			}
 		}
 
@@ -59,6 +62,7 @@ func (hs *HTTPServer) QueryMetricsV2(c *models.ReqContext, reqDto dtos.MetricReq
 			RefId:         query.Get("refId").MustString("A"),
 			MaxDataPoints: query.Get("maxDataPoints").MustInt64(100),
 			IntervalMs:    query.Get("intervalMs").MustInt64(1000),
+			QueryType:     query.Get("queryType").MustString(""),
 			Model:         query,
 			DataSource:    ds,
 		})
@@ -72,7 +76,7 @@ func (hs *HTTPServer) QueryMetricsV2(c *models.ReqContext, reqDto dtos.MetricReq
 			return Error(500, "Metric request error", err)
 		}
 	} else {
-		if !setting.IsExpressionsEnabled() {
+		if !hs.Cfg.IsExpressionsEnabled() {
 			return Error(404, "Expressions feature toggle is not enabled", nil)
 		}
 

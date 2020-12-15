@@ -7,7 +7,7 @@ import { QueryCtrl } from 'app/plugins/sdk';
 import appEvents from 'app/core/app_events';
 import { promiseToDigest } from 'app/core/utils/promiseToDigest';
 import { auto } from 'angular';
-import { TemplateSrv } from 'app/features/templating/template_srv';
+import { TemplateSrv } from '@grafana/runtime';
 import { AppEvents } from '@grafana/data';
 
 const GRAPHITE_TAG_OPERATORS = ['=', '!=', '=~', '!=~'];
@@ -158,7 +158,7 @@ export class GraphiteQueryCtrl extends QueryCtrl {
         }
 
         // add template variables
-        _.eachRight(this.templateSrv.variables, variable => {
+        _.eachRight(this.templateSrv.getVariables(), variable => {
           altSegments.unshift(
             this.uiSegmentSrv.newSegment({
               type: 'template',
@@ -369,7 +369,7 @@ export class GraphiteQueryCtrl extends QueryCtrl {
     return this.datasource.getTagValuesAutoComplete(tagExpressions, tagKey, valuePrefix).then((values: any[]) => {
       const altValues = _.map(values, 'text');
       // Add template variables as additional values
-      _.eachRight(this.templateSrv.variables, variable => {
+      _.eachRight(this.templateSrv.getVariables(), variable => {
         altValues.push('${' + variable.name + ':regex}');
       });
       return mapToDropdownOptions(altValues);

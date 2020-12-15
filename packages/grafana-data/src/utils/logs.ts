@@ -1,13 +1,13 @@
 import { countBy, chain, escapeRegExp } from 'lodash';
 
-import { LogLevel, LogRowModel, LogLabelStatsModel, LogsParser } from '../types/logs';
+import { LogLevel, LogRowModel, LogLabelStatsModel, LogsParser, LogsModel, LogsSortOrder } from '../types/logs';
 import { DataFrame, FieldType } from '../types/index';
 import { ArrayVector } from '../vector/ArrayVector';
 
 // This matches:
 // first a label from start of the string or first white space, then any word chars until "="
 // second either an empty quotes, or anything that starts with quote and ends with unescaped quote,
-// or any non whitespace chars that do not start with qoute
+// or any non whitespace chars that do not start with quote
 const LOGFMT_REGEXP = /(?:^|\s)([\w\(\)\[\]\{\}]+)=(""|(?:".*?[^\\]"|[^"\s]\S*))/;
 
 /**
@@ -37,8 +37,8 @@ export function getLogLevel(line: string): LogLevel {
   return level;
 }
 
-export function getLogLevelFromKey(key: string): LogLevel {
-  const level = (LogLevel as any)[key.toLowerCase()];
+export function getLogLevelFromKey(key: string | number): LogLevel {
+  const level = (LogLevel as any)[key.toString().toLowerCase()];
   if (level) {
     return level;
   }
@@ -158,3 +158,68 @@ export function getParser(line: string): LogsParser | undefined {
 
   return parser;
 }
+
+export const sortInAscendingOrder = (a: LogRowModel, b: LogRowModel) => {
+  // compare milliseconds
+  if (a.timeEpochMs < b.timeEpochMs) {
+    return -1;
+  }
+
+  if (a.timeEpochMs > b.timeEpochMs) {
+    return 1;
+  }
+
+  // if milliseconds are equal, compare nanoseconds
+  if (a.timeEpochNs < b.timeEpochNs) {
+    return -1;
+  }
+
+  if (a.timeEpochNs > b.timeEpochNs) {
+    return 1;
+  }
+
+  return 0;
+};
+
+export const sortInDescendingOrder = (a: LogRowModel, b: LogRowModel) => {
+  // compare milliseconds
+  if (a.timeEpochMs > b.timeEpochMs) {
+    return -1;
+  }
+
+  if (a.timeEpochMs < b.timeEpochMs) {
+    return 1;
+  }
+
+  // if milliseconds are equal, compare nanoseconds
+  if (a.timeEpochNs > b.timeEpochNs) {
+    return -1;
+  }
+
+  if (a.timeEpochNs < b.timeEpochNs) {
+    return 1;
+  }
+
+  return 0;
+};
+
+export const sortLogsResult = (logsResult: LogsModel | null, sortOrder: LogsSortOrder): LogsModel => {
+  const rows = logsResult ? sortLogRows(logsResult.rows, sortOrder) : [];
+  return logsResult ? { ...logsResult, rows } : { hasUniqueLabels: false, rows };
+};
+
+export const sortLogRows = (logRows: LogRowModel[], sortOrder: LogsSortOrder) =>
+  sortOrder === LogsSortOrder.Ascending ? logRows.sort(sortInAscendingOrder) : logRows.sort(sortInDescendingOrder);
+
+// Currently supports only error condition in Loki logs
+export const checkLogsError = (logRow: LogRowModel): { hasError: boolean; errorMessage?: string } => {
+  if (logRow.labels.__error__) {
+    return {
+      hasError: true,
+      errorMessage: logRow.labels.__error__,
+    };
+  }
+  return {
+    hasError: false,
+  };
+};

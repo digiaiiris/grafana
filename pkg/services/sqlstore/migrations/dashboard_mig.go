@@ -215,4 +215,14 @@ func addDashboardMigration(mg *Migrator) {
 	mg.AddMigration("Add check_sum column", NewAddColumnMigration(dashboardExtrasTableV2, &Column{
 		Name: "check_sum", Type: DB_NVarchar, Length: 32, Nullable: true,
 	}))
+	mg.AddMigration("Add index for dashboard_title", NewAddIndexMigration(dashboardV2, &Index{
+		Cols: []string{"title"},
+		Type: IndexType,
+	}))
+
+	mg.AddMigration("delete tags for deleted dashboards", NewRawSqlMigration(
+		"DELETE FROM dashboard_tag WHERE dashboard_id NOT IN (SELECT id FROM dashboard)"))
+
+	mg.AddMigration("delete stars for deleted dashboards", NewRawSqlMigration(
+		"DELETE FROM star WHERE dashboard_id NOT IN (SELECT id FROM dashboard)"))
 }

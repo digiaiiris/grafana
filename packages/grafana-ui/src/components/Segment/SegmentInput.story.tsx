@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { action } from '@storybook/addon-actions';
-import { SegmentInput } from '.';
+import { SegmentInput, Icon } from '@grafana/ui';
 
 const SegmentFrame = ({ children }: any) => (
   <>
@@ -29,8 +29,8 @@ export const BasicInput = () => {
 };
 
 export default {
-  title: 'Panel/Segment/SegmentInput',
-  component: BasicInput,
+  title: 'Data Source/Segment/SegmentInput',
+  component: SegmentInput,
 };
 
 export const BasicInputWithPlaceholder = () => {
@@ -39,6 +39,23 @@ export const BasicInputWithPlaceholder = () => {
     <SegmentFrame>
       <SegmentInput
         placeholder="add text"
+        value={value}
+        onChange={text => {
+          setValue(text as string);
+          action('Segment value changed')(text);
+        }}
+      />
+    </SegmentFrame>
+  );
+};
+
+export const BasicInputWithHtmlAttributes = () => {
+  const [value, setValue] = useState('some text');
+  return (
+    <SegmentFrame>
+      <SegmentInput
+        data-testid="segment-input-test"
+        id="segment-input"
         value={value}
         onChange={text => {
           setValue(text as string);
@@ -69,7 +86,7 @@ export const InputWithAutoFocus = () => {
   return (
     <SegmentFrame>
       {inputComponents.map((InputComponent: any) => (
-        <InputComponent intitialValue="test"></InputComponent>
+        <InputComponent initialValue="test"></InputComponent>
       ))}
       <a
         className="gf-form-label query-part"
@@ -77,7 +94,7 @@ export const InputWithAutoFocus = () => {
           setInputComponents([...inputComponents, InputComponent]);
         }}
       >
-        <i className="fa fa-plus" />
+        <Icon name="plus" />
       </a>
     </SegmentFrame>
   );

@@ -9,15 +9,13 @@ import { ErrorBoundary } from '@grafana/ui';
 import { getTimeSrv, TimeSrv } from '../services/TimeSrv';
 import { applyPanelTimeOverrides } from 'app/features/dashboard/utils/panel';
 import { profiler } from 'app/core/profiler';
-import { getProcessedDataFrames } from '../state/runRequest';
-import templateSrv from 'app/features/templating/template_srv';
 import config from 'app/core/config';
+import { updateLocation } from 'app/core/actions';
 // Types
 import { DashboardModel, PanelModel } from '../state';
 import { PANEL_BORDER } from 'app/core/constants';
 import {
   LoadingState,
-  ScopedVars,
   AbsoluteTimeRange,
   DefaultTimeRange,
   toUtc,
@@ -25,7 +23,11 @@ import {
   PanelEvents,
   PanelData,
   PanelPlugin,
+  FieldConfigSource,
+  PanelPluginMeta,
 } from '@grafana/data';
+import { selectors } from '@grafana/e2e-selectors';
+import { loadSnapshotData } from '../utils/loadSnapshotData';
 
 const DEFAULT_PLUGIN_ERROR = 'Error in plugin';
 
@@ -33,11 +35,12 @@ export interface Props {
   panel: PanelModel;
   dashboard: DashboardModel;
   plugin: PanelPlugin;
-  isFullscreen: boolean;
+  isViewing: boolean;
+  isEditing: boolean;
   isInView: boolean;
-  isInEditMode?: boolean;
   width: number;
   height: number;
+  updateLocation: typeof updateLocation;
 }
 
 export interface State {
@@ -45,8 +48,6 @@ export interface State {
   renderCounter: number;
   errorMessage?: string;
   refreshWhenInView: boolean;
-
-  // Current state of all events
   data: PanelData;
 }
 
@@ -70,35 +71,32 @@ export class PanelChrome extends PureComponent<Props, State> {
   }
 
   componentDidMount() {
-    const { panel, dashboard, isInEditMode } = this.props;
+    const { panel, dashboard } = this.props;
+
     panel.events.on(PanelEvents.refresh, this.onRefresh);
     panel.events.on(PanelEvents.render, this.onRender);
+
     dashboard.panelInitialized(this.props.panel);
 
     // Move snapshot data into the query response
     if (this.hasPanelSnapshot) {
       this.setState({
-        data: {
-          ...this.state.data,
-          state: LoadingState.Done,
-          series: getProcessedDataFrames(panel.snapshotData),
-        },
+        data: loadSnapshotData(panel, dashboard),
         isFirstLoad: false,
       });
-    } else {
-      if (isInEditMode) {
-        this.querySubscription = panel
-          .getQueryRunner()
-          .getData()
-          .subscribe({
-            next: data => this.onDataUpdate(data),
-          });
-      }
-
-      if (!this.wantsQueryExecution) {
-        this.setState({ isFirstLoad: false });
-      }
+      return;
     }
+
+    if (!this.wantsQueryExecution) {
+      this.setState({ isFirstLoad: false });
+    }
+
+    this.querySubscription = panel
+      .getQueryRunner()
+      .getData({ withTransforms: true, withFieldConfig: true })
+      .subscribe({
+        next: data => this.onDataUpdate(data),
+      });
   }
 
   componentWillUnmount() {
@@ -170,7 +168,6 @@ export class PanelChrome extends PureComponent<Props, State> {
   onRefresh = () => {
     const { panel, isInView, width } = this.props;
     if (!isInView) {
-      console.log('Refresh when panel is visible', panel.id);
       this.setState({ refreshWhenInView: true });
       return;
     }
@@ -180,19 +177,10 @@ export class PanelChrome extends PureComponent<Props, State> {
     // Issue Query
     if (this.wantsQueryExecution) {
       if (width < 0) {
-        console.log('Refresh skippted, no width yet... wait till we know');
         return;
       }
 
-      const queryRunner = panel.getQueryRunner();
-
-      if (!this.querySubscription) {
-        this.querySubscription = queryRunner.getData().subscribe({
-          next: data => this.onDataUpdate(data),
-        });
-      }
-
-      queryRunner.run({
+      panel.getQueryRunner().run({
         datasource: panel.datasource,
         queries: panel.targets,
         panelId: panel.id,
@@ -200,19 +188,20 @@ export class PanelChrome extends PureComponent<Props, State> {
         timezone: this.props.dashboard.getTimezone(),
         timeRange: timeData.timeRange,
         timeInfo: timeData.timeInfo,
-        widthPixels: width,
-        maxDataPoints: panel.maxDataPoints,
+        maxDataPoints: panel.maxDataPoints || width,
         minInterval: panel.interval,
         scopedVars: panel.scopedVars,
         cacheTimeout: panel.cacheTimeout,
         transformations: panel.transformations,
       });
+    } else {
+      // The panel should render on refresh as well if it doesn't have a query, like clock panel
+      this.onRender();
     }
   };
 
   onRender = () => {
     const stateUpdate = { renderCounter: this.state.renderCounter + 1 };
-
     this.setState(stateUpdate);
   };
 
@@ -220,12 +209,8 @@ export class PanelChrome extends PureComponent<Props, State> {
     this.props.panel.updateOptions(options);
   };
 
-  replaceVariables = (value: string, extraVars?: ScopedVars, format?: string) => {
-    let vars = this.props.panel.scopedVars;
-    if (extraVars) {
-      vars = vars ? { ...vars, ...extraVars } : extraVars;
-    }
-    return templateSrv.replace(value, vars, format);
+  onFieldConfigChange = (config: FieldConfigSource) => {
+    this.props.panel.updateFieldConfig(config);
   };
 
   onPanelError = (message: string) => {
@@ -239,10 +224,6 @@ export class PanelChrome extends PureComponent<Props, State> {
     return panel.snapshotData && panel.snapshotData.length;
   }
 
-  panelHasLastResult = () => {
-    return !!this.props.panel.getQueryRunner().getLastResult();
-  };
-
   get wantsQueryExecution() {
     return !(this.props.plugin.meta.skipDataQuery || this.hasPanelSnapshot);
   }
@@ -254,35 +235,38 @@ export class PanelChrome extends PureComponent<Props, State> {
     });
   };
 
+  shouldSignalRenderingCompleted(loadingState: LoadingState, pluginMeta: PanelPluginMeta) {
+    return loadingState === LoadingState.Done || pluginMeta.skipDataQuery;
+  }
+
   renderPanel(width: number, height: number) {
     const { panel, plugin } = this.props;
     const { renderCounter, data, isFirstLoad } = this.state;
     const { theme } = config;
-
-    // This is only done to increase a counter that is used by backend
-    // image rendering (phantomjs/headless chrome) to know when to capture image
-    const loading = data.state;
-    if (loading === LoadingState.Done) {
-      profiler.renderingCompleted();
-    }
+    const { state: loadingState } = data;
 
     // do not render component until we have first data
-    if (isFirstLoad && (loading === LoadingState.Loading || loading === LoadingState.NotStarted)) {
+    if (isFirstLoad && (loadingState === LoadingState.Loading || loadingState === LoadingState.NotStarted)) {
       return null;
     }
 
-    const PanelComponent = plugin.panel;
-    const timeRange = data.timeRange || this.timeSrv.timeRange();
+    // This is only done to increase a counter that is used by backend
+    // image rendering to know when to capture image
+    if (this.shouldSignalRenderingCompleted(loadingState, plugin.meta)) {
+      profiler.renderingCompleted();
+    }
 
+    const PanelComponent = plugin.panel!;
+    const timeRange = data.timeRange || this.timeSrv.timeRange();
     const headerHeight = this.hasOverlayHeader() ? 0 : theme.panelHeaderHeight;
     const chromePadding = plugin.noPadding ? 0 : theme.panelPadding;
     const panelWidth = width - chromePadding * 2 - PANEL_BORDER;
     const innerPanelHeight = height - headerHeight - chromePadding * 2 - PANEL_BORDER;
-
     const panelContentClassNames = classNames({
       'panel-content': true,
       'panel-content--no-padding': plugin.noPadding,
     });
+    const panelOptions = panel.getOptions();
 
     return (
       <>
@@ -290,15 +274,18 @@ export class PanelChrome extends PureComponent<Props, State> {
           <PanelComponent
             id={panel.id}
             data={data}
+            title={panel.title}
             timeRange={timeRange}
             timeZone={this.props.dashboard.getTimezone()}
-            options={panel.getOptions()}
+            options={panelOptions}
+            fieldConfig={panel.fieldConfig}
             transparent={panel.transparent}
             width={panelWidth}
             height={innerPanelHeight}
             renderCounter={renderCounter}
-            replaceVariables={this.replaceVariables}
+            replaceVariables={panel.replaceVariables}
             onOptionsChange={this.onOptionsChange}
+            onFieldConfigChange={this.onFieldConfigChange}
             onChangeTimeRange={this.onChangeTimeRange}
           />
         </div>
@@ -324,7 +311,7 @@ export class PanelChrome extends PureComponent<Props, State> {
   }
 
   render() {
-    const { dashboard, panel, isFullscreen, width, height } = this.props;
+    const { dashboard, panel, isViewing, isEditing, width, height, updateLocation } = this.props;
     const { errorMessage, data } = this.state;
     const { transparent } = panel;
 
@@ -336,18 +323,19 @@ export class PanelChrome extends PureComponent<Props, State> {
     });
 
     return (
-      <div className={containerClassNames}>
+      <div className={containerClassNames} aria-label={selectors.components.Panels.Panel.containerByTitle(panel.title)}>
         <PanelHeader
           panel={panel}
           dashboard={dashboard}
-          timeInfo={data.request ? data.request.timeInfo : undefined}
           title={panel.title}
           description={panel.description}
           scopedVars={panel.scopedVars}
           links={panel.links}
           error={errorMessage}
-          isFullscreen={isFullscreen}
-          isLoading={data.state === LoadingState.Loading}
+          isEditing={isEditing}
+          isViewing={isViewing}
+          data={data}
+          updateLocation={updateLocation}
         />
         <ErrorBoundary>
           {({ error }) => {

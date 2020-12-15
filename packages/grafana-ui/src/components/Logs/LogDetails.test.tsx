@@ -15,6 +15,7 @@ const setup = (propOverrides?: Partial<Props>, rowOverrides?: Partial<LogRowMode
       logLevel: 'error' as LogLevel,
       timeFromNow: '',
       timeEpochMs: 1546297200000,
+      timeEpochNs: '1546297200000000000',
       timeLocal: '',
       timeUtc: '',
       hasAnsi: false,
@@ -37,17 +38,23 @@ describe('LogDetails', () => {
   describe('when labels are present', () => {
     it('should render heading', () => {
       const wrapper = setup(undefined, { labels: { key1: 'label1', key2: 'label2' } });
-      expect(wrapper.find({ 'aria-label': 'Log Labels' })).toHaveLength(1);
+      expect(wrapper.find({ 'aria-label': 'Log Labels' }).hostNodes()).toHaveLength(1);
     });
     it('should render labels', () => {
       const wrapper = setup(undefined, { labels: { key1: 'label1', key2: 'label2' } });
       expect(wrapper.text().includes('key1label1key2label2')).toBe(true);
     });
   });
+  describe('when log row has error', () => {
+    it('should not render log level border', () => {
+      const wrapper = setup({ hasError: true }, undefined);
+      expect(wrapper.find({ 'aria-label': 'Log level' }).html()).not.toContain('logs-row__level');
+    });
+  });
   describe('when row entry has parsable fields', () => {
     it('should render heading ', () => {
       const wrapper = setup(undefined, { entry: 'test=successful' });
-      expect(wrapper.find({ title: 'Ad-hoc statistics' })).toHaveLength(1);
+      expect(wrapper.find({ title: 'Ad-hoc statistics' }).hostNodes()).toHaveLength(1);
     });
     it('should render parsed fields', () => {
       const wrapper = setup(undefined, { entry: 'test=successful' });
@@ -116,7 +123,7 @@ describe('LogDetails', () => {
     expect(wrapper.find(LogDetailsRow).length).toBe(3);
     const traceIdRow = wrapper.find(LogDetailsRow).filter({ parsedKey: 'traceId' });
     expect(traceIdRow.length).toBe(1);
-    expect(traceIdRow.find('a').length).toBe(1);
+    expect(traceIdRow.find('a').hostNodes().length).toBe(1);
     expect((traceIdRow.find('a').getDOMNode() as HTMLAnchorElement).href).toBe('localhost:3210/1234');
   });
 });

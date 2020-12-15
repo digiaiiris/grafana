@@ -5,7 +5,7 @@ import { css, cx } from 'emotion';
 import { SeriesIcon } from '../../Legend/SeriesIcon';
 import { useTheme } from '../../../themes';
 
-interface SeriesTableRowProps {
+export interface SeriesTableRowProps {
   color?: string;
   label?: string;
   value: string | GraphSeriesValue;
@@ -67,6 +67,7 @@ interface SeriesTableProps {
 export const SeriesTable: React.FC<SeriesTableProps> = ({ timestamp, series }) => {
   const theme = useTheme();
   const styles = getSeriesTableRowStyles(theme);
+
   return (
     <>
       {timestamp && (

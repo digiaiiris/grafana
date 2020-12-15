@@ -91,7 +91,6 @@ func isOrgNameTaken(name string, existingId int64, sess *DBSession) (bool, error
 
 func CreateOrg(cmd *models.CreateOrgCommand) error {
 	return inTransaction(func(sess *DBSession) error {
-
 		if isNameTaken, err := isOrgNameTaken(cmd.Name, 0, sess); err != nil {
 			return err
 		} else if isNameTaken {
@@ -131,7 +130,6 @@ func CreateOrg(cmd *models.CreateOrgCommand) error {
 
 func UpdateOrg(cmd *models.UpdateOrgCommand) error {
 	return inTransaction(func(sess *DBSession) error {
-
 		if isNameTaken, err := isOrgNameTaken(cmd.Name, cmd.OrgId, sess); err != nil {
 			return err
 		} else if isNameTaken {
@@ -220,6 +218,18 @@ func DeleteOrg(cmd *models.DeleteOrgCommand) error {
 	})
 }
 
+func verifyExistingOrg(sess *DBSession, orgId int64) error {
+	var org models.Org
+	has, err := sess.Where("id=?", orgId).Get(&org)
+	if err != nil {
+		return err
+	}
+	if !has {
+		return models.ErrOrgNotFound
+	}
+	return nil
+}
+
 func getOrCreateOrg(sess *DBSession, orgName string) (int64, error) {
 	var org models.Org
 
@@ -235,9 +245,9 @@ func getOrCreateOrg(sess *DBSession, orgName string) (int64, error) {
 			org.Name = mainOrgName
 			org.Id = int64(setting.AutoAssignOrgId)
 		} else {
-			sqlog.Info("Could not create user: organization id %v does not exist",
+			sqlog.Error("Could not create user: organization ID does not exist", "orgID",
 				setting.AutoAssignOrgId)
-			return 0, fmt.Errorf("Could not create user: organization id %v does not exist",
+			return 0, fmt.Errorf("could not create user: organization ID %d does not exist",
 				setting.AutoAssignOrgId)
 		}
 	} else {

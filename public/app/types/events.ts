@@ -1,4 +1,4 @@
-import { DataFrame, eventFactory, TimeRange } from '@grafana/data';
+import { eventFactory, TimeRange } from '@grafana/data';
 import { DashboardModel } from 'app/features/dashboard/state';
 
 /**
@@ -139,8 +139,6 @@ export const rowCollapsed = eventFactory('row-collapsed');
 export const templateVariableValueUpdated = eventFactory('template-variable-value-updated');
 export const submenuVisibilityChanged = eventFactory<boolean>('submenu-visibility-changed');
 
-export const dataFramesReceived = eventFactory<DataFrame[]>('data-frames-received');
-
 export const graphClicked = eventFactory<GraphClickedPayload>('graph-click');
 
 export const thresholdChanged = eventFactory<ThresholdChangedPayload>('threshold-changed');
@@ -158,3 +156,6 @@ export const jsonDiffReady = eventFactory('json-diff-ready');
 export const closeTimepicker = eventFactory('closeTimepicker');
 
 export const routeUpdated = eventFactory('$routeUpdate');
+
+export const queryChanged = eventFactory('queryChanged');
+export const transformationChanged = eventFactory('transformationChanged');

@@ -1,12 +1,11 @@
 package migrations
 
 import (
-	"github.com/go-xorm/xorm"
 	. "github.com/grafana/grafana/pkg/services/sqlstore/migrator"
+	"xorm.io/xorm"
 )
 
 func addAnnotationMig(mg *Migrator) {
-
 	table := Table{
 		Name: "annotation",
 		Columns: []*Column{
@@ -66,9 +65,9 @@ func addAnnotationMig(mg *Migrator) {
 		Name: "tags", Type: DB_NVarchar, Nullable: true, Length: 500,
 	}))
 
-	///
-	/// Annotation tag
-	///
+	//
+	// Annotation tag
+	//
 	annotationTagTable := Table{
 		Name: "annotation_tag",
 		Columns: []*Column{
