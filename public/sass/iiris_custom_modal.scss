@@ -2,6 +2,7 @@ $panel-background-color: #ffffff;
 $panel-background-color-dark: #000000;
 $button-background-color: #d01d00;
 $button-background-secondary-color: #505050;
+$button-text-color: #ffffff;
 $table-line-color: #cccccc;
 
 .modal {
@@ -54,9 +55,11 @@ $table-line-color: #cccccc;
                 }
             }
             .btn-secondary {
+                color: $button-text-color;
                 background-color: $button-background-secondary-color;
             }
             .btn-primary {
+                color: $button-text-color;
                 background-color: $button-background-color;
             }
         }
@@ -117,6 +120,7 @@ $table-line-color: #cccccc;
     border: none;
     margin: 0 0 0 5px;
     font-weight: 400;
+    height: 24px;
 }
 
 .checkbox-block {

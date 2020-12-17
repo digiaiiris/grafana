@@ -34,7 +34,7 @@ $table-line-color: #cccccc;
     padding: 2px !important;
 }
 
-.main-view {
+.page-dashboard .grafana-app .main-view {
     background: $page-background-color;
 }
 
@@ -43,8 +43,9 @@ $table-line-color: #cccccc;
 .navbar .navbar-page-btn .icon-gf,
 .navbar .navbar-page-btn .gicon,
 .navbar .navbar-page-btn .fa-caret-down,
+.navbar .navbar-page-btn svg,
 .navbar .dashnav-action-icons,
-.navbar-buttons--actions .navbar-button:not(.navbar-button--manage-maintenances):not(.navbar-button--open-wiki) {
+.navbar-buttons--actions {
     display: none !important;
 }
 
@@ -170,8 +171,11 @@ button, input, select, textarea {
     font-family: $text-font-family;
 }
 
-.dashboard-container {
-    padding: 10px 10px 15px 10px;
+.grafana-app .scroll-canvas .dashboard-container {
+    padding: 0;
+    .dashboard-content {
+        padding: 10px 15px 15px 10px;
+    }
 }
 
 .grafana-row .panel-container, .dash-row .panel-container, grafana-panel .panel-container,
