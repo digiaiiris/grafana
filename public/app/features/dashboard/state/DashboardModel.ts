@@ -52,6 +52,7 @@ export class DashboardModel {
   selectedDatasource: string;
   serviceInfoWikiUrl: string;
   serviceInfoWikiUrlIsExternal: boolean;
+  dashboardLogo: string;
   id: any;
   uid: string;
   title: string;
@@ -114,6 +115,7 @@ export class DashboardModel {
     this.selectedDatasource = data.selectedDatasource;
     this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
     this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
+    this.dashboardLogo = data.dashboardLogo;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
     this.tags = data.tags || [];
