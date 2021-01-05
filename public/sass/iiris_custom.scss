@@ -128,10 +128,13 @@ $table-line-color: #cccccc;
     border: none;
     text-shadow: none;
     border-radius: 3px;
+    svg {
+      color: $button-text-color;
+    }
 }
 
 .navbar .navbar-button--tight {
-    padding: 5px 4px 8px;
+    padding: 6px 4px 8px;
     margin-left: 4px;
 }
 
@@ -222,17 +225,6 @@ grafana-panel .panel-info-corner--links .fa,
 
 .navbar-button--tight {
     padding: 6px 4px 7px 4px;
-}
-
-.iiris-customer-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px;
-  img {
-    object-fit: contain;
-    height: 44px;
-  }
 }
 
 // Scrollbar
