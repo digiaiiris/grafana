@@ -778,6 +778,11 @@ class DashNav extends PureComponent<Props> {
 
     return (
       <div className="navbar">
+        {this.props.dashboard.dashboardLogo && (
+          <div className="iiris-customer-logo">
+            <img src={this.props.dashboard.dashboardLogo} />
+          </div>
+        )}
         {isFullscreen && this.renderBackButton()}
         {this.renderDashboardTitleSearchButton()}
 

@@ -154,3 +154,14 @@ $table-line-color: #cccccc;
         flex-direction: column;
     }
 }
+
+.iiris-customer-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  img {
+    object-fit: contain;
+    height: 44px;
+  }
+}

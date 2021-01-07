@@ -56,7 +56,7 @@ $table-line-color: #cccccc;
     border-right-style: none;
     font-size: 1.75rem;
     font-weight: 400;
-    padding-left: 21px !important;
+    padding-left: 16px !important;
     color: $dashboard-title-color;
     background-color: transparent;
     cursor: default;
@@ -128,10 +128,13 @@ $table-line-color: #cccccc;
     border: none;
     text-shadow: none;
     border-radius: 3px;
+    svg {
+      color: $button-text-color;
+    }
 }
 
 .navbar .navbar-button--tight {
-    padding: 5px 4px 8px;
+    padding: 6px 4px 8px;
     margin-left: 4px;
 }
 
