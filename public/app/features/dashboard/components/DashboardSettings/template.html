@@ -25,6 +25,10 @@
 
   <div class="gf-form-group">
     <div class='gf-form'>
+      <label class='gf-form-label width-12'>Dashboard Logo</label>
+      <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.dashboardLogo'></input>
+    </div>
+    <div class='gf-form'>
       <label class='gf-form-label width-12'>Maintenance Datasource</label>
       <input type='text' class='gf-form-input width-30' ng-model='ctrl.dashboard.selectedDatasource' ng-change='ctrl.datasourceChanged()' bs-typeahead='ctrl.datasourceOptions' data-min-length='0' data-items='100'></input>
     </div>
