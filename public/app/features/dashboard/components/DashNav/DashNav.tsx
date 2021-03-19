@@ -331,7 +331,9 @@ class DashNav extends PureComponent<Props> {
       }
       if (selectedMaintenance.activeSince > curTime) {
         // Maintenance period hasn't started yet so it can be safely removed
-        this.listModalScope.confirmAction = this.onRemoveMaintenance.bind(this);
+        // NOTE: This is temporarily commented because 'maintenance.delete' causes error
+        // this.listModalScope.confirmAction = this.onRemoveMaintenance.bind(this);
+        this.listModalScope.confirmAction = this.onUpdateMaintenanceEndTime.bind(this);
       } else {
         // Period has already started so we can just set the end time of period
         this.listModalScope.confirmAction = this.onUpdateMaintenanceEndTime.bind(this);
@@ -354,8 +356,9 @@ class DashNav extends PureComponent<Props> {
    * @param {number} endTime epoch
    */
   onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
+    const curTime = this.getCurrentTimeEpoch();
     if (!endTime) {
-      endTime = this.getCurrentTimeEpoch();
+      endTime = curTime;
     }
     let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     if (!selectedMaintenance) {
@@ -369,13 +372,18 @@ class DashNav extends PureComponent<Props> {
             maintenanceid: maintenanceID,
             active_till: endTime,
           };
+          // Check if maintenance period has started yet
+          if (selectedMaintenance.activeSince > curTime) {
+            options['active_since'] = endTime;
+            selectedMaintenance.activeSince = endTime;
+          }
           // In case of single maintenances we need to also set the period end time
           if (!selectedMaintenance.maintenanceType) {
             options['timeperiods'] = [
               {
                 timeperiod_type: 0,
-                period: (endTime || 0) - selectedMaintenance.active_since,
-                start_date: selectedMaintenance.active_since,
+                period: (endTime || 0) - selectedMaintenance.activeSince,
+                start_date: selectedMaintenance.activeSince,
               },
             ];
           }
