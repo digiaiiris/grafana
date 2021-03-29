@@ -429,7 +429,7 @@ export class DashboardModel {
 
     for (let i = 0; i < this.panels.length; i++) {
       const panel = this.panels[i];
-      if ((!panel.repeat || panel.repeatedByRow) && panel.repeatPanelId && panel.repeatIteration !== this.iteration) {
+      if ((!panel.repeat || panel.repeatedByRow) && panel.repeatPanelId && panel.repeatIteration !== this.iteration && !panel.isTabPanel) {
         panelsToRemove.push(panel);
       }
     }
