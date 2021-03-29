@@ -263,7 +263,7 @@ class DashNav extends PureComponent<Props> {
     const { dashboard } = this.props;
     if (dashboard.serviceInfoWikiUrlIsExternal) {
       // Navigate directly to given URL
-      window.top.location.href = dashboard.serviceInfoWikiUrl;
+      window.open(dashboard.serviceInfoWikiUrl, '_blank');
     } else {
       // Tell parent window to navigate to given URL
       const messageObj = {
