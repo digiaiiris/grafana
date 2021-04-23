@@ -2,11 +2,7 @@
 title = "Cloud Monitoring"
 description = "Guide for using Google Cloud Monitoring in Grafana"
 keywords = ["grafana", "stackdriver", "google", "guide", "cloud", "monitoring"]
-type = "docs"
 aliases = ["/docs/grafana/latest/features/datasources/stackdriver", "/docs/grafana/latest/features/datasources/cloudmonitoring/"]
-[menu.docs]
-name = "Google Cloud Monitoring"
-parent = "datasources"
 weight = 200
 +++
 
@@ -30,9 +26,9 @@ Grafana ships with built-in support for Google Cloud Monitoring. Just add it as 
 
 | Name                  | Description                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------- |
-| _Name_                | The data source name. This is how you refer to the data source in panels and queries. |
-| _Default_             | Default data source means that it will be pre-selected for new panels.                |
-| _Service Account Key_ | Service Account Key File for a GCP Project. Instructions below on how to create it.   |
+| `Name`                | The data source name. This is how you refer to the data source in panels and queries. |
+| `Default`             | Default data source means that it will be pre-selected for new panels.                |
+| `Service Account Key` | Service Account Key File for a GCP Project. Instructions below on how to create it.   |
 
 ## Authentication
 
@@ -226,6 +222,27 @@ The Alias By field allows you to control the format of the legend keys for SLO q
 
 SLO queries use the same [alignment period functionality as metric queries]({{< relref "#metric-queries" >}}).
 
+### MQL (Monitoring Query Language) queries
+
+> **Note:** Only available in Grafana v7.4+.
+
+The MQL query builder in the Google Cloud Monitoring data source allows you to display MQL results in time series format. To get an understanding of the basic concepts in MQL, refer to [Introduction to Monitoring Query Language](https://cloud.google.com/monitoring/mql).
+
+#### Create an MQL query
+
+To create an MQL query, follow these steps:
+
+1. In the **Query Type** list, select **Metrics**.
+2. Click **<> Edit MQL** right next to the **Query Type** field. This will toggle the metric query builder mode so that raw MQL queries can be used.
+3. Choose a project from the **Project** list.
+4. Add the [MQL](https://cloud.google.com/monitoring/mql/query-language) query of your choice in the text area.
+
+#### Alias patterns for MQL queries
+
+MQL queries use the same alias patterns as [metric queries]({{< relref "#metric-queries" >}}).
+
+`{{metric.service}}` is not supported. `{{metric.type}}` and `{{metric.name}}` show the time series key in the response.
+
 ## Templating
 
 Instead of hard-coding things like server, application and sensor name in your metric queries you can use variables in their place.
@@ -241,16 +258,16 @@ Variable of the type _Query_ allows you to query Google Cloud Monitoring for var
 
 | Name                             | Description                                                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| _Metric Types_                   | Returns a list of metric type names that are available for the specified service.                             |
-| _Labels Keys_                    | Returns a list of keys for `metric label` and `resource label` in the specified metric.                       |
-| _Labels Values_                  | Returns a list of values for the label in the specified metric.                                               |
-| _Resource Types_                 | Returns a list of resource types for the specified metric.                                                    |
-| _Aggregations_                   | Returns a list of aggregations (cross series reducers) for the specified metric.                              |
-| _Aligners_                       | Returns a list of aligners (per series aligners) for the specified metric.                                    |
-| _Alignment periods_              | Returns a list of all alignment periods that are available in Google Cloud Monitoring query editor in Grafana |
-| _Selectors_                      | Returns a list of selectors that can be used in SLO (Service Level Objectives) queries                        |
-| _SLO Services_                   | Returns a list of Service Monitoring services that can be used in SLO queries                                 |
-| _Service Level Objectives (SLO)_ | Returns a list of SLO's for the specified SLO service                                                         |
+| `Metric Types`                   | Returns a list of metric type names that are available for the specified service.                             |
+| `Labels Keys`                    | Returns a list of keys for `metric label` and `resource label` in the specified metric.                       |
+| `Labels Values`                  | Returns a list of values for the label in the specified metric.                                               |
+| `Resource Types`                 | Returns a list of resource types for the specified metric.                                                    |
+| `Aggregations`                   | Returns a list of aggregations (cross series reducers) for the specified metric.                              |
+| `Aligners`                       | Returns a list of aligners (per series aligners) for the specified metric.                                    |
+| `Alignment periods`              | Returns a list of all alignment periods that are available in Google Cloud Monitoring query editor in Grafana |
+| `Selectors`                      | Returns a list of selectors that can be used in SLO (Service Level Objectives) queries                        |
+| `SLO Services`                   | Returns a list of Service Monitoring services that can be used in SLO queries                                 |
+| `Service Level Objectives (SLO)` | Returns a list of SLO's for the specified SLO service                                                         |
 
 ### Using variables in queries
 
