@@ -187,7 +187,8 @@ class DashNav extends PureComponent<Props> {
    * @param {string} groupid Get maintenances from specified group
    */
   getMaintenanceList = (hostIds: string[], groupId: string) => {
-    getMaintenances(hostIds, [groupId], this.availableDatasources, this.datasourceSrv)
+    const showOnlyOneUpcomingPerPeriod = true;
+    getMaintenances(hostIds, [groupId], this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
           this.ongoingMaintenances = [];
