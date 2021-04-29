@@ -32,6 +32,10 @@ $iiris-table-horizontal-padding: 10px;
             }
             &.iiris-table-cell-no-wrap {
                 white-space: nowrap;
+                max-width: 0;
+            }
+            &.iiris-cell-width-5 {
+                width: 5%;
             }
             &.iiris-cell-width-10 {
                 width: 10%;
