@@ -311,7 +311,7 @@
     "puppeteer": "node_modules/puppeteer-core"
   },
   "engines": {
-    "node": ">=12 <13"
+    "node": ">=12 <=14"
   },
   "volta": {
     "node": "12.19.0"
