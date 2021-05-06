@@ -70,6 +70,14 @@ export interface State {
   showLoadingState: boolean;
 }
 
+/* eslint-disable */
+/* tslint:disable */
+
+function handleError(event: any) {
+  console.log('error');
+  console.log(event);
+}
+
 export class DashboardPage extends PureComponent<Props, State> {
   state: State = {
     editPanel: null,
@@ -90,16 +98,16 @@ export class DashboardPage extends PureComponent<Props, State> {
       routeInfo: this.props.routeInfo,
       fixUrl: true,
     });
+    window.addEventListener('error', handleError);
   }
 
   componentWillUnmount() {
     this.props.cleanUpDashboardAndVariables();
     this.setPanelFullscreenClass(false);
+    window.removeEventListener('error', handleError);
   }
 
   componentDidUpdate(prevProps: Props) {
-    /* eslint-disable */
-    /* tslint:disable */
     function notifyContainerWindow(messageObj: any, queryObj: any) {
       let orgId = '';
       if (queryObj.orgId) {
