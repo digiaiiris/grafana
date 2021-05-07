@@ -33,6 +33,8 @@ import { SubMenu } from '../components/SubMenu/SubMenu';
 import { cleanUpDashboardAndVariables } from '../state/actions';
 import { cancelVariables } from '../../variables/state/actions';
 import { dashboardWatcher } from 'app/features/live/dashboard/dashboardWatcher';
+import { appEvents } from 'app/core/app_events';
+import { AppEvents } from '@grafana/data';
 
 export interface Props {
   location?: any;
@@ -73,11 +75,6 @@ export interface State {
 /* eslint-disable */
 /* tslint:disable */
 
-function handleError(event: any) {
-  console.log('error');
-  console.log(event);
-}
-
 export class DashboardPage extends PureComponent<Props, State> {
   state: State = {
     editPanel: null,
@@ -98,13 +95,23 @@ export class DashboardPage extends PureComponent<Props, State> {
       routeInfo: this.props.routeInfo,
       fixUrl: true,
     });
-    window.addEventListener('error', handleError);
+    console.log('listening for errors');
+    appEvents.on(AppEvents.alertError, (response: any) => {
+      const errorText = Object.keys(response).map((key: string) => response[key]).join(' ');
+      console.log('error');
+      console.log(errorText);
+      const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
+      const messageObj = {
+        errorText,
+        dashboard
+      };
+      window.top.postMessage(messageObj, '*');
+    });
   }
 
   componentWillUnmount() {
     this.props.cleanUpDashboardAndVariables();
     this.setPanelFullscreenClass(false);
-    window.removeEventListener('error', handleError);
   }
 
   componentDidUpdate(prevProps: Props) {
