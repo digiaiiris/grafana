@@ -33,6 +33,8 @@ import { SubMenu } from '../components/SubMenu/SubMenu';
 import { cleanUpDashboardAndVariables } from '../state/actions';
 import { cancelVariables } from '../../variables/state/actions';
 import { dashboardWatcher } from 'app/features/live/dashboard/dashboardWatcher';
+import { appEvents } from 'app/core/app_events';
+import { AppEvents } from '@grafana/data';
 
 export interface Props {
   location?: any;
@@ -70,6 +72,9 @@ export interface State {
   showLoadingState: boolean;
 }
 
+/* eslint-disable */
+/* tslint:disable */
+
 export class DashboardPage extends PureComponent<Props, State> {
   state: State = {
     editPanel: null,
@@ -90,6 +95,15 @@ export class DashboardPage extends PureComponent<Props, State> {
       routeInfo: this.props.routeInfo,
       fixUrl: true,
     });
+    appEvents.on(AppEvents.alertError, (response: any) => {
+      const errorText = Object.keys(response).map((key: string) => response[key]).join(' ');
+      const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
+      const messageObj = {
+        errorText,
+        dashboard
+      };
+      window.top.postMessage(messageObj, '*');
+    });
   }
 
   componentWillUnmount() {
@@ -98,8 +112,6 @@ export class DashboardPage extends PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    /* eslint-disable */
-    /* tslint:disable */
     function notifyContainerWindow(messageObj: any, queryObj: any) {
       let orgId = '';
       if (queryObj.orgId) {
