@@ -20,6 +20,7 @@ import { DashboardModel } from '../../state';
 import { CoreEvents, StoreState } from 'app/types';
 import { ShareModal } from 'app/features/dashboard/components/ShareModal';
 import { SaveDashboardModalProxy } from 'app/features/dashboard/components/SaveDashboard/SaveDashboardModalProxy';
+import { AppEvents } from '@grafana/data';
 
 export interface OwnProps {
   dashboard: DashboardModel;
@@ -178,7 +179,7 @@ class DashNav extends PureComponent<Props> {
   handleError = (error: any) => {
     console.log(error);
     if (typeof error === 'object' && Object.keys(error).length > 0) {
-      appEvents.emit('alert-error', [JSON.stringify(error)]);
+      appEvents.emit(AppEvents.alertError, [JSON.stringify(error)]);
     }
   };
 
