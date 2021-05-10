@@ -95,11 +95,8 @@ export class DashboardPage extends PureComponent<Props, State> {
       routeInfo: this.props.routeInfo,
       fixUrl: true,
     });
-    console.log('listening for errors');
     appEvents.on(AppEvents.alertError, (response: any) => {
       const errorText = Object.keys(response).map((key: string) => response[key]).join(' ');
-      console.log('error');
-      console.log(errorText);
       const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
       const messageObj = {
         errorText,
