@@ -88,10 +88,14 @@ class DashNav extends PureComponent<Props> {
     this.user = contextSrv.user.name;
     this.selectedMaintenanceId = '';
     this.maintenanceIconStyle = '';
-    this.availableDatasources = this.datasourceSrv
-      .getMetricSources()
-      .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
-      .map((ds: any) => ds.name);
+    if (dashboard.selectedDatasource) {
+      this.availableDatasources = [dashboard.selectedDatasource];
+    } else {
+      this.availableDatasources = this.datasourceSrv
+        .getMetricSources()
+        .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
+        .map((ds: any) => ds.name);
+    }
     this.hosts = {
       selected: [],
       options: [],
