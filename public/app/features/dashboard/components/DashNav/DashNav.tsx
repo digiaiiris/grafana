@@ -1,6 +1,6 @@
 // Libaries
 import React, { PureComponent, FC, ReactNode } from 'react';
-import { replaceTemplateVars, getZabbix, getHostGroups, getHosts, getMaintenances } from './common_tools';
+import { replaceTemplateVars, getZabbix, getHostGroups, getHostsFromGroup, getMaintenances } from './common_tools';
 import { connect, MapDispatchToProps } from 'react-redux';
 import { css } from 'emotion';
 // Utils & Services
@@ -105,10 +105,10 @@ class DashNav extends PureComponent<Props> {
     getHostGroups(this.hostGroup, this.availableDatasources, this.datasourceSrv)
       .then((groupId: string) => {
         this.groupId = groupId;
-        getHosts(this.hostGroup, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
+        getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
           // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-          this.hosts.options = hosts.filter((hostItem: any) => !/[-_.](sla|SLA)$/.test(hostItem.text));
-          this.hostIds = hosts.map((host: any) => host.value);
+          this.hosts.options = hosts.filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0');
+          this.hostIds = hosts.map((host: any) => host.hostid);
           this.getMaintenanceList(this.hostIds, groupId);
           this.clearHostSelection();
         });
