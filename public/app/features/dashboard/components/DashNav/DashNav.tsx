@@ -107,7 +107,9 @@ class DashNav extends PureComponent<Props> {
         this.groupId = groupId;
         getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
           // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-          this.hosts.options = hosts.filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0');
+          this.hosts.options = hosts
+            .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
+            .map((host: any) => ({ text: host.name, value: host.hostid }));
           this.hostIds = hosts.map((host: any) => host.hostid);
           this.getMaintenanceList(this.hostIds, groupId);
           this.clearHostSelection();
