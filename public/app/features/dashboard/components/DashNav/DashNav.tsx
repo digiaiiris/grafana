@@ -348,6 +348,17 @@ class DashNav extends PureComponent<Props> {
     this.listModalScope.$apply();
   };
 
+  setMaintenanceUpdateTimeOut = () => {
+    setTimeout(() => {
+      this.getMaintenanceList(this.hostIds, this.groupId);
+      const maintenanceInfoText = 'Maintenances updated succesfully. Status will be updated in 1-2 minutes.';
+      appEvents.emit(AppEvents.alertSuccess, [maintenanceInfoText]);
+    }, 1000);
+    setTimeout(() => {
+      document.dispatchEvent(new Event('iiris-maintenance-update'));
+    }, 2 * 60 * 1000);
+  }
+
   /**
    * Callback for clicking edit maintenance button
    * @param {string} maintenanceID
@@ -396,10 +407,7 @@ class DashNav extends PureComponent<Props> {
           zabbix.zabbixAPI
             .request('maintenance.update', options)
             .then((answer: any) => {
-              setTimeout(() => {
-                this.getMaintenanceList(this.hostIds, this.groupId);
-                document.dispatchEvent(new Event('iiris-maintenance-update'));
-              }, 1000);
+              this.setMaintenanceUpdateTimeOut();
             })
             .catch((err: any) => {
               this.handleError(err);
@@ -424,10 +432,7 @@ class DashNav extends PureComponent<Props> {
           zabbix.zabbixAPI
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
-              setTimeout(() => {
-                this.getMaintenanceList(this.hostIds, this.groupId);
-                document.dispatchEvent(new Event('iiris-maintenance-update'));
-              }, 1000);
+              this.setMaintenanceUpdateTimeOut();
             }).catch((err: any) => {
               this.handleError(err);
             });
@@ -490,10 +495,7 @@ class DashNav extends PureComponent<Props> {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            setTimeout(() => {
-              this.getMaintenanceList(this.hostIds, this.groupId);
-              document.dispatchEvent(new Event('iiris-maintenance-update'));
-            }, 1000);
+            this.setMaintenanceUpdateTimeOut();
           })
           .catch((err: any) => {
             this.handleError(err);
