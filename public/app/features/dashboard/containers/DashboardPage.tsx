@@ -137,13 +137,13 @@ export class DashboardPage extends PureComponent<Props, State> {
       window.top.postMessage(messageObj, '*');
     }
 
-    function isInsideIframe() {
+    /* function isInsideIframe() {
       try {
         return window.self !== window.top;
       } catch (error) {
         return true;
       }
-    }
+    } */
 
     // Update breadcrumb when dashboard is loaded
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
@@ -156,7 +156,7 @@ export class DashboardPage extends PureComponent<Props, State> {
     }
 
     // Check if Grafana is inside iFrame
-    if (!isInsideIframe()) {
+    /* if (!isInsideIframe()) {
       let url = '';
       if (window.location.hostname === 'localhost') {
         // Using local version of Grafana for testing purposes
@@ -172,8 +172,8 @@ export class DashboardPage extends PureComponent<Props, State> {
       if (queryParams.indexOf('?') > -1) {
         url += '&' + queryParams.substr(1, queryParams.length);
       }
-      // window.location.href = url;
-    }
+      window.location.href = url;
+    } */
 
     // Adding a mechanism for telling parent frame to navigate to new url
     // Listen for location changes: If route has relaytarget-parameter then
