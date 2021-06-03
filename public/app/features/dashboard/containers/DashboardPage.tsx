@@ -172,7 +172,7 @@ export class DashboardPage extends PureComponent<Props, State> {
       if (queryParams.indexOf('?') > -1) {
         url += '&' + queryParams.substr(1, queryParams.length);
       }
-      window.location.href = url;
+      // window.location.href = url;
     }
 
     // Adding a mechanism for telling parent frame to navigate to new url
