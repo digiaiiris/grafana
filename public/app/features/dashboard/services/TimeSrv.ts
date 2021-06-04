@@ -204,7 +204,8 @@ export class TimeSrv {
       const params = this.$location.search();
       if (interval) {
         params.refresh = this.contextSrv.getValidInterval(interval);
-        console.log('********* set interval **********');
+        // IIRIS NOTE: The following line has been commented because it was causing double history events
+        // and thus resulting that browser back button needed to be clicked twice when going back
         // this.$location.search(params);
       } else if (params.refresh) {
         delete params.refresh;
