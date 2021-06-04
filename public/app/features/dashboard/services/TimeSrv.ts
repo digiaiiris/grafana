@@ -204,7 +204,8 @@ export class TimeSrv {
       const params = this.$location.search();
       if (interval) {
         params.refresh = this.contextSrv.getValidInterval(interval);
-        this.$location.search(params);
+        console.log('********* set interval **********');
+        // this.$location.search(params);
       } else if (params.refresh) {
         delete params.refresh;
         this.$location.search(params);
