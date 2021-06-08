@@ -6,6 +6,7 @@ import { map, catchError, takeUntil, mapTo, share, finalize, tap } from 'rxjs/op
 import { backendSrv } from 'app/core/services/backend_srv';
 // Types
 import {
+  AppEvents,
   DataSourceApi,
   DataQueryRequest,
   PanelData,
@@ -19,6 +20,7 @@ import {
   DataTopic,
   guessFieldTypes,
 } from '@grafana/data';
+import appEvents from 'app/core/app_events';
 import { toDataQueryError } from '@grafana/runtime';
 import { emitDataRequestEvent } from './analyticsProcessor';
 import { ExpressionDatasourceID, expressionDatasource } from 'app/features/expressions/ExpressionDatasource';
@@ -130,6 +132,11 @@ export function runRequest(datasource: DataSourceApi, request: DataQueryRequest)
     }),
     // handle errors
     catchError(err => {
+      if (err && err.data && err.data.message) {
+        appEvents.emit(AppEvents.alertError, [err.data.message]);
+      } else {
+        appEvents.emit(AppEvents.alertError, [err.status]);
+      }
       console.error('runRequest.catchError', err);
       return of({
         ...state.panelData,
