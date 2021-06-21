@@ -8,6 +8,7 @@ import { backendSrv } from 'app/core/services/backend_srv';
 import {
   DataFrame,
   DataQueryError,
+  AppEvents,
   DataQueryRequest,
   DataQueryResponse,
   DataQueryResponseData,
@@ -20,6 +21,7 @@ import {
   TimeRange,
   toDataFrame,
 } from '@grafana/data';
+import appEvents from 'app/core/app_events';
 import { toDataQueryError } from '@grafana/runtime';
 import { emitDataRequestEvent } from './queryAnalytics';
 import { expressionDatasource, ExpressionDatasourceID } from 'app/features/expressions/ExpressionDatasource';
@@ -141,6 +143,11 @@ export function runRequest(
     }),
     // handle errors
     catchError((err) => {
+      if (err && err.data && err.data.message) {
+        appEvents.emit(AppEvents.alertError, [err.data.message]);
+      } else {
+        appEvents.emit(AppEvents.alertError, [err.status]);
+      }
       console.error('runRequest.catchError', err);
       return of({
         ...state.panelData,

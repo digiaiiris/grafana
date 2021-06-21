@@ -84,6 +84,15 @@ export class DashboardPage extends PureComponent<Props, State> {
     rememberScrollTop: 0,
   };
 
+  sendError(errorText: string) {
+    const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
+    const messageObj = {
+      errorText,
+      dashboard
+    };
+    window.top.postMessage(messageObj, '*');
+  }
+
   async componentDidMount() {
     this.props.initDashboard({
       $injector: this.props.$injector,
@@ -97,13 +106,13 @@ export class DashboardPage extends PureComponent<Props, State> {
     });
     appEvents.on(AppEvents.alertError, (response: any) => {
       const errorText = Object.keys(response).map((key: string) => response[key]).join(' ');
-      const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
-      const messageObj = {
-        errorText,
-        dashboard
-      };
-      window.top.postMessage(messageObj, '*');
+      this.sendError(errorText);
     });
+    const sendErrorFunc = this.sendError.bind(this);
+    window.onerror = function(message: string) {
+      sendErrorFunc(message);
+      return false;
+    }
   }
 
   componentWillUnmount() {
