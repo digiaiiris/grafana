@@ -167,3 +167,17 @@ $table-line-color: #cccccc;
     height: 44px;
   }
 }
+
+.iiris-modal-column-container {
+    display: flex;
+    flex-direction: row;
+    & .iiris-modal-column:not(:last-of-type) {
+        margin-right: 50px;
+    }
+}
+
+.iiris-radio-button-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}

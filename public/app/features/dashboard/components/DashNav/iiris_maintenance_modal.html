@@ -126,133 +126,139 @@
           </div>
         </div>
       </div>
-      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='4'">
-        <label class="gf-form-label">Toistetaan
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="MONTH" id="dayOfMonthSelected" />
-            <label class="gf-form-label checkbox-label width-12" for="dayOfMonthSelected">Kuukauden päivänä n</label>
+      <div class="gf-form-group maintenance-row-container iiris-modal-column-container" ng-if="ctrl.mTypeInput.value=='4'">
+        <div class="iiris-modal-column">
+          <label class="gf-form-label iiris-radio-button-block">Toistetaan
+            <div class="checkbox-container">
+              <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="MONTH" id="dayOfMonthSelected" />
+              <label class="gf-form-label checkbox-label width-12" for="dayOfMonthSelected">Kuukauden päivänä n</label>
+            </div>
+            <div class="checkbox-container">
+              <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="WEEK" id="dayOfWeekSelected" />
+              <label class="gf-form-label checkbox-label width-12" for="dayOfWeekSelected">Viikonpäivänä n</label>
+            </div>
+          </label>
+        </div>
+        <div class="iiris-modal-column">
+          <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
+            <label class="gf-form-label">Toistetaan kuukauden päivänä</label>
+            <div>
+              <input class="input-small gf-form-input width-25" type="number" ng-model="ctrl.scope.dayOfMonth" min="1" step="1" />
+            </div>
           </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="WEEK" id="dayOfWeekSelected" />
-            <label class="gf-form-label checkbox-label width-12" for="dayOfWeekSelected">Viikonpäivänä n</label>
+          <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
+            <label class="gf-form-label">Toistetaan viikonpäivänä (esim. kuukauden toinen tiistai)</label>
+            <div class="gf-form-select-wrapper">
+              <select class="gf-form-input" ng-model="ctrl.everyDayOfWeekInput.value" ng-options="v.value as v.text for v in ctrl.everyDayOfWeekInput.options">
+                <option value="" ng-hide="ctrl.everyDayOfWeekInput.value">{{ctrl.everyDayOfWeekInput.text}}</option>
+              </select>
+            </div>
+            <div class="checkbox-block checkbox-top-spacer">
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.monday" id="monday" />
+                <label class="gf-form-label checkbox-label" for="monday">Maanantai</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.tuesday" id="tuesday" />
+                <label class="gf-form-label checkbox-label" for="tuesday">Tiistai</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.wednesday" id="wednesday" />
+                <label class="gf-form-label checkbox-label" for="wednesday">Keskiviikko</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.thursday" id="thursday" />
+                <label class="gf-form-label checkbox-label" for="thursday">Torstai</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.friday" id="friday" />
+                <label class="gf-form-label checkbox-label" for="friday">Perjantai</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.saturday" id="saturday" />
+                <label class="gf-form-label checkbox-label" for="saturday">Lauantai</label>
+              </div>
+              <div class="checkbox-container">
+                <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.sunday" id="sunday" />
+                <label class="gf-form-label checkbox-label" for="sunday">Sunnuntai</label>
+              </div>
+            </div>
           </div>
-        </label>
-      </div>
-      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='4' && ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
-        <label class="gf-form-label">Toistetaan kuukauden päivänä</label>
-        <div>
-          <input class="input-small gf-form-input width-25" type="number" ng-model="ctrl.scope.dayOfMonth" min="1" step="1" />
         </div>
       </div>
-      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='4' && ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
-        <label class="gf-form-label">Toistetaan viikonpäivänä (esim. kuukauden toinen tiistai)</label>
-        <div class="gf-form-select-wrapper">
-          <select class="gf-form-input" ng-model="ctrl.everyDayOfWeekInput.value" ng-options="v.value as v.text for v in ctrl.everyDayOfWeekInput.options">
-            <option value="" ng-hide="ctrl.everyDayOfWeekInput.value">{{ctrl.everyDayOfWeekInput.text}}</option>
-          </select>
-        </div>
-        <div class="checkbox-block checkbox-top-spacer">
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.monday" id="monday" />
-            <label class="gf-form-label checkbox-label" for="monday">Maanantai</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.tuesday" id="tuesday" />
-            <label class="gf-form-label checkbox-label" for="tuesday">Tiistai</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.wednesday" id="wednesday" />
-            <label class="gf-form-label checkbox-label" for="wednesday">Keskiviikko</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.thursday" id="thursday" />
-            <label class="gf-form-label checkbox-label" for="thursday">Torstai</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.friday" id="friday" />
-            <label class="gf-form-label checkbox-label" for="friday">Perjantai</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.saturday" id="saturday" />
-            <label class="gf-form-label checkbox-label" for="saturday">Lauantai</label>
-          </div>
-          <div class="checkbox-container">
-            <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.sunday" id="sunday" />
-            <label class="gf-form-label checkbox-label" for="sunday">Sunnuntai</label>
-          </div>
-        </div>
-      </div>
-      <div class="gf-form-group maintenance-row-container">
+      <div class="gf-form-group maintenance-row-container iiris-modal-column-container">
         <label class="gf-form-label" ng-if="ctrl.mTypeInput.value=='0'">Huollon alkamisajankohta</label>
-        <label class="gf-form-label" ng-if="ctrl.mTypeInput.value!='0'">Aloita toisto</label>
-        <div class="date-selection-row">
-          <div class="date-selection-container">
-            <div>Päivä</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.dayInput.value" ng-options="v.value as v.text for v in ctrl.dayInput.options">
-                <option value="" ng-hide="ctrl.dayInput.value">{{ctrl.dayInput.text}}</option>
-              </select>
+        <div class="iiris-modal-column">
+          <label class="gf-form-label" ng-if="ctrl.mTypeInput.value!='0'">Aloita toisto</label>
+          <div class="date-selection-row">
+            <div class="date-selection-container">
+              <div>Päivä</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.dayInput.value" ng-options="v.value as v.text for v in ctrl.dayInput.options">
+                  <option value="" ng-hide="ctrl.dayInput.value">{{ctrl.dayInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container">
-            <div>Kuukausi</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.monthInput.value" ng-options="v.value as v.text for v in ctrl.monthInput.options" ng-change="ctrl.onMonthValueChanged()">
-                <option value="" ng-hide="ctrl.monthInput.value">{{ctrl.monthInput.text}}</option>
-              </select>
+            <div class="date-selection-container">
+              <div>Kuukausi</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.monthInput.value" ng-options="v.value as v.text for v in ctrl.monthInput.options" ng-change="ctrl.onMonthValueChanged()">
+                  <option value="" ng-hide="ctrl.monthInput.value">{{ctrl.monthInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container">
-            <div>Vuosi</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.yearInput.value" ng-options="v.value as v.text for v in ctrl.yearInput.options" ng-change="ctrl.onYearValueChanged()">
-                <option value="" ng-hide="ctrl.yearInput.value">{{ctrl.yearInput.text}}</option>
-              </select>
+            <div class="date-selection-container">
+              <div>Vuosi</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.yearInput.value" ng-options="v.value as v.text for v in ctrl.yearInput.options" ng-change="ctrl.onYearValueChanged()">
+                  <option value="" ng-hide="ctrl.yearInput.value">{{ctrl.yearInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container hour-input">
-            <div>Tunti</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.hourInput.value" ng-options="v.value as v.text for v in ctrl.hourInput.options">
-                <option value="" ng-hide="ctrl.hourInput.value">{{ctrl.hourInput.text}}</option>
-              </select>
+            <div class="date-selection-container hour-input">
+              <div>Tunti</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.hourInput.value" ng-options="v.value as v.text for v in ctrl.hourInput.options">
+                  <option value="" ng-hide="ctrl.hourInput.value">{{ctrl.hourInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container">
-            <div>Minuutti</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.minuteInput.value" ng-options="v.value as v.text for v in ctrl.minuteInput.options">
-                <option value="" ng-hide="ctrl.minuteInput.value">{{ctrl.minuteInput.text}}</option>
-              </select>
+            <div class="date-selection-container">
+              <div>Minuutti</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.minuteInput.value" ng-options="v.value as v.text for v in ctrl.minuteInput.options">
+                  <option value="" ng-hide="ctrl.minuteInput.value">{{ctrl.minuteInput.text}}</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='2'||ctrl.mTypeInput.value=='3'||ctrl.mTypeInput.value=='4'">
-        <label class="gf-form-label">Lopeta toisto</label>
-        <div class="date-selection-row">
-          <div class="date-selection-container">
-            <div>Päivä</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.dayStopInput.value" ng-options="v.value as v.text for v in ctrl.dayStopInput.options">
-                <option value="" ng-hide="ctrl.dayStopInput.value">{{ctrl.dayStopInput.text}}</option>
-              </select>
+        <div class="iiris-modal-column" ng-if="ctrl.mTypeInput.value=='2'||ctrl.mTypeInput.value=='3'||ctrl.mTypeInput.value=='4'">
+          <label class="gf-form-label">Lopeta toisto</label>
+          <div class="date-selection-row">
+            <div class="date-selection-container">
+              <div>Päivä</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.dayStopInput.value" ng-options="v.value as v.text for v in ctrl.dayStopInput.options">
+                  <option value="" ng-hide="ctrl.dayStopInput.value">{{ctrl.dayStopInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container">
-            <div>Kuukausi</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.monthStopInput.value" ng-options="v.value as v.text for v in ctrl.monthStopInput.options" ng-change="ctrl.onMonthStopValueChanged()">
-                <option value="" ng-hide="ctrl.monthStopInput.value">{{ctrl.monthStopInput.text}}</option>
-              </select>
+            <div class="date-selection-container">
+              <div>Kuukausi</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.monthStopInput.value" ng-options="v.value as v.text for v in ctrl.monthStopInput.options" ng-change="ctrl.onMonthStopValueChanged()">
+                  <option value="" ng-hide="ctrl.monthStopInput.value">{{ctrl.monthStopInput.text}}</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="date-selection-container">
-            <div>Vuosi</div>
-            <div class="gf-form-select-wrapper">
-              <select class="gf-form-input" ng-model="ctrl.yearStopInput.value" ng-options="v.value as v.text for v in ctrl.yearStopInput.options" ng-change="ctrl.onYearStopValueChanged()">
-                <option value="" ng-hide="ctrl.yearStopInput.value">{{ctrl.yearStopInput.text}}</option>
-              </select>
+            <div class="date-selection-container">
+              <div>Vuosi</div>
+              <div class="gf-form-select-wrapper">
+                <select class="gf-form-input" ng-model="ctrl.yearStopInput.value" ng-options="v.value as v.text for v in ctrl.yearStopInput.options" ng-change="ctrl.onYearStopValueChanged()">
+                  <option value="" ng-hide="ctrl.yearStopInput.value">{{ctrl.yearStopInput.text}}</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
