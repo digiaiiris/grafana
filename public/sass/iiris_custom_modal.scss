@@ -9,6 +9,7 @@ $table-line-color: #cccccc;
     overflow-y: auto;
     max-height: 90%;
     max-width: 1000px;
+    top: 20px;
 }
 
 .modal-body {
@@ -38,7 +39,7 @@ $table-line-color: #cccccc;
             border: none;
             font-weight: 600;
             height: auto;
-            margin-bottom: 5px;
+            margin-bottom: 0;
         }
         .gf-form-button-row, table {
             .btn {
@@ -113,7 +114,7 @@ $table-line-color: #cccccc;
 }
 
 .modal-body .modal-content .gf-form-group.maintenance-row-container {
-    margin-bottom: 25px;
+    margin-bottom: 15px;
 }
 
 .modal-body .modal-content .gf-form-label.checkbox-label {
@@ -121,7 +122,7 @@ $table-line-color: #cccccc;
     border: none;
     margin: 0 0 0 5px;
     font-weight: 400;
-    height: 24px;
+    height: 21px;
 }
 
 .checkbox-block {
@@ -141,6 +142,7 @@ $table-line-color: #cccccc;
     display: flex;
     flex-direction: row;
     margin: 0 10px 0 0;
+    align-items: center;
 }
 
 .date-selection-row {
@@ -165,4 +167,18 @@ $table-line-color: #cccccc;
     object-fit: contain;
     height: 44px;
   }
+}
+
+.iiris-modal-column-container {
+    display: flex;
+    flex-direction: row;
+    & .iiris-modal-column:not(:last-of-type) {
+        margin-right: 50px;
+    }
+}
+
+.iiris-radio-button-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
