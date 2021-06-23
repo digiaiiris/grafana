@@ -8,7 +8,7 @@
     <div ng-if="ctrl.scope.wizardPhase==1">
       <div class="gf-form-group maintenance-row-container">
         <label class="gf-form-label">Huollon tyyppi</label>
-        <div class="gf-form-select-wrapper">
+        <div class="gf-form-select-wrapper iiris-fixed-width-select">
           <select class="gf-form-input" ng-model="ctrl.mTypeInput.value" ng-options="v.value as v.text for v in ctrl.mTypeInput.options" ng-change="ctrl.onMaintenanceTypeChanged()">
             <option value="" ng-hide="ctrl.mTypeInput.value">{{ctrl.mTypeInput.text}}</option>
           </select>
@@ -17,13 +17,13 @@
       <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='2'">
         <label class="gf-form-label">Toistetaan [n] päivän välein</label>
         <div>
-          <input class="input-small gf-form-input width-25" type="number" ng-model="ctrl.scope.everyNDays" min="1" step="1" />
+          <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.everyNDays" min="1" step="1" />
         </div>
       </div>
       <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='3'">
         <label class="gf-form-label">Toistetaan [n] viikon välein</label>
         <div>
-          <input class="input-small gf-form-input width-25" type="number" ng-model="ctrl.scope.everyNWeeks" min="1" step="1" />
+          <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.everyNWeeks" min="1" step="1" />
         </div>
       </div>
       <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='3'">
@@ -143,7 +143,7 @@
           <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
             <label class="gf-form-label">Toistetaan kuukauden päivänä</label>
             <div>
-              <input class="input-small gf-form-input width-25" type="number" ng-model="ctrl.scope.dayOfMonth" min="1" step="1" />
+              <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.dayOfMonth" min="1" step="1" />
             </div>
           </div>
           <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
@@ -265,7 +265,7 @@
       </div>
       <div class="gf-form-group maintenance-row-container" ng-if="!ctrl.scope.strictEndTimeSelected">
         <label class="gf-form-label">Huollon kesto</label>
-        <div class="gf-form-select-wrapper">
+        <div class="gf-form-select-wrapper iiris-fixed-width-select">
           <select class="gf-form-input" ng-model="ctrl.durationInput.value" ng-options="v.value as v.text for v in ctrl.durationInput.options" ng-change="ctrl.onDurationValueChanged()">
             <option value="" ng-hide="ctrl.durationInput.value">{{ctrl.durationInput.text}}</option>
           </select>
