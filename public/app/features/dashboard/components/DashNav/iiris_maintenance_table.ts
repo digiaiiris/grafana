@@ -76,7 +76,7 @@ coreModule.directive('iirisMaintenanceModalTable', () => {
           if (!preservePagePosition) {
             scope.currentPage = 1;
           }
-          const filteredEvents = scope.data;
+          const filteredEvents = _.cloneDeep(scope.data);
           scope.pageCount = Math.ceil(filteredEvents.length / ctrl.rowsPerPage);
           scope.pageData = filteredEvents;
           // Update paging

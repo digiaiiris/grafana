@@ -8,7 +8,7 @@ $table-line-color: #cccccc;
 .modal {
     overflow-y: auto;
     max-height: 90%;
-    max-width: 1000px;
+    max-width: 1120px;
     top: 20px;
 }
 
@@ -181,4 +181,12 @@ $table-line-color: #cccccc;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+}
+
+.iiris-fixed-width-select {
+    width: 250px;
+}
+
+.iiris-table-icon {
+    margin-right: 5px;
 }
