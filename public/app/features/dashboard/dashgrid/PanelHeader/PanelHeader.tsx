@@ -12,6 +12,8 @@ import { PanelHeaderNotices } from './PanelHeaderNotices';
 import { PanelHeaderMenuTrigger } from './PanelHeaderMenuTrigger';
 import { PanelHeaderLoadingIndicator } from './PanelHeaderLoadingIndicator';
 import { PanelHeaderMenuWrapper } from './PanelHeaderMenuWrapper';
+import { getTemplateSrv } from 'app/features/templating/template_srv';
+import { getExpandedTemplateVariables } from '../../components/DashNav/common_tools';
 
 export interface Props {
   panel: PanelModel;
@@ -28,7 +30,8 @@ export interface Props {
 
 export const PanelHeader: FC<Props> = ({ panel, error, isViewing, isEditing, data, alertState, dashboard }) => {
   const onCancelQuery = () => panel.getQueryRunner().cancelQuery();
-  const title = panel.replaceVariables(panel.title, {}, 'text');
+  const tempScopedVars = Object.assign({}, panel.scopedVars);
+  const title = getExpandedTemplateVariables(panel.title || '', getTemplateSrv(), tempScopedVars);
   const className = cx('panel-header', !(isViewing || isEditing) ? 'grid-drag-handle' : '');
 
   return (
