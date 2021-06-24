@@ -14,6 +14,8 @@ import { getPanelLinksSupplier } from 'app/features/panel/panellinks/linkSupplie
 import { getPanelMenu } from 'app/features/dashboard/utils/getPanelMenu';
 import { updateLocation } from 'app/core/actions';
 
+import { getExpandedTemplateVariables } from '../../components/DashNav/common_tools';
+
 export interface Props {
   panel: PanelModel;
   dashboard: DashboardModel;
@@ -135,8 +137,8 @@ export class PanelHeader extends Component<Props, State> {
   render() {
     const { panel, scopedVars, error, isViewing, isEditing, data, alertState } = this.props;
     const { menuItems } = this.state;
-    const title = getTemplateSrv().replace(panel.title, scopedVars, 'text');
-
+    const tempScopedVars = Object.assign({}, scopedVars);
+    const title = getExpandedTemplateVariables(panel.title || '', getTemplateSrv(), tempScopedVars);
     const panelHeaderClass = classNames({
       'panel-header': true,
       'grid-drag-handle': !(isViewing || isEditing),
