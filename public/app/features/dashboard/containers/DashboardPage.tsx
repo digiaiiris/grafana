@@ -8,6 +8,7 @@ import { connect } from 'react-redux';
 import { createErrorNotification } from 'app/core/copy/appNotification';
 import { getMessageFromError } from 'app/core/utils/errors';
 import { Branding } from 'app/core/components/Branding/Branding';
+import { contextSrv } from 'app/core/services/context_srv';
 // Components
 import { DashboardGrid } from '../dashgrid/DashboardGrid';
 import { DashNav } from '../components/DashNav';
@@ -158,7 +159,12 @@ export class DashboardPage extends PureComponent<Props, State> {
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
       const location = this.props.location;
       const db = this.props.dashboard;
-      const messageObj = { url: location.path, name: db.title, uid: location.routeParams.uid };
+      const messageObj = {
+        url: location.path,
+        name: db.title,
+        uid: location.routeParams.uid,
+        orgName: contextSrv.user.orgName,
+      };
       if (db.uid) {
         notifyContainerWindow(messageObj, location.query);
       }
