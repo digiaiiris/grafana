@@ -164,6 +164,7 @@ export class DashboardPage extends PureComponent<Props, State> {
         name: db.title,
         uid: location.routeParams.uid,
         orgName: contextSrv.user.orgName,
+        isGrafanaAdmin: contextSrv.user.isGrafanaAdmin,
       };
       if (db.uid) {
         notifyContainerWindow(messageObj, location.query);
