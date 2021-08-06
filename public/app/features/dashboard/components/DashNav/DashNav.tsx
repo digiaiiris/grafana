@@ -510,7 +510,13 @@ class DashNav extends PureComponent<Props> {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            this.setMaintenanceUpdateTimeOut('Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.', true);
+            let infoText = 'Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.';
+            let showModal = true;
+            if (this.getCurrentTimeEpoch(startDate) > curTime) {
+              infoText = 'Huolto on päivitetty onnistuneesti.';
+              showModal = false;
+            }
+            this.setMaintenanceUpdateTimeOut(infoText, showModal);
           })
           .catch((err: any) => {
             this.handleError(err);
