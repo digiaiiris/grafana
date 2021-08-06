@@ -76,6 +76,8 @@ class DashNav extends PureComponent<Props> {
   selectedMaintenanceId: string;
   maintenanceIconStyle: string;
   allHostsTitle = 'Kaikki palvelimet';
+  stoppingOngoingMaintenance: boolean;
+  confirmModalScope: any;
 
   onOpenMaintenanceDialog = () => {
     const { $injector, dashboard } = this.props;
@@ -310,8 +312,10 @@ class DashNav extends PureComponent<Props> {
     let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     let isOngoing = false;
     const curTime = this.getCurrentTimeEpoch();
+    this.stoppingOngoingMaintenance = false;
     if (selectedMaintenance) {
       isOngoing = true;
+      this.stoppingOngoingMaintenance = true;
     } else {
       selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     }
@@ -350,12 +354,16 @@ class DashNav extends PureComponent<Props> {
     this.listModalScope.$apply();
   };
 
-  setMaintenanceUpdateTimeOut = () => {
-    setTimeout(() => {
-      this.getMaintenanceList(this.hostIds, this.groupId);
-      const maintenanceInfoText = 'Maintenances updated succesfully. Status will be updated in 1-2 minutes.';
-      appEvents.emit(AppEvents.alertSuccess, [maintenanceInfoText]);
-    }, 1000);
+  setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
+    if (showModal) {
+      this.openConfirmMaintenanceModal('Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa');
+    } else {
+      setTimeout(() => {
+        this.getMaintenanceList(this.hostIds, this.groupId);
+        const maintenanceInfoText = 'Huoltoja on päivitetty onnistuneesti.';
+        appEvents.emit(AppEvents.alertSuccess, [maintenanceInfoText]);
+      }, 1000);
+    }
     setTimeout(() => {
       document.dispatchEvent(new Event('iiris-maintenance-update'));
     }, 2 * 60 * 1000);
@@ -409,7 +417,13 @@ class DashNav extends PureComponent<Props> {
           zabbix.zabbixAPI
             .request('maintenance.update', options)
             .then((answer: any) => {
-              this.setMaintenanceUpdateTimeOut();
+              let showModal = false;
+              let infoText = 'Huolto on poistettu onnistuneesti.';
+              if (this.stoppingOngoingMaintenance) {
+                showModal = true;
+                infoText = 'Huolto on keskeytetty. Järjestelmän tila päivittyy 1-2 minuutissa.';
+              }
+              this.setMaintenanceUpdateTimeOut(infoText, showModal);
             })
             .catch((err: any) => {
               this.handleError(err);
@@ -434,7 +448,7 @@ class DashNav extends PureComponent<Props> {
           zabbix.zabbixAPI
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
-              this.setMaintenanceUpdateTimeOut();
+              this.setMaintenanceUpdateTimeOut('Huolto on poistettu onnistuneesti.', true);
             }).catch((err: any) => {
               this.handleError(err);
             });
@@ -489,7 +503,7 @@ class DashNav extends PureComponent<Props> {
           maintenanceObj['timeperiods'][0][optionKey] = options[optionKey];
         });
         let apiCommand = 'maintenance.create';
-        // Check if we are updagting an existing maintenance
+        // Check if we are updating an existing maintenance
         if (maintenanceId) {
           maintenanceObj['maintenanceid'] = maintenanceId;
           apiCommand = 'maintenance.update';
@@ -497,7 +511,7 @@ class DashNav extends PureComponent<Props> {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            this.setMaintenanceUpdateTimeOut();
+            this.setMaintenanceUpdateTimeOut('Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.', true);
           })
           .catch((err: any) => {
             this.handleError(err);
@@ -561,6 +575,20 @@ class DashNav extends PureComponent<Props> {
     appEvents.emit('show-modal', {
       templateHtml: template,
       scope: this.listModalScope,
+      backdrop: 'static',
+    });
+  };
+
+  /**
+   * Open maintenance confirmation modal
+   */
+   openConfirmMaintenanceModal = (confirmText: string) => {
+    this.confirmModalScope = this.rootScope.$new();
+    this.confirmModalScope.confirmText = confirmText;
+    const template = '<iiris-maintenance-confirm-modal confirm-text="confirmText"></iiris-maintenance-confirm-modal>';
+    appEvents.emit('show-modal', {
+      templateHtml: template,
+      scope: this.confirmModalScope,
       backdrop: 'static',
     });
   };
