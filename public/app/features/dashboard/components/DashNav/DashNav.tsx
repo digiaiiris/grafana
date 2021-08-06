@@ -356,12 +356,11 @@ class DashNav extends PureComponent<Props> {
 
   setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
     if (showModal) {
-      this.openConfirmMaintenanceModal('Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa');
+      this.openConfirmMaintenanceModal(infoText);
     } else {
       setTimeout(() => {
         this.getMaintenanceList(this.hostIds, this.groupId);
-        const maintenanceInfoText = 'Huoltoja on päivitetty onnistuneesti.';
-        appEvents.emit(AppEvents.alertSuccess, [maintenanceInfoText]);
+        appEvents.emit(AppEvents.alertSuccess, [infoText]);
       }, 1000);
     }
     setTimeout(() => {
