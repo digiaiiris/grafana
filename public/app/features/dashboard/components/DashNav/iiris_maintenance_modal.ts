@@ -106,7 +106,7 @@ export class IirisMaintenanceModalCtrl {
   /**
    * Maintenance Modal class constructor
    */
-  constructor() {
+  init() {
     this.scope = {};
     this.scope.hosts = this.hosts;
     this.scope.user = this.user;
@@ -857,6 +857,9 @@ export function iirisMaintenanceModalDirective() {
       user: '=',
       openAllMaintenancesModal: '&',
     },
+    link: function(scope: any, elem: any, attrs: any, ctrl: any) {
+      ctrl.init();
+    }
   };
 }
 
