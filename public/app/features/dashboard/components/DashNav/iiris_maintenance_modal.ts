@@ -459,7 +459,7 @@ export class IirisMaintenanceModalCtrl {
       .endOf('day')
       .toDate();
     if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
-      options.start_time = moment.utc(startDate).hour() * 60 * 60 + moment.utc(startDate).minute() * 60;
+      options.start_time = moment(startDate).hour() * 60 * 60 + moment(startDate).minute() * 60;
     }
     let anyHostSelected = false;
     const hostIds = [];
