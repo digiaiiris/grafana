@@ -417,7 +417,10 @@ class DashNav extends PureComponent<Props> {
             .request('maintenance.update', options)
             .then((answer: any) => {
               let showModal = true;
-              let infoText = 'Huolto on keskeytetty. Järjestelmän tila päivittyy 1-2 minuutissa.';
+              let infoText = 'Huolto on poistettu onnistuneesti.';
+              if (this.stoppingOngoingMaintenance) {
+                infoText = 'Huolto on keskeytetty. Järjestelmän tila päivittyy 1-2 minuutissa.';
+              }
               this.setMaintenanceUpdateTimeOut(infoText, showModal);
             })
             .catch((err: any) => {
@@ -511,6 +514,14 @@ class DashNav extends PureComponent<Props> {
               infoText = 'Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.';
             }
             let showModal = true;
+            // Show only info popup if maintenance is in future
+            if (this.getCurrentTimeEpoch(startDate) > this.getCurrentTimeEpoch()) {
+              if (maintenanceId) {
+                infoText = 'Huolto on päivitetty onnistuneesti.';
+              } else {
+                infoText = 'Uusi huolto luotu onnistuneesti.';
+              }
+            }
             this.setMaintenanceUpdateTimeOut(infoText, showModal);
           })
           .catch((err: any) => {
