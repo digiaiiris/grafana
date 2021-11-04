@@ -416,10 +416,9 @@ class DashNav extends PureComponent<Props> {
           zabbix.zabbixAPI
             .request('maintenance.update', options)
             .then((answer: any) => {
-              let showModal = false;
+              let showModal = true;
               let infoText = 'Huolto on poistettu onnistuneesti.';
               if (this.stoppingOngoingMaintenance) {
-                showModal = true;
                 infoText = 'Huolto on keskeytetty. Järjestelmän tila päivittyy 1-2 minuutissa.';
               }
               this.setMaintenanceUpdateTimeOut(infoText, showModal);
@@ -522,7 +521,6 @@ class DashNav extends PureComponent<Props> {
               } else {
                 infoText = 'Uusi huolto luotu onnistuneesti.';
               }
-              showModal = false;
             }
             this.setMaintenanceUpdateTimeOut(infoText, showModal);
           })
