@@ -458,8 +458,7 @@ export class IirisMaintenanceModalCtrl {
       parseInt(this.minuteInput.value, 10)
     );
     let stopDate = new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value);
-    stopDate = moment
-      .utc(stopDate)
+    stopDate = moment(stopDate)
       .endOf('day')
       .toDate();
     if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
