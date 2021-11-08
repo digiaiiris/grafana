@@ -194,7 +194,7 @@
             <div class="date-selection-container">
               <div>Päivä</div>
               <div class="gf-form-select-wrapper">
-                <select class="gf-form-input" ng-model="ctrl.dayInput.value" ng-options="v.value as v.text for v in ctrl.dayInput.options">
+                <select class="gf-form-input" ng-model="ctrl.dayInput.value" ng-options="v.value as v.text for v in ctrl.dayInput.options" ng-change="ctrl.onDayValueChanged()">
                   <option value="" ng-hide="ctrl.dayInput.value">{{ctrl.dayInput.text}}</option>
                 </select>
               </div>
@@ -218,7 +218,7 @@
             <div class="date-selection-container hour-input">
               <div>Tunti</div>
               <div class="gf-form-select-wrapper">
-                <select class="gf-form-input" ng-model="ctrl.hourInput.value" ng-options="v.value as v.text for v in ctrl.hourInput.options">
+                <select class="gf-form-input" ng-model="ctrl.hourInput.value" ng-options="v.value as v.text for v in ctrl.hourInput.options" ng-change="ctrl.onHourValueChanged()">
                   <option value="" ng-hide="ctrl.hourInput.value">{{ctrl.hourInput.text}}</option>
                 </select>
               </div>
@@ -226,7 +226,7 @@
             <div class="date-selection-container">
               <div>Minuutti</div>
               <div class="gf-form-select-wrapper">
-                <select class="gf-form-input" ng-model="ctrl.minuteInput.value" ng-options="v.value as v.text for v in ctrl.minuteInput.options">
+                <select class="gf-form-input" ng-model="ctrl.minuteInput.value" ng-options="v.value as v.text for v in ctrl.minuteInput.options" ng-change="ctrl.onMinuteValueChanged()">
                   <option value="" ng-hide="ctrl.minuteInput.value">{{ctrl.minuteInput.text}}</option>
                 </select>
               </div>
