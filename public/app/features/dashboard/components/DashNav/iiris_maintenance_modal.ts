@@ -817,7 +817,12 @@ export class IirisMaintenanceModalCtrl {
       parseInt(this.hourInput.value, 10),
       parseInt(this.minuteInput.value, 10)
     );
-    const stopPeriodDate = new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value);
+    const stopPeriodDate = moment(
+      new Date(
+        this.yearStopInput.value,
+        this.monthStopInput.value - 1,
+        this.dayStopInput.value)
+      ).endOf('day').toDate();
     const currentDate = new Date();
     const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     const stopDateTime = moment(startDate).add(duration, 'second').toDate();
@@ -825,8 +830,8 @@ export class IirisMaintenanceModalCtrl {
       if (stopPeriodDate <= startDate) {
         valid = false;
         this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
-      }
-      if (stopPeriodDate < currentDate) {
+      } else if (stopPeriodDate < currentDate) {
+        valid = false;
         this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
       }
     }
@@ -834,7 +839,8 @@ export class IirisMaintenanceModalCtrl {
       valid = false;
       this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
     }
-    if (stopDateTime < currentDate) {
+    if (this.mTypeInput.value === '0' && stopDateTime < currentDate) {
+      valid = false;
       this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
     }
     if (valid) {
