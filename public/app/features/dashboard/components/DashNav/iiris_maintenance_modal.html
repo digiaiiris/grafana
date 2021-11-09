@@ -343,7 +343,7 @@
           <input id="select_all" type="checkbox" ng-model="ctrl.scope.hosts.allSelected" ng-change="ctrl.selectAllHosts()" />
           <label class="checkbox-label" for="select_all">Kaikki palvelimet</label>
         </div>
-        <div class="iiris-checkbox" ng-repeat="item in ctrl.scope.hosts.options track by item.value | filter:search">
+        <div class="iiris-checkbox" ng-repeat="item in ctrl.scope.hosts.options track by item.value | filter:ctrl.search">
           <input id="cb{{item.value}}" type="checkbox" ng-model="ctrl.scope.hosts.selected[$index]" ng-change="ctrl.selectHost($index)" ng-value="item" />
           <label class="checkbox-label" for="cb{{item.value}}">{{item.text}}</label>
         </div>

@@ -9,7 +9,6 @@ import coreModule from 'app/core/core_module';
 import appEvents from 'app/core/app_events';
 import _ from 'lodash';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
-import { toDurationInHoursMinutesSeconds } from '@grafana/data/src/valueFormats/dateTimeFormatters';
 
 const WEEK = 'WEEK';
 const MONTH = 'MONTH';
