@@ -615,6 +615,16 @@ export class IirisMaintenanceModalCtrl {
     minuteInputObject.text = givenMinutes;
   }
 
+  getStrictEndTimeDate() {
+    return new Date(
+      this.strictEndYearInput.value,
+      this.strictEndMonthInput.value - 1,
+      this.strictEndDayInput.value,
+      parseInt(this.strictEndHourInput.value, 10),
+      parseInt(this.strictEndMinuteInput.value, 10)
+    );
+  }
+
   /**
    * Count maintenance duration if strict end time is selected
    */
@@ -626,13 +636,7 @@ export class IirisMaintenanceModalCtrl {
       parseInt(this.hourInput.value, 10),
       parseInt(this.minuteInput.value, 10)
     );
-    const stopDate = new Date(
-      this.strictEndYearInput.value,
-      this.strictEndMonthInput.value - 1,
-      this.strictEndDayInput.value,
-      parseInt(this.strictEndHourInput.value, 10),
-      parseInt(this.strictEndMinuteInput.value, 10)
-    );
+    const stopDate = this.getStrictEndTimeDate();
     const duration = Math.round((stopDate.getTime() - startDate.getTime()) / 1000);
     return duration;
   }
@@ -848,23 +852,38 @@ export class IirisMaintenanceModalCtrl {
         }
       }
     }
+    const startDate = new Date(
+      this.yearInput.value,
+      this.monthInput.value - 1,
+      this.dayInput.value,
+      parseInt(this.hourInput.value, 10),
+      parseInt(this.minuteInput.value, 10)
+    );
+    const stopPeriodDate = moment(
+      new Date(
+        this.yearStopInput.value,
+        this.monthStopInput.value - 1,
+        this.dayStopInput.value)
+      ).endOf('day').toDate();
+    const currentDate = new Date();
+    const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
+    const stopDateTime = moment(startDate).add(duration, 'second').toDate();
     if (this.mTypeInput.value === '2' || this.mTypeInput.value === '3' || this.mTypeInput.value === '4') {
-      const startDate = new Date(
-        this.yearInput.value,
-        this.monthInput.value - 1,
-        this.dayInput.value,
-        parseInt(this.hourInput.value, 10),
-        parseInt(this.minuteInput.value, 10)
-      );
-      const stopDate = new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value);
-      if (stopDate <= startDate) {
+      if (stopPeriodDate <= startDate) {
         valid = false;
         this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
+      } else if (stopPeriodDate < currentDate) {
+        valid = false;
+        this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
       }
     }
     if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
       valid = false;
       this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
+    }
+    if (this.mTypeInput.value === '0' && stopDateTime < currentDate) {
+      valid = false;
+      this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
     }
     if (valid) {
       this.scope.wizardPhase = 2;
