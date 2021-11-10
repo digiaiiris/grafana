@@ -65,6 +65,19 @@ $table-line-color: #cccccc;
                 background-color: $button-background-color;
             }
         }
+        .iiris-text-search-container {
+            margin-bottom: 5px;
+            position: relative;
+            .iiris-search-icon {
+                position: absolute;
+                left: 4px;
+                top: 3px;
+            }
+            .gf-form-input {
+                height: 30px;
+                padding-left: 25px;
+            }
+        }
         table {
             width: 100%;
             th, td {

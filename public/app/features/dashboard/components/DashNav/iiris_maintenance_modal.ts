@@ -102,6 +102,9 @@ export class IirisMaintenanceModalCtrl {
     value: number;
     text: string;
   };
+  search: {
+    text: string;
+  }
 
   /**
    * Maintenance Modal class constructor
@@ -255,6 +258,9 @@ export class IirisMaintenanceModalCtrl {
         { text: 'Neljäs', value: 4 },
         { text: 'Viimeinen', value: 5 },
       ],
+    };
+    this.search = {
+      text: ''
     };
     let currentDate = new Date();
     let currentHours = currentDate.getHours();
