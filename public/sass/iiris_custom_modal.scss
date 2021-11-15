@@ -203,3 +203,16 @@ $table-line-color: #cccccc;
 .iiris-table-icon {
     margin-right: 5px;
 }
+
+.iiris-stat-panel {
+    width: 100%;
+    height: 100%;
+    &.has-link {
+        cursor: pointer;
+    }
+}
+
+.grafana-tooltip.iiris-maintenance-tooltip {
+    position: fixed;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
