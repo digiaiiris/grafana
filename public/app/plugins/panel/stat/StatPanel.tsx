@@ -35,6 +35,8 @@ interface State {
 
 export class StatPanelUnconnected extends PureComponent<Props, State> {
   panel: any;
+  linkUrl: string;
+  linkTitle: string;
 
   constructor(props: any) {
     super(props);
@@ -54,16 +56,30 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     if (!this.panel && dashboard.panelInEdit.id === id) {
       this.panel = dashboard.panels.find((panel: any) => panel.id === dashboard.panelInEdit.editSourceId);
     }
+    // Set link title and url to class attributes
+    // Check first for regular Grafana panel links and if that doesn't exist then check for data links
+    if (this.panel && this.panel.links && this.panel.links.length > 0) {
+      this.linkUrl = this.panel.links[0].url;
+      this.linkTitle = this.panel.links[0].title;
+    } else if (
+      this.panel && this.panel.fieldConfig &&
+      this.panel.fieldConfig.defaults &&
+      this.panel.fieldConfig.defaults.links &&
+      this.panel.fieldConfig.defaults.links.length > 0
+    ) {
+      this.linkUrl = this.panel.fieldConfig.defaults.links[0].url;
+      this.linkTitle = this.panel.fieldConfig.defaults.links[0].title;
+    }
   }
 
   onPanelClick = () => {
-    if (this.panel && this.panel.links && this.panel.links.length > 0) {
-      window.location.href = this.panel.links[0].url;
+    if (this.linkUrl) {
+      window.location.href = this.linkUrl;
     }
   };
 
   onMouseEnterPanel = () => {
-    if (this.panel && this.panel.links && this.panel.links.length > 0) {
+    if (this.linkUrl) {
       this.setState({ tooltipVisible: true });
     }
   };
@@ -74,22 +90,22 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
 
   onMouseMoveOver(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     const { tooltipRef } = this.state;
-    const url = this.panel.links[0].url;
-    let title = this.panel.links[0].title;
-    if (!title) {
-      title = url;
-    }
-    console.log('joo: ' + title);
-    if (tooltipRef) {
-      const xpos = this.getTooltipXPos(tooltipRef.offsetWidth, event.pageX);
-      console.log(xpos);
-      this.setState({
-        tooltipX: xpos,
-        tooltipY: event.pageY - 50,
-        hoveredTileUrl: url,
-        hoveredTileTitle: title,
-        tooltipVisible: !!url,
-      });
+    const url = this.linkUrl;
+    let title = this.linkTitle;
+    if (this.linkUrl) {
+      if (!title) {
+        title = url;
+      }
+      if (tooltipRef) {
+        const xpos = this.getTooltipXPos(tooltipRef.offsetWidth, event.pageX);
+        this.setState({
+          tooltipX: xpos,
+          tooltipY: event.pageY - 50,
+          hoveredTileUrl: url,
+          hoveredTileTitle: title,
+          tooltipVisible: !!url,
+        });
+      }
     }
   }
 
