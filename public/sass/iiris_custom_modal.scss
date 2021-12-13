@@ -210,6 +210,9 @@ $table-line-color: #cccccc;
     overflow: hidden;
     &.has-link {
         cursor: pointer;
+        & > div > div > div {
+            cursor: pointer;
+        }
     }
 }
 
