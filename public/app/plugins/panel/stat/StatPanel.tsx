@@ -85,7 +85,8 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     }
   }
 
-  onPanelClick = () => {
+  onPanelClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    event.stopPropagation();
     if (this.linkUrl) {
       window.location.href = this.linkUrl;
     }
@@ -211,7 +212,7 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     return (
       <div
         className={'iiris-stat-panel' + (tooltipVisible ? ' has-link' : '')}
-        onClick={this.onPanelClick}
+        onClick={(event) => this.onPanelClick(event)}
         onMouseEnter={this.onMouseEnterPanel}
         onMouseLeave={this.onMouseLeavePanel}
         onMouseMove={(event) => this.onMouseMoveOver(event)}
