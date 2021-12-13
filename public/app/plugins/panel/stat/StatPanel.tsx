@@ -58,6 +58,7 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     }
     // Set link title and url to class attributes
     // Check first for regular Grafana panel links and if that doesn't exist then check for data links
+    // Also check for override links if there is only one override (can't add tooltips for multiple links)
     if (this.panel && this.panel.links && this.panel.links.length > 0) {
       this.linkUrl = this.panel.links[0].url;
       this.linkTitle = this.panel.links[0].title;
@@ -69,6 +70,18 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     ) {
       this.linkUrl = this.panel.fieldConfig.defaults.links[0].url;
       this.linkTitle = this.panel.fieldConfig.defaults.links[0].title;
+    } else if (
+      this.panel && this.panel.fieldConfig &&
+      this.panel.fieldConfig.overrides &&
+      this.panel.fieldConfig.overrides.length === 1 &&
+      this.panel.fieldConfig.overrides[0].properties &&
+      this.panel.fieldConfig.overrides[0].properties.length > 0 &&
+      this.panel.fieldConfig.overrides[0].properties[0].value &&
+      this.panel.fieldConfig.overrides[0].properties[0].value.length > 0 &&
+      this.panel.fieldConfig.overrides[0].properties[0].value[0].url
+    ) {
+      this.linkUrl = this.panel.fieldConfig.overrides[0].properties[0].value[0].url;
+      this.linkTitle = this.panel.fieldConfig.overrides[0].properties[0].value[0].title;
     }
   }
 
