@@ -1,6 +1,13 @@
 // Libaries
 import React, { PureComponent, FC, ReactNode } from 'react';
-import { replaceTemplateVars, getZabbix, getHostGroups, getHostsFromGroup, getMaintenances } from './common_tools';
+import {
+  replaceTemplateVars,
+  getZabbix,
+  getHostGroups,
+  getHostsFromGroup,
+  getMaintenances,
+  getOngoingMaintenances
+} from './common_tools';
 import { connect, MapDispatchToProps } from 'react-redux';
 import { css } from 'emotion';
 // Utils & Services
@@ -124,29 +131,6 @@ class DashNav extends PureComponent<Props> {
   };
 
   /**
-   * Is maintenance ongoing
-   * @param {any} maintenance
-   * @returns {boolean}
-   */
-  isOngoingMaintenance = (maintenance: any) => {
-    let isOngoing = false;
-    if (maintenance) {
-      if (maintenance.startTime) {
-        const curTime = new Date().getTime() / 1000;
-        if (
-          curTime >= maintenance.startTime &&
-          curTime <= maintenance.endTime &&
-          curTime >= maintenance.activeSince &&
-          curTime <= maintenance.activeTill
-        ) {
-          isOngoing = true;
-        }
-      }
-    }
-    return isOngoing;
-  };
-
-  /**
    * Parse given Date object to string
    * @param {Date} newDate
    * @returns {string}
@@ -200,7 +184,7 @@ class DashNav extends PureComponent<Props> {
     getMaintenances(hostIds, [groupId], this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
-          this.ongoingMaintenances = [];
+          this.ongoingMaintenances = getOngoingMaintenances(maintenances);
           this.allMaintenances = [];
           maintenances.map((maintenance: any) => {
             if (maintenance.maintenanceType === 0) {
@@ -219,30 +203,6 @@ class DashNav extends PureComponent<Props> {
               maintenance.maintenanceTypeString = '';
             }
             this.allMaintenances.push(maintenance);
-            if (this.isOngoingMaintenance(maintenance)) {
-              const endTime = new Date(maintenance.endTime * 1000);
-              const maintenanceEnds = this.parseDateToString(endTime);
-              let hosts = '';
-              if (maintenance.hosts && maintenance.hosts.length > 0) {
-                maintenance.hosts.map((host: any, index: number) => {
-                  hosts += host.name + (index < maintenance.hosts.length - 1 ? ', ' : '');
-                });
-              } else {
-                hosts = this.allHostsTitle;
-              }
-              this.ongoingMaintenances.push({
-                description: maintenance.name.split('|')[0],
-                caller: maintenance.name.split('|').length > 1 ? maintenance.name.split('|')[1] : '',
-                endtime: maintenanceEnds,
-                activeSince: maintenance.startTime,
-                activeTill: maintenance.endTime,
-                id: maintenance.id,
-                internalId: maintenance.internalId,
-                hosts,
-                periodicMaintenance: maintenance.maintenanceType !== 0 ? true : false,
-                maintenanceType: maintenance.maintenanceType,
-              });
-            }
           });
           const curTime = new Date().getTime() / 1000;
           this.allMaintenances = this.allMaintenances.filter(
