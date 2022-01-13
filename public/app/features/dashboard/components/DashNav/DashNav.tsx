@@ -118,7 +118,17 @@ class DashNav extends PureComponent<Props> {
           // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
           this.hosts.options = hosts
             .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
-            .map((host: any) => ({ text: host.name, value: host.hostid }));
+            .map((host: any) => ({ text: host.name, value: host.hostid }))
+            .sort((hostA: any, hostB: any) => {
+              const nameA = hostA.text.toLowerCase();
+              const nameB = hostB.text.toLowerCase();
+              if (nameA < nameB) {
+                return -1;
+              } else if (nameA > nameB) {
+                return 1;
+              }
+              return 0;
+            });
           this.hostIds = hosts.map((host: any) => host.hostid);
           this.getMaintenanceList(this.hostIds, groupId);
           this.clearHostSelection();
