@@ -526,7 +526,7 @@ class DashNav extends PureComponent<Props> {
     appEvents.emit('show-modal', {
       templateHtml: template,
       scope: this.modalScope,
-      backdrop: 'static',
+      backdrop: true,
     });
   };
 
@@ -556,7 +556,7 @@ class DashNav extends PureComponent<Props> {
     appEvents.emit('show-modal', {
       templateHtml: template,
       scope: this.listModalScope,
-      backdrop: 'static',
+      backdrop: true,
     });
   };
 
@@ -570,7 +570,7 @@ class DashNav extends PureComponent<Props> {
     appEvents.emit('show-modal', {
       templateHtml: template,
       scope: this.confirmModalScope,
-      backdrop: 'static',
+      backdrop: true,
     });
   };
   /* tslint:enable */
