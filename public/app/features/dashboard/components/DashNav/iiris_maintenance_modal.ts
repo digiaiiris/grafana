@@ -266,14 +266,18 @@ export class IirisMaintenanceModalCtrl {
     let currentHours = currentDate.getHours();
     let currentMinutes = currentDate.getMinutes();
     if (this.scope.selectedMaintenance) {
-      if (this.scope.selectedMaintenance.maintenanceType > 0) {
-        currentDate = new Date(this.scope.selectedMaintenance.activeSince * 1000);
-      } else {
-        currentDate = new Date(this.scope.selectedMaintenance.startTime * 1000);
-      }
       const currentStartTime = new Date(this.scope.selectedMaintenance.startTime * 1000);
       currentHours = currentStartTime.getHours();
       currentMinutes = currentStartTime.getMinutes();
+      if (this.scope.selectedMaintenance.maintenanceType > 0) {
+        currentDate = moment(this.scope.selectedMaintenance.activeSince * 1000)
+          .startOf('day')
+          .add(currentHours, 'hour')
+          .add(currentMinutes, 'minute')
+          .toDate();
+      } else {
+        currentDate = new Date(this.scope.selectedMaintenance.startTime * 1000);
+      }
     }
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
