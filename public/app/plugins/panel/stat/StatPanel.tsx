@@ -19,6 +19,11 @@ import {
 import { config } from 'app/core/config';
 import { StatPanelOptions } from './types';
 import { DataLinksContextMenuApi } from '@grafana/ui/src/components/DataLinks/DataLinksContextMenu';
+import {
+  getExpandedUrlLink,
+  getExpandedTemplateVariables
+} from 'app/features/dashboard/components/DashNav/common_tools';
+import { getTemplateSrv } from '@grafana/runtime';
 
 interface Props extends PanelProps<StatPanelOptions> {
   dashboard: any;
@@ -62,6 +67,7 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     if (this.panel && this.panel.links && this.panel.links.length > 0) {
       this.linkUrl = this.panel.links[0].url;
       this.linkTitle = this.panel.links[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
     } else if (
       this.panel && this.panel.fieldConfig &&
       this.panel.fieldConfig.defaults &&
@@ -70,6 +76,7 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     ) {
       this.linkUrl = this.panel.fieldConfig.defaults.links[0].url;
       this.linkTitle = this.panel.fieldConfig.defaults.links[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
     } else if (
       this.panel && this.panel.fieldConfig &&
       this.panel.fieldConfig.overrides &&
@@ -82,7 +89,14 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
     ) {
       this.linkUrl = this.panel.fieldConfig.overrides[0].properties[0].value[0].url;
       this.linkTitle = this.panel.fieldConfig.overrides[0].properties[0].value[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
     }
+  }
+
+  expandVariables = (linkUrl: string, linkTitle: string) => {
+    const vars = Object.assign({}, this.panel.scopedVars);
+    this.linkUrl = getExpandedUrlLink(linkUrl, getTemplateSrv(), vars);
+    this.linkTitle = getExpandedTemplateVariables(linkTitle, getTemplateSrv(), vars);
   }
 
   onPanelClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
