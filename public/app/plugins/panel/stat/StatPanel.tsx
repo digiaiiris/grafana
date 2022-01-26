@@ -14,6 +14,9 @@ import {
   getDisplayValueAlignmentFactors,
   getFieldDisplayValues,
   PanelProps,
+  urlUtil,
+  DataLinkBuiltInVars,
+  Registry,
 } from '@grafana/data';
 
 import { config } from 'app/core/config';
@@ -95,7 +98,15 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
 
   expandVariables = (linkUrl: string, linkTitle: string) => {
     const vars = Object.assign({}, this.panel.scopedVars);
-    this.linkUrl = getExpandedUrlLink(linkUrl, getTemplateSrv(), vars);
+    const registry = new Registry();
+    this.linkUrl = getExpandedUrlLink(
+      linkUrl,
+      getTemplateSrv(),
+      urlUtil,
+      DataLinkBuiltInVars,
+      vars,
+      registry
+    );
     this.linkTitle = getExpandedTemplateVariables(linkTitle, getTemplateSrv(), vars);
   }
 
