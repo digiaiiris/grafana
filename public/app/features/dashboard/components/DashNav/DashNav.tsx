@@ -106,7 +106,7 @@ class DashNav extends PureComponent<Props> {
         .map((ds: any) => ds.name);
     }
     this.hosts = {
-      selected: [],
+      selected: {},
       options: [],
       allSelected: true,
     };
