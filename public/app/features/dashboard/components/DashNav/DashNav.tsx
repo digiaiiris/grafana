@@ -106,7 +106,7 @@ class DashNav extends PureComponent<Props> {
         .map((ds: any) => ds.name);
     }
     this.hosts = {
-      selected: [],
+      selected: {},
       options: [],
       allSelected: true,
     };
@@ -167,10 +167,10 @@ class DashNav extends PureComponent<Props> {
   clearHostSelection = () => {
     this.hosts.allSelected = true;
     if (this.hosts.options.length > 0) {
-      for (let i = 0; i < this.hosts.options.length; i++) {
-        this.hosts.selected[i] = this.hosts.allSelected;
-        this.hosts.options[i].checked = this.hosts.allSelected;
-      }
+      this.hosts.options.forEach((option: any, index: number) => {
+        this.hosts.selected[option.value] = this.hosts.allSelected;
+        this.hosts.options[index].checked = this.hosts.allSelected;
+      });
     }
   };
 

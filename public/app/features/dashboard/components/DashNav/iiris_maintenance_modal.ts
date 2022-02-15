@@ -390,7 +390,7 @@ export class IirisMaintenanceModalCtrl {
       this.scope.hosts.options.map((option: any, index: number) => {
         if (maintenanceHostIds.indexOf(option.value) === -1) {
           this.scope.hosts.options[index].checked = false;
-          this.scope.hosts.selected[index] = false;
+          this.scope.hosts.selected[option.value] = false;
           this.scope.hosts.allSelected = false;
         }
       });
@@ -475,13 +475,13 @@ export class IirisMaintenanceModalCtrl {
       options.start_time = moment(startDate).hour() * 60 * 60 + moment(startDate).minute() * 60;
     }
     let anyHostSelected = false;
-    const hostIds = [];
-    for (let i = 0; i < this.scope.hosts.selected.length; i++) {
-      if (this.scope.hosts.selected[i]) {
+    const hostIds: string[] = [];
+    this.scope.hosts.options.forEach((option: any) => {
+      if (this.scope.hosts.selected[option.value]) {
         anyHostSelected = true;
-        hostIds.push(this.scope.hosts.options[i].value);
+        hostIds.push(option.value);
       }
-    }
+    });
     const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
     const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
@@ -748,27 +748,28 @@ export class IirisMaintenanceModalCtrl {
    */
   selectAllHosts() {
     const allSelected = this.scope.hosts.allSelected;
-    for (let i = 0; i < this.scope.hosts.options.length; i++) {
-      this.scope.hosts.options[i].checked = allSelected;
-      this.scope.hosts.selected[i] = allSelected;
-    }
+    this.scope.hosts.options.forEach((option: any, index: number) => {
+      this.scope.hosts.options[index].checked = allSelected;
+      this.scope.hosts.selected[option.value] = allSelected;
+    });
   }
 
   /**
    * Callback for selecting host
    */
-  selectHost(index: number) {
+  selectHost(id: string) {
+    const index = this.scope.hosts.options.findIndex((host: any) => host.value === id);
     this.scope.hosts.options[index].checked = !this.scope.hosts.options[index].checked;
     if (!this.scope.hosts.options[index].checked) {
       this.scope.hosts.allSelected = false;
     } else {
       // Check if all checkboxes are selected
       let allSelected = true;
-      for (let i = 0; i < this.scope.hosts.options.length; i++) {
-        if (!this.scope.hosts.selected[i]) {
+      this.scope.hosts.options.forEach((option: any) => {
+        if (!this.scope.hosts.selected[option.value]) {
           allSelected = false;
         }
-      }
+      });
       this.scope.hosts.allSelected = allSelected;
     }
   }
