@@ -167,10 +167,10 @@ class DashNav extends PureComponent<Props> {
   clearHostSelection = () => {
     this.hosts.allSelected = true;
     if (this.hosts.options.length > 0) {
-      for (let i = 0; i < this.hosts.options.length; i++) {
-        this.hosts.selected[this.hosts.options[i].value] = this.hosts.allSelected;
-        this.hosts.options[i].checked = this.hosts.allSelected;
-      }
+      this.hosts.options.forEach((option: any, index: number) => {
+        this.hosts.selected[option.value] = this.hosts.allSelected;
+        this.hosts.options[index].checked = this.hosts.allSelected;
+      });
     }
   };
 
