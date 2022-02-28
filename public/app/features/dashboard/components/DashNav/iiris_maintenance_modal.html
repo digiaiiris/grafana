@@ -340,7 +340,7 @@
         <input class="input-small gf-form-input iiris-fixed-width-select" type="text" ng-model="ctrl.search.text" placeholder="Hae nimellä">
       </div>
       <div class="gf-form-group maintenance-host-list">
-        <div class="iiris-checkbox">
+        <div class="iiris-checkbox" ng-if="!ctrl.search.text">
           <input id="select_all" type="checkbox" ng-model="ctrl.scope.hosts.allSelected" ng-change="ctrl.selectAllHosts()" />
           <label class="checkbox-label" for="select_all">Kaikki palvelimet</label>
         </div>
@@ -350,6 +350,88 @@
         </div>
       </div>
       <div class="maintenance-config-error-text">{{ctrl.scope.errorText}}</div>
+      <div class="gf-form-button-row">
+        <a class="btn btn-secondary" ng-click="ctrl.goToPrevious()">Takaisin</a>
+        <a class="btn btn-secondary" ng-click="ctrl.dismiss()">Peruuta</a>
+        <a class="btn btn-primary" ng-click="ctrl.goToNext()" ng-if="!ctrl.scope.selectedMaintenance">Luo huolto</a>
+        <a class="btn btn-primary" ng-click="ctrl.goToNext()" ng-if="ctrl.scope.selectedMaintenance">Tallenna muutokset</a>
+      </div>
+    </div>
+    <div ng-if="ctrl.scope.wizardPhase==3">
+      <div class="iiris-maintenance-modal-text-row">
+        <div class="iiris-maintenance-modal-text-label">Kuvaus</div>
+        <div class="iiris-maintenance-modal-text-normal">{{ctrl.description}}</div>
+      </div>
+      <div class="iiris-maintenance-modal-text-row">
+        <div class="iiris-maintenance-modal-text-label">Palvelimet</div>
+        <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayHosts}}</div>
+      </div>
+      <div class="iiris-maintenance-modal-text-row">
+        <div class="iiris-maintenance-modal-text-label">Huollon tyyppi</div>
+        <div class="iiris-maintenance-modal-text-normal">{{ctrl.maintenanceType}}</div>
+      </div>
+      <div ng-if="ctrl.mTypeInput.value==0">
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
+        </div>
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStopDate}}</div>
+        </div>
+      </div>
+      <div ng-if="ctrl.mTypeInput.value==2">
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Toistetaan [n] päivän välein</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.everyNDays}}</div>
+        </div>
+      </div>
+      <div ng-if="ctrl.mTypeInput.value==3">
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Toistetaan [n] viikon välein</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.everyNWeeks}}</div>
+        </div>
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Toistetaan viikonpäivänä</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayWeeklyDays}}</div>
+        </div>
+      </div>
+      <div ng-if="ctrl.mTypeInput.value==4">
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Toistetaan kuukautena</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayMonths}}</div>
+        </div>
+        <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
+          <div class="iiris-maintenance-modal-text-row">
+            <div class="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
+            <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.dayOfMonth}}</div>
+          </div>
+        </div>
+        <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
+          <div class="iiris-maintenance-modal-text-row">
+            <div class="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
+            <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayMonthlyWeekdayNumber + ' ' + ctrl.displayMonthlyWeekdayNames}}</div>
+          </div>
+        </div>
+      </div>
+      <div ng-if="ctrl.mTypeInput.value>0">
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
+        </div>
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStopDate}}</div>
+        </div>
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Aloita toisto</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
+        </div>
+        <div class="iiris-maintenance-modal-text-row">
+          <div class="iiris-maintenance-modal-text-label">Lopeta toisto</div>
+          <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayRepeatStopDate}}</div>
+        </div>
+      </div>
       <div class="gf-form-button-row">
         <a class="btn btn-secondary" ng-click="ctrl.goToPrevious()">Takaisin</a>
         <a class="btn btn-secondary" ng-click="ctrl.dismiss()">Peruuta</a>
