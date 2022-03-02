@@ -225,3 +225,20 @@ $table-line-color: #cccccc;
     max-height: 347px;
     overflow-y: scroll;
 }
+
+.iiris-maintenance-modal-text-row {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: -2px;
+}
+
+.iiris-maintenance-modal-text-label {
+    flex-basis: 250px;
+    font-weight: 600;
+}
+
+.iiris-maintenance-modal-text-normal {
+    flex: 1 1 100%;
+    word-break: break-word;
+    margin: 0 10px 0 5px;
+}

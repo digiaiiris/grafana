@@ -105,6 +105,18 @@ export class IirisMaintenanceModalCtrl {
   search: {
     text: string;
   }
+  maintenanceType: string;
+  displayStartDate: string;
+  displayStopDate: string;
+  displayRepeatStopDate: string;
+  displayHosts: string;
+  displayWeeklyDays: string;
+  weekdayNames: any;
+  monthNames: any;
+  displayMonths: string;
+  displayMonthlyDays: string;
+  displayMonthlyWeekdayNumber: string;
+  displayMonthlyWeekdayNames: string;
 
   /**
    * Maintenance Modal class constructor
@@ -183,6 +195,7 @@ export class IirisMaintenanceModalCtrl {
         { text: 'Kuukausittainen', value: '4' },
       ],
     };
+    this.maintenanceType = this.mTypeInput.text;
     this.yearInput = {
       value: 0,
       text: '',
@@ -261,6 +274,29 @@ export class IirisMaintenanceModalCtrl {
     };
     this.search = {
       text: ''
+    };
+    this.weekdayNames = {
+      monday: 'Maanantai',
+      tuesday: 'Tiistai',
+      wednesday: 'Keskiviikko',
+      thursday: 'Torstai',
+      friday: 'Perjantai',
+      saturday: 'Lauantai',
+      sunday: 'Sunnuntai',
+    };
+    this.monthNames = {
+      january: 'Tammikuu',
+      february: 'Helmikuu',
+      march: 'Maaliskuu',
+      april: 'Huhtikuu',
+      may: 'Toukokuu',
+      june: 'Kesäkuu',
+      july: 'Heinäkuu',
+      august: 'Elokuu',
+      september: 'Syyskuu',
+      october: 'Lokakuu',
+      november: 'Marraskuu',
+      december: 'Joulukuu',
     };
     let currentDate = new Date();
     let currentHours = currentDate.getHours();
@@ -805,6 +841,7 @@ export class IirisMaintenanceModalCtrl {
    */
   onMaintenanceTypeChanged() {
     this.scope.errorText = '';
+    this.maintenanceType = this.mTypeInput.options.find((option: any) => option.value === this.mTypeInput.value).text;
   }
 
   /**
@@ -814,46 +851,20 @@ export class IirisMaintenanceModalCtrl {
     let valid = true;
     this.scope.errorText = '';
     // Check for validity
-    if (this.mTypeInput.value === '2') {
-      if (!this.scope.everyNDays || !/^[0-9]*$/.test(this.scope.everyNDays)) {
-        valid = false;
-        this.scope.errorText += 'Kentän "Toistetaan n päivän välein" täytyy sisältää kokonaisluku. ';
-      }
-    } else if (this.mTypeInput.value === '3') {
-      if (!this.scope.everyNWeeks || !/^[0-9]*$/.test(this.scope.everyNWeeks)) {
-        valid = false;
-        this.scope.errorText += 'Kentän "Toistetaan n viikon välein" täytyy sisältää kokonaisluku. ';
-      }
-      let someWeekdaySelected = false;
-      Object.keys(this.scope.weekdays).map(weekday => {
-        if (this.scope.weekdays[weekday]) {
-          someWeekdaySelected = true;
-        }
-      });
-      if (!someWeekdaySelected) {
-        valid = false;
-        this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
-      }
-    } else if (this.mTypeInput.value === '4') {
-      let someMonthSelected = false;
-      Object.keys(this.scope.months).map(month => {
-        if (this.scope.months[month]) {
-          someMonthSelected = true;
-        }
-      });
-      if (!someMonthSelected) {
-        valid = false;
-        this.scope.errorText += 'Ainakin yhden kuukauden täytyy olla valittu. ';
-      }
-      if (this.scope.dayOfMonthOrWeekSelected.value === MONTH) {
-        if (!this.scope.dayOfMonth || !/^[0-9]*$/.test(this.scope.dayOfMonth)) {
+    if (this.scope.wizardPhase === 1) {
+      if (this.mTypeInput.value === '2') {
+        if (!this.scope.everyNDays || !/^[0-9]*$/.test(this.scope.everyNDays)) {
           valid = false;
-          this.scope.errorText += 'Kentän "Toistetaan kuukauden päivänä" täytyy sisältää kokonaisluku. ';
+          this.scope.errorText += 'Kentän "Toistetaan n päivän välein" täytyy sisältää kokonaisluku. ';
         }
-      } else if (this.scope.dayOfMonthOrWeekSelected.value === WEEK) {
+      } else if (this.mTypeInput.value === '3') {
+        if (!this.scope.everyNWeeks || !/^[0-9]*$/.test(this.scope.everyNWeeks)) {
+          valid = false;
+          this.scope.errorText += 'Kentän "Toistetaan n viikon välein" täytyy sisältää kokonaisluku. ';
+        }
         let someWeekdaySelected = false;
-        Object.keys(this.scope.monthlyWeekdays).map(weekday => {
-          if (this.scope.monthlyWeekdays[weekday]) {
+        Object.keys(this.scope.weekdays).map(weekday => {
+          if (this.scope.weekdays[weekday]) {
             someWeekdaySelected = true;
           }
         });
@@ -861,43 +872,138 @@ export class IirisMaintenanceModalCtrl {
           valid = false;
           this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
         }
+      } else if (this.mTypeInput.value === '4') {
+        let someMonthSelected = false;
+        Object.keys(this.scope.months).map(month => {
+          if (this.scope.months[month]) {
+            someMonthSelected = true;
+          }
+        });
+        if (!someMonthSelected) {
+          valid = false;
+          this.scope.errorText += 'Ainakin yhden kuukauden täytyy olla valittu. ';
+        }
+        if (this.scope.dayOfMonthOrWeekSelected.value === MONTH) {
+          if (!this.scope.dayOfMonth || !/^[0-9]*$/.test(this.scope.dayOfMonth)) {
+            valid = false;
+            this.scope.errorText += 'Kentän "Toistetaan kuukauden päivänä" täytyy sisältää kokonaisluku. ';
+          }
+        } else if (this.scope.dayOfMonthOrWeekSelected.value === WEEK) {
+          let someWeekdaySelected = false;
+          Object.keys(this.scope.monthlyWeekdays).map(weekday => {
+            if (this.scope.monthlyWeekdays[weekday]) {
+              someWeekdaySelected = true;
+            }
+          });
+          if (!someWeekdaySelected) {
+            valid = false;
+            this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
+          }
+        }
       }
-    }
-    const startDate = new Date(
-      this.yearInput.value,
-      this.monthInput.value - 1,
-      this.dayInput.value,
-      parseInt(this.hourInput.value, 10),
-      parseInt(this.minuteInput.value, 10)
-    );
-    const stopPeriodDate = moment(
-      new Date(
-        this.yearStopInput.value,
-        this.monthStopInput.value - 1,
-        this.dayStopInput.value)
-      ).endOf('day').toDate();
-    const currentDate = new Date();
-    const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
-    const stopDateTime = moment(startDate).add(duration, 'second').toDate();
-    if (this.mTypeInput.value === '2' || this.mTypeInput.value === '3' || this.mTypeInput.value === '4') {
-      if (stopPeriodDate <= startDate) {
-        valid = false;
-        this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
-      } else if (stopPeriodDate < currentDate) {
-        valid = false;
-        this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
+      const startDate = new Date(
+        this.yearInput.value,
+        this.monthInput.value - 1,
+        this.dayInput.value,
+        parseInt(this.hourInput.value, 10),
+        parseInt(this.minuteInput.value, 10)
+      );
+      const stopPeriodDate = moment(
+        new Date(
+          this.yearStopInput.value,
+          this.monthStopInput.value - 1,
+          this.dayStopInput.value)
+        ).endOf('day').toDate();
+      const currentDate = new Date();
+      const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
+      const stopDateTime = moment(startDate).add(duration, 'second').toDate();
+      if (this.mTypeInput.value === '2' || this.mTypeInput.value === '3' || this.mTypeInput.value === '4') {
+        if (stopPeriodDate <= startDate) {
+          valid = false;
+          this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
+        } else if (stopPeriodDate < currentDate) {
+          valid = false;
+          this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
+        }
       }
-    }
-    if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
-      valid = false;
-      this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
-    }
-    if (this.mTypeInput.value === '0' && stopDateTime < currentDate) {
-      valid = false;
-      this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
-    }
-    if (valid) {
-      this.scope.wizardPhase = 2;
+      if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
+        valid = false;
+        this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
+      }
+      if (this.mTypeInput.value === '0' && stopDateTime < currentDate) {
+        valid = false;
+        this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
+      }
+      if (valid) {
+        this.scope.wizardPhase = 2;
+      }
+    } else {
+      let anyHostSelected = false;
+      this.scope.hosts.options.forEach((option: any) => {
+        if (this.scope.hosts.selected[option.value]) {
+          anyHostSelected = true;
+        }
+      });
+      const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
+      if (!anyHostSelected) {
+        this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
+        valid = false;
+      } else if (maintenanceName.length > 128) {
+        const excessLength = maintenanceName.length - 128;
+        this.scope.errorText = "Huollon kuvaus on " + excessLength + " merkkiä liian pitkä";
+        valid = false;
+      }
+      if (valid) {
+        this.scope.wizardPhase = 3;
+        this.displayStartDate = moment(new Date(
+          this.yearInput.value,
+          this.monthInput.value - 1,
+          this.dayInput.value,
+          parseInt(this.hourInput.value, 10),
+          parseInt(this.minuteInput.value, 10)
+        )).format('DD.MM.YYYY HH:mm');
+        this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
+        this.displayRepeatStopDate = moment(
+          new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
+        ).endOf('day').format('DD.MM.YYYY HH:mm');
+        this.displayHosts = '';
+        this.scope.hosts.options.forEach((option: any) => {
+          if (this.scope.hosts.selected[option.value]) {
+            if (this.displayHosts) {
+              this.displayHosts += ', ';
+            }
+            this.displayHosts += option.text;
+          }
+        });
+        this.displayWeeklyDays = '';
+        Object.keys(this.scope.weekdays).forEach((weekday: string) => {
+          if (this.scope.weekdays[weekday]) {
+            if (this.displayWeeklyDays) {
+              this.displayWeeklyDays += ', ';
+            }
+            this.displayWeeklyDays += this.weekdayNames[weekday];
+          }
+        });
+        this.displayMonths = '';
+        Object.keys(this.scope.months).forEach((month: string) => {
+          if (this.scope.months[month]) {
+            if (this.displayMonths) {
+              this.displayMonths += ', ';
+            }
+            this.displayMonths += this.monthNames[month];
+          }
+        });
+        this.displayMonthlyWeekdayNumber = this.everyDayOfWeekInput.options.find((option: any) => option.value === this.everyDayOfWeekInput.value).text;
+        this.displayMonthlyWeekdayNames = '';
+        Object.keys(this.scope.monthlyWeekdays).forEach((weekday: string) => {
+          if (this.scope.monthlyWeekdays[weekday]) {
+            if (this.displayMonthlyWeekdayNames) {
+              this.displayMonthlyWeekdayNames += ', ';
+            }
+            this.displayMonthlyWeekdayNames += this.weekdayNames[weekday];
+          }
+        });
+      }
     }
   }
 
@@ -905,7 +1011,7 @@ export class IirisMaintenanceModalCtrl {
    * Callback for go previous button
    */
   goToPrevious() {
-    this.scope.wizardPhase = 1;
+    this.scope.wizardPhase--;
   }
 
   dismiss() {
