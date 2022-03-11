@@ -934,7 +934,8 @@ export class IirisMaintenanceModalCtrl {
         } else {
           nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
         }
-        if (moment(stopPeriodDate).isDST() !== isCurrentlyDST) {
+        if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
+          valid = false;
           this.scope.errorText += 'Toiston päättymisaika ei voi ylittää kesä/talviaika vaihdosta ' + 
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
