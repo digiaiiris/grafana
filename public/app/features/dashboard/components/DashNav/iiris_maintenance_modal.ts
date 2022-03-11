@@ -925,6 +925,19 @@ export class IirisMaintenanceModalCtrl {
           valid = false;
           this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
         }
+        // Check if period continues over next DST change
+        const curYear = new Date().getFullYear();
+        const isCurrentlyDST = moment().isDST();
+        let nextChange;
+        if (isCurrentlyDST) {
+          nextChange = moment(curYear + '-10-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(4,'hour');
+        } else {
+          nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+        }
+        if (moment(stopPeriodDate).isDST() !== isCurrentlyDST) {
+          this.scope.errorText += 'Toiston päättymisaika ei voi ylittää kesä/talviaika vaihdosta ' + 
+            nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
+        }
       }
       if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
         valid = false;
