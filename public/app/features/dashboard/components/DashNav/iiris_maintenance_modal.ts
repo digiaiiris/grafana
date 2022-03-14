@@ -508,7 +508,7 @@ export class IirisMaintenanceModalCtrl {
       .endOf('day')
       .toDate();
     if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
-      options.start_time = moment(startDate).hour() * 60 * 60 + moment(startDate).minute() * 60;
+      options.start_time = moment.utc(startDate).hour() * 60 * 60 + moment.utc(startDate).minute() * 60;
     }
     let anyHostSelected = false;
     const hostIds: string[] = [];
@@ -924,6 +924,20 @@ export class IirisMaintenanceModalCtrl {
         } else if (stopPeriodDate < currentDate) {
           valid = false;
           this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
+        }
+        // Check if period continues over next DST change
+        const curYear = new Date().getFullYear();
+        const isCurrentlyDST = moment().isDST();
+        let nextChange;
+        if (isCurrentlyDST) {
+          nextChange = moment(curYear + '-10-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(4,'hour');
+        } else {
+          nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+        }
+        if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
+          valid = false;
+          this.scope.errorText += 'Toiston päättymisaika ei voi ylittää kesä/talviaika vaihdosta ' + 
+            nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
       }
       if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
