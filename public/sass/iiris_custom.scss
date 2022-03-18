@@ -447,6 +447,10 @@ li[style*='rgb(215, 0, 0)'] // Critical - Kriittinen häiriö
     .alert-rule-item__header .alert-rule-item__time {
         color: #A51A00;
     }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #ED7E7E;
+    }
 }
 
 li[style*='rgb(255, 101, 72)'] // High - Vakava häiriö
@@ -456,6 +460,10 @@ li[style*='rgb(255, 101, 72)'] // High - Vakava häiriö
     .alert-rule-item__text .zbx-trigger-severity,
     .alert-rule-item__header .alert-rule-item__time {
         color: #C50027;
+    }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #F9A7A7;
     }
 }
 
@@ -467,6 +475,10 @@ li[style*='rgb(255, 137, 30)'] // Average - Keskitason häiriö
     .alert-rule-item__header .alert-rule-item__time {
         color: #E03F25;
     }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #FFD4B8;
+    }
 }
 
 li[style*='rgb(175, 180, 36)'] // Warning - Matala häiriö
@@ -476,6 +488,10 @@ li[style*='rgb(175, 180, 36)'] // Warning - Matala häiriö
     .alert-rule-item__text .zbx-trigger-severity,
     .alert-rule-item__header .alert-rule-item__time {
         color: #E98600;
+    }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #FFEEAC;
     }
 }
 
@@ -487,6 +503,10 @@ li[style*='rgb(120, 158, 183)'] // Information - Tiedote
     .alert-rule-item__header .alert-rule-item__time {
         color: #18A109;
     }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #C9E7C5;
+    }
 }
 
 li[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
@@ -496,6 +516,10 @@ li[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
     .alert-rule-item__text .zbx-trigger-severity,
     .alert-rule-item__header .alert-rule-item__time {
         color: #2F5FB8;
+    }
+    &.iiris-active-test-incident {
+        background: #FFFFFF !important;
+        border: 5px solid #DAE6F3;
     }
 }
 
