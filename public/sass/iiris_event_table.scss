@@ -351,15 +351,3 @@ $iiris-table-horizontal-padding: 10px;
         background-color: #D01D04;
     }
 }
-
-.theme-dark .panel-container {
-    &.panel-container--no-title {
-        .panel-info-corner {
-            margin-left: -450%;
-        }
-        .panel-header {
-            width: 10%;
-            left: 45%;
-        }
-    }
-}
