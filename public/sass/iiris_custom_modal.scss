@@ -242,3 +242,15 @@ $table-line-color: #cccccc;
     word-break: break-word;
     margin: 0 10px 0 5px;
 }
+
+.theme-dark .panel-container {
+    &.panel-container--no-title {
+        .panel-info-corner {
+            margin-left: -450%;
+        }
+        .panel-header {
+            width: 10%;
+            left: 45%;
+        }
+    }
+}
