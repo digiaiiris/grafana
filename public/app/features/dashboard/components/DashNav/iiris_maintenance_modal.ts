@@ -558,7 +558,10 @@ export class IirisMaintenanceModalCtrl {
   populateYearSelector(yearInputObject: any, yearValue: number) {
     yearInputObject.value = yearValue;
     yearInputObject.text = '' + yearValue;
-    for (let i = yearValue; i < yearValue + 2; i++) {
+    const currentYear = new Date().getFullYear();
+    const startYear = Math.min(currentYear, yearValue);
+    const endYear = Math.max(currentYear, yearValue)
+    for (let i = startYear; i < endYear + 2; i++) {
       yearInputObject.options.push({
         text: '' + i,
         value: i,
