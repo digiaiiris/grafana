@@ -10,6 +10,8 @@ import { selectors } from '@grafana/e2e-selectors';
 
 const setupTestContext = (options: Partial<Props>) => {
   const defaults: Props = {
+    datasourceOptions: [],
+    hostGroupOptions: [],
     dashboard: {
       title: 'test dashboard title',
       description: 'test dashboard description',

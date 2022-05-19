@@ -79,6 +79,11 @@ export interface DashboardLink {
 }
 
 export class DashboardModel {
+  maintenanceHostGroup: string;
+  selectedDatasource: string;
+  serviceInfoWikiUrl: string;
+  serviceInfoWikiUrlIsExternal: boolean;
+  dashboardLogo: string;
   id: any;
   uid: string;
   title: string;
@@ -148,6 +153,11 @@ export class DashboardModel {
     this.uid = data.uid || null;
     this.revision = data.revision;
     this.title = data.title ?? 'No Title';
+    this.maintenanceHostGroup = data.maintenanceHostGroup;
+    this.selectedDatasource = data.selectedDatasource;
+    this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
+    this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
+    this.dashboardLogo = data.dashboardLogo;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
     this.tags = data.tags ?? [];

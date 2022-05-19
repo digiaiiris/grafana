@@ -12,11 +12,14 @@
    scope: any;
    onCloseConfirmation: () => void;
    confirmText: any;
+   model: any;
  
    /**
     * Maintenance List Modal class constructor
     */
    constructor() {
+     console.log('CTRL');
+     console.log(this.model);
      this.onCloseConfirmation = () => {
         this.dismiss();
      };

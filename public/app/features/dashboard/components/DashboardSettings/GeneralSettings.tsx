@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { TimeZone } from '@grafana/data';
-import { CollapsableSection, Field, Input, RadioButtonGroup, TagsInput } from '@grafana/ui';
+import { CollapsableSection, Field, Input, RadioButtonGroup, TagsInput, Select } from '@grafana/ui';
 import { selectors } from '@grafana/e2e-selectors';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
 import { DashboardModel } from '../../state/DashboardModel';
@@ -14,6 +14,8 @@ import { config } from '@grafana/runtime';
 
 interface OwnProps {
   dashboard: DashboardModel;
+  datasourceOptions: string[];
+  hostGroupOptions: string[];
 }
 
 export type Props = OwnProps & ConnectedProps<typeof connector>;
@@ -24,7 +26,13 @@ const GRAPH_TOOLTIP_OPTIONS = [
   { value: 2, label: 'Shared Tooltip' },
 ];
 
-export function GeneralSettingsUnconnected({ dashboard, updateTimeZone, updateWeekStart }: Props): JSX.Element {
+export function GeneralSettingsUnconnected({
+  dashboard,
+  updateTimeZone,
+  updateWeekStart,
+  datasourceOptions,
+  hostGroupOptions,
+}: Props): JSX.Element {
   const [renderCounter, setRenderCounter] = useState(0);
 
   const onFolderChange = (folder: { id: number; title: string }) => {
@@ -82,6 +90,16 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone, updateWe
     setRenderCounter(renderCounter + 1);
   };
 
+  const onMaintenanceDatasourceChange = (datasource: any) => {
+    dashboard.selectedDatasource = datasource.value;
+    setRenderCounter(renderCounter + 1);
+  };
+
+  const onMaintenanceHostGroupChange = (hostgroup: any) => {
+    dashboard.maintenanceHostGroup = hostgroup.value;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const editableOptions = [
     { label: 'Editable', value: true },
     { label: 'Read-only', value: false },
@@ -93,6 +111,24 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone, updateWe
         General
       </h3>
       <div className="gf-form-group">
+        <Field label="Maintenance Datasource">
+          <Select
+            className="width-24"
+            options={datasourceOptions.map((item: string) => ({ label: item, value: item }))}
+            placeholder="Select datasource"
+            value={dashboard.selectedDatasource}
+            onChange={onMaintenanceDatasourceChange}
+          />
+        </Field>
+        <Field label="Maintenance Host Group">
+          <Select
+            className="width-24"
+            options={hostGroupOptions.map((item: string) => ({ label: item, value: item }))}
+            placeholder="Select host group"
+            value={dashboard.maintenanceHostGroup}
+            onChange={onMaintenanceHostGroupChange}
+          />
+        </Field>
         <Field label="Name">
           <Input id="title-input" name="title" onBlur={onBlur} defaultValue={dashboard.title} />
         </Field>
