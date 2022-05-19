@@ -5,13 +5,13 @@
  * View maintenance confirmation
  */
 
- import coreModule from 'app/core/core_module';
+ import coreModule from 'app/angular/core_module';
  import appEvents from 'app/core/app_events';
  
  export class IirisMaintenanceConfirmModalCtrl {
    scope: any;
    onCloseConfirmation: () => void;
-   confirmText: string;
+   confirmText: any;
  
    /**
     * Maintenance List Modal class constructor

@@ -1,6 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
-import coreModule from 'app/core/core_module';
+import coreModule from 'app/angular/core_module';
 import _ from 'lodash';
 
 const SORT_ASC = 'sort-ascending';

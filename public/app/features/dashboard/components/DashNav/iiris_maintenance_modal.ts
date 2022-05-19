@@ -5,7 +5,7 @@
  * You can initiate Zabbix maintenance from this dialog.
  */
 
-import coreModule from 'app/core/core_module';
+import coreModule from 'app/angular/core_module';
 import appEvents from 'app/core/app_events';
 import _ from 'lodash';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
@@ -16,107 +16,107 @@ const MONTH = 'MONTH';
 export class IirisMaintenanceModalCtrl {
   scope: any;
   hosts: any;
-  user: string;
+  user: any;
   onCreateMaintenance: any;
   selectedMaintenance: any;
   getCurrentTimeEpoch: any;
-  description: string;
+  description: any;
   durationInput: {
     options: any;
     value: number;
     text: string;
     isValid: boolean;
-  };
+  } | any;
   mTypeInput: {
     options: any;
     value: string;
     text: string;
-  };
+  } | any;
   yearInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   monthInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   dayInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   hourInput: {
     options: any;
     value: string;
     text: string;
-  };
+  } | any;
   minuteInput: {
     options: any;
     value: string;
     text: string;
-  };
+  } | any;
   yearStopInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   monthStopInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   dayStopInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   everyDayOfWeekInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   strictEndHourInput: {
     options: any;
     value: string;
     text: string;
-  };
+  } | any;
   strictEndMinuteInput: {
     options: any;
     value: string;
     text: string;
-  };
+  } | any;
   strictEndYearInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   strictEndMonthInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   strictEndDayInput: {
     options: any;
     value: number;
     text: string;
-  };
+  } | any;
   search: {
     text: string;
-  }
-  maintenanceType: string;
-  displayStartDate: string;
-  displayStopDate: string;
-  displayRepeatStopDate: string;
-  displayHosts: string;
-  displayWeeklyDays: string;
+  } | any;
+  maintenanceType: any;
+  displayStartDate: any;
+  displayStopDate: any;
+  displayRepeatStopDate: any;
+  displayHosts: any;
+  displayWeeklyDays: any;
   weekdayNames: any;
   monthNames: any;
-  displayMonths: string;
-  displayMonthlyDays: string;
-  displayMonthlyWeekdayNumber: string;
-  displayMonthlyWeekdayNames: string;
+  displayMonths: any;
+  displayMonthlyDays: any;
+  displayMonthlyWeekdayNumber: any;
+  displayMonthlyWeekdayNames: any;
 
   /**
    * Maintenance Modal class constructor

@@ -5,19 +5,19 @@
  * You can view all Zabbix maintenances from this dialog.
  */
 
-import coreModule from 'app/core/core_module';
+import coreModule from 'app/angular/core_module';
 import appEvents from 'app/core/app_events';
 
 export class IirisMaintenanceListModalCtrl {
   scope: any;
   onStopMaintenanceClicked: (maintenanceId: string) => void;
   onStopMaintenance: any;
-  confirmIsVisible: boolean;
+  confirmIsVisible: any;
   onCloseConfirmation: () => void;
   onAcceptConfirmation: () => void;
-  confirmText: string;
+  confirmText: any;
   confirmAction: any;
-  selectedMaintenanceId: string;
+  selectedMaintenanceId: any;
 
   /**
    * Maintenance List Modal class constructor
