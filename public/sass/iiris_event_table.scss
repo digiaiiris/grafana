@@ -8,14 +8,21 @@ $iiris-table-horizontal-padding: 10px;
 }
 
 .iiris-event-table {
-  height: calc(100% - 50px);
+  height: 100%;
   overflow-y: scroll;
   .table {
     width: 100%;
     tr {
       border-bottom: 1px solid #cccccc;
+      &.iiris-table-selectable-row {
+        cursor: pointer;
+      }
+      &.iiris-table-selectable-row:hover {
+        background-color: #efefef;
+      }
     }
     td {
+      word-break: break-word;
       padding: $iiris-table-vertical-padding $iiris-table-horizontal-padding;
       &.iiris-no-data-message {
         text-align: center;
@@ -32,10 +39,6 @@ $iiris-table-horizontal-padding: 10px;
       }
       &.iiris-table-cell-no-wrap {
         white-space: nowrap;
-        max-width: 0;
-      }
-      &.iiris-cell-width-5 {
-        width: 5%;
       }
       &.iiris-cell-width-10 {
         width: 10%;
@@ -63,6 +66,17 @@ $iiris-table-horizontal-padding: 10px;
       }
       &.iiris-cell-width-90 {
         width: 90%;
+      }
+      &.iiris-table-title-cell {
+        font-weight: 600;
+        padding-right: 15px;
+        vertical-align: top;
+      }
+      a {
+        color: #0189bf;
+        &:hover {
+          text-decoration: underline;
+        }
       }
     }
     th {
@@ -94,6 +108,30 @@ $iiris-table-horizontal-padding: 10px;
       border-bottom: none;
     }
   }
+  &.iiris-table-bottom-spacer {
+    margin-bottom: 40px;
+  }
+}
+
+.iiris-event-table.iiris-event-configuration-table {
+  overflow-y: visible;
+}
+
+.theme-light .iiris-event-table .table {
+  .iiris-inner-table {
+    td {
+      background-color: #efefef;
+      border: 1px solid #ffffff;
+    }
+  }
+}
+
+.theme-dark .iiris-event-table .table td.iiris-colored-row {
+  background-color: #690000;
+}
+
+.theme-dark .iiris-event-table .table tr.iiris-table-selectable-row:hover {
+  background-color: #333333;
 }
 
 .modal-content .iiris-table-container .table .iiris-button-cell {
@@ -147,6 +185,10 @@ $iiris-table-horizontal-padding: 10px;
   margin: 5px 0 10px 0;
 }
 
+.iiris-table-container.iiris-trigger-table .iiris-table-filters {
+  justify-content: flex-start;
+}
+
 .iiris-table-filter {
   display: flex;
   cursor: pointer;
@@ -156,10 +198,14 @@ $iiris-table-horizontal-padding: 10px;
   }
   .gf-form-select-wrapper {
     margin-right: 0;
+    select {
+      line-height: 18px;
+    }
   }
   &.filter-single-line {
     flex-basis: 100%;
-    justify-content: center;
+    justify-content: flex-start;
+    margin-bottom: 20px;
     .iiris-filter-label {
       background: none;
       font-weight: 600;
@@ -173,6 +219,7 @@ $iiris-table-horizontal-padding: 10px;
   }
   select {
     width: auto;
+    max-width: 200px;
     padding: 2px 30px 2px 6px;
     height: 25px;
     border-radius: 3px;
@@ -217,14 +264,34 @@ $iiris-table-horizontal-padding: 10px;
   .iiris-filter-container {
     display: flex;
     flex-direction: row;
+    align-items: center;
     &.filter-disabled {
       opacity: 0.4;
       cursor: default;
     }
     &.filter-single-line {
       align-items: center;
+      margin-top: -4px;
+      margin-right: 10px;
+      flex-basis: 33%;
+      justify-content: flex-end;
     }
   }
+  .iiris-icon-button-text {
+    margin-left: 7px;
+  }
+  &.iiris-triggers-title {
+    font-weight: 600;
+    font-size: 16px;
+  }
+}
+
+.theme-dark .iiris-table-filter.filter-single-line .iiris-filter-label.priority-99 {
+  color: #ffffff;
+}
+
+.iiris-filter-switch {
+  height: 26px;
 }
 
 .iiris-table-paging {
@@ -301,7 +368,8 @@ $iiris-table-horizontal-padding: 10px;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin-top: 30px;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 
 .iiris-time-interval-text {
@@ -311,6 +379,23 @@ $iiris-table-horizontal-padding: 10px;
 .iiris-time-interval-title {
   font-weight: 600;
   margin-right: 5px;
+}
+
+.iiris-table-error-icon {
+  padding: 0;
+  margin: -3px 0;
+  font-size: 20px;
+}
+
+.iiris-table-inline-icon {
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.iiris-table-inline-icon-text {
+  display: inline-block;
+  line-height: 22px;
+  vertical-align: top;
 }
 
 .iiris-button {
@@ -350,5 +435,31 @@ $iiris-table-horizontal-padding: 10px;
   }
   &.primary {
     background-color: #d01d04;
+  }
+}
+
+.iiris-search-field-container {
+  display: flex;
+  flex-basis: 33%;
+  justify-content: flex-start;
+}
+
+.iiris-search-field {
+  border-radius: 3px;
+  border: 1px solid #b3b3b3;
+  background-color: #ffffff;
+  width: 200px;
+  height: 28px;
+  font-size: 14px;
+  color: #000000;
+  padding: 3px;
+}
+
+.iiris-search-icon {
+  width: 20px;
+  height: 20px;
+  margin: 5px 3px 0 5px;
+  svg {
+    fill: #505050;
   }
 }

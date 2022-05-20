@@ -1,8 +1,12 @@
-import React from 'react';
+/* eslint-disable */
+/* tslint:disable */
+import React, { useCallback, useState } from 'react';
 import { Modal } from '@grafana/ui';
+import { IirisMaintenanceTable } from './IirisMaintenanceTable';
 
 interface Props {
-  onDismiss(): void;
+  show: boolean;
+  onDismiss?(): void;
   onCreateMaintenance?(): void;
   allMaintenances: any[];
   openMaintenanceModal?(): void;
@@ -13,58 +17,23 @@ interface Props {
   confirmIsVisible?: boolean;
   confirmText?: string;
   confirmAction?: string;
+  children: (api: any) => JSX.Element;
 }
 
-interface State {}
+export function IirisMaintenanceListModal(props: Props) {
+  const [show, setShow] = useState(props.show);
+  const showModal = useCallback(() => setShow(true), [setShow]);
+  const onClose = useCallback(() => setShow(false), [setShow]);
+  const title = (<h2 className="modal-header">Tulevat huollot</h2>);
 
-export class IirisMaintenanceListModal extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-  }
-
-  onDismiss = () => {
-    this.props.onDismiss();
-  };
-
-  renderTitle() {
-    return <div className="iiris-modal-title-text">{'Tulevat huollot'}</div>;
-  }
-
-  render() {
-    const { allMaintenances } = this.props;
-    return (
-      <Modal isOpen={true} title={this.renderTitle()} onDismiss={this.onDismiss} className="iiris-modal-box">
-        <div className="iiris-modal-content">
-          {allMaintenances && allMaintenances.length > 0 ? (
-            allMaintenances.map((maintenance: any, index: number) => {
-              return (
-                <div className="iiris-modal-text-block" key={'modalblock' + index}>
-                  <div className="iiris-modal-text-row">
-                    <div className="iiris-modal-text-label">{'Kuvaus:'}</div>
-                    <div className="iiris-modal-text-normal">{maintenance.description}</div>
-                  </div>
-                  <div className="iiris-modal-text-row">
-                    <div className="iiris-modal-text-label">{'Käynnistäjä:'}</div>
-                    <div className="iiris-modal-text-normal">{maintenance.caller}</div>
-                  </div>
-                  <div className="iiris-modal-text-row">
-                    <div className="iiris-modal-text-label">{'Alkoi:'}</div>
-                    <div className="iiris-modal-text-normal">{maintenance.startTime}</div>
-                  </div>
-                  <div className="iiris-modal-text-row">
-                    <div className="iiris-modal-text-label">{'Päättyy:'}</div>
-                    <div className="iiris-modal-text-normal">{maintenance.endTime}</div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="iiris-modal-text-block">
-              <div className="iiris-modal-sub-title">Ei tietoja</div>
-            </div>
-          )}
+  return (
+    <>
+      <Modal isOpen={show} title={title} onDismiss={onClose} className="modal modal-body">
+        <div className="modal-content">
+          <IirisMaintenanceTable data={props.allMaintenances} />
         </div>
       </Modal>
-    );
-  }
+      {props.children({ showModal })}
+    </>
+  );
 }

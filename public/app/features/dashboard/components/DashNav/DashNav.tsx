@@ -751,29 +751,28 @@ class DashNav extends PureComponent<Props, State> {
 
     if (this.props.dashboard.maintenanceHostGroup) {
       buttons.push(
-        <ModalsController key="button-maintenances">
-          {({ showModal, hideModal }) => (
-            <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" onClick={() => {
-              this.onOpenMaintenanceDialog();
-              showModal(IirisMaintenanceListModal, {
-                onDismiss: hideModal,
-                allMaintenances: this.state.allMaintenances
-              });
-            }}>
-              <div style={{ width: '24px', height: '24px' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
-                  <path
-                    d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
-                    c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
-                    c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
-                  />
-                  <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
-                  <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
-                </svg>
-              </div>
-            </ToolbarButton>
-          )}
-        </ModalsController>
+        <IirisMaintenanceListModal show={false} key="button-maintenances" allMaintenances={this.state.allMaintenances}>
+          {({ showModal }) => {
+            return (
+              <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" onClick={() => {
+                this.onOpenMaintenanceDialog();
+                showModal();
+              }}>
+                <div style={{ width: '24px', height: '24px' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
+                    <path
+                      d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
+                      c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
+                      c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
+                    />
+                    <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
+                    <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
+                  </svg>
+                </div>
+              </ToolbarButton>
+            )
+          }}
+        </IirisMaintenanceListModal>
       );
     }
     if (this.props.dashboard.serviceInfoWikiUrl) {
