@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { css, cx } from '@emotion/css';
 import { Button, CustomScrollbar, Icon, IconName, PageToolbar, stylesFactory, useForceUpdate } from '@grafana/ui';
@@ -16,7 +16,6 @@ import { VersionsSettings } from './VersionsSettings';
 import { JsonEditorSettings } from './JsonEditorSettings';
 import { GrafanaTheme2, locationUtil } from '@grafana/data';
 import { locationService, reportInteraction } from '@grafana/runtime';
-import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
 export interface Props {
   dashboard: DashboardModel;
@@ -39,49 +38,7 @@ const MakeEditable = (props: { onMakeEditable: () => any }) => (
   </div>
 );
 
-/* eslint-disable */
-/* tslint:disable */
-const getZabbix = (availableDatasources: string[], datasourceSrv: any) => {
-  return new Promise<any>((resolve: any, reject: any) => {
-    if (availableDatasources.length > 0) {
-      datasourceSrv
-        .get(availableDatasources[0])
-        .then((datasource: any) => {
-          if (datasource.zabbix) {
-            resolve(datasource.zabbix);
-          } else {
-            reject('');
-          }
-        })
-        .catch((err: any) => {
-          reject(err);
-        });
-      } else {
-        reject('');
-      }
-  }) as any;
-}
-
-const getHostGroups = (availableDatasources: string[], datasourceSrv: any) => {
-  return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv)
-      .then((zabbix: any) => {
-        // Get all host group ids
-        zabbix.getAllGroups()
-          .then((groups: any) => {
-            resolve(groups.map((group: any) => group.name));
-          });
-      })
-      .catch((err: any) => {
-        reject(err);
-      });
-  }) as any;
-}
-
 export function DashboardSettings({ dashboard, editview }: Props) {
-  const [datasourceOptions, setDatasourceOptions] = useState<string[]>([]);
-  const [hostGroupOptions, setHostGroupOptions] = useState<string[]>([]);
-
   const forceUpdate = useForceUpdate();
   const onMakeEditable = useCallback(() => {
     dashboard.editable = true;
@@ -91,22 +48,6 @@ export function DashboardSettings({ dashboard, editview }: Props) {
     forceUpdate();
   }, [dashboard, forceUpdate]);
 
-  useEffect(() => {
-    const datasourceSrv = getDatasourceSrv();
-    const datasources: any[] = [];
-    datasourceSrv.getMetricSources().map((datasource: { name: string }) => datasources.push(datasource.name));
-    setDatasourceOptions(datasources);
-    const availableDatasources = datasourceSrv
-      .getMetricSources()
-      .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
-      .map((ds: any) => ds.name);
-    if (!dashboard.selectedDatasource && availableDatasources.length > 0) {
-      dashboard.selectedDatasource = availableDatasources[0];
-    }
-    const dsPointer = dashboard.selectedDatasource ? [dashboard.selectedDatasource] : availableDatasources;
-    getHostGroups(dsPointer, datasourceSrv).then((groups: string[]) => setHostGroupOptions(groups));
-  }, []);
-
   const pages = useMemo((): SettingsPage[] => {
     const pages: SettingsPage[] = [];
 
@@ -115,7 +56,7 @@ export function DashboardSettings({ dashboard, editview }: Props) {
         title: 'General',
         id: 'settings',
         icon: 'sliders-v-alt',
-        component: <GeneralSettings dashboard={dashboard} datasourceOptions={datasourceOptions} hostGroupOptions={hostGroupOptions} />,
+        component: <GeneralSettings dashboard={dashboard} />,
       });
 
       pages.push({

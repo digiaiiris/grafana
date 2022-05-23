@@ -3,34 +3,25 @@
 import React from 'react';
 import { useTable } from 'react-table';
 
+interface ColumnType {
+  accessor: string;
+  Header: string;
+}
+
 interface Props {
   data: any[];
+  columns: ColumnType[];
 }
  
 export function IirisMaintenanceTable(props: Props) {
-  const data = props.data.map(item => ({
-    maintenanceTypeString: item.maintenanceTypeString,
-    description: item.description,
-    startTimeString: item.startTimeString,
-  }));
-
-  const columns: any = React.useMemo(
-    () => [
-      {
-        Header: 'maintenanceTypeString',
-        accessor: 'maintenanceTypeString',
-      },
-      {
-        Header: 'description',
-        accessor: 'description',
-      },
-      {
-        Header: 'startTimeString',
-        accessor: 'startTimeString',
-      },
-    ],
-    []
-  )
+  const columns = props.columns;
+  const data = props.data.map(item => {
+    const obj: any = {};
+    columns.map((col: ColumnType) => {
+      obj[col.accessor] = item[col.accessor];
+    });
+    return obj;
+  });
 
   const {
     getTableProps,

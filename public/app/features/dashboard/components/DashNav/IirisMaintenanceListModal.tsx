@@ -25,12 +25,36 @@ export function IirisMaintenanceListModal(props: Props) {
   const showModal = useCallback(() => setShow(true), [setShow]);
   const onClose = useCallback(() => setShow(false), [setShow]);
   const title = (<h2 className="modal-header">Tulevat huollot</h2>);
+  const columns = [
+    {
+      Header: 'Tyyppi',
+      accessor: 'maintenanceTypeString', 
+    }, {
+      Header: 'Kuvaus',
+      accessor: 'description',
+    }, {
+      Header: 'Käynnistäjä',
+      accessor: 'caller',
+    }, {
+      Header: 'Aloitusaika',
+      accessor: 'startTimeString',
+    }, {
+      Header: 'Päätösaika',
+      accessor: 'endTimeString',
+    }, {
+      Header: 'Kesto',
+      accessor: 'durationString',
+    }, {
+      Header: 'Toisto päättyy',
+      accessor: 'activeTillString',
+    }
+  ]
 
   return (
     <>
       <Modal isOpen={show} title={title} onDismiss={onClose} className="modal modal-body">
         <div className="modal-content">
-          <IirisMaintenanceTable data={props.allMaintenances} />
+          <IirisMaintenanceTable data={props.allMaintenances} columns={columns} />
         </div>
       </Modal>
       {props.children({ showModal })}
