@@ -167,6 +167,19 @@ function moveToBlockedLocationAfterReactStateUpdate(location?: H.Location | null
  * For some dashboards and users changes should be ignored *
  */
 export function ignoreChanges(current: DashboardModel, original: object | null) {
+  // If tab row is in display mode we need to ignore changes to dashboard panels
+  let tabRowInDisplayMode = false;
+  current.panels.map((panel: any) => {
+    if (panel.type === 'iiris-tab-row-panel') {
+      if (panel.options.isInDisplayMode) {
+        tabRowInDisplayMode = true;
+      }
+    }
+  });
+  if (tabRowInDisplayMode) {
+    return true;
+  }
+
   if (!original) {
     return true;
   }

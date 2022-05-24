@@ -35,6 +35,18 @@ header .page-toolbar {
   padding: 5px 10px;
 }
 
+header .page-toolbar {
+  & > div:first-child {
+    display: none;
+  }
+  nav a {
+    font-size: 24px;
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+  }
+}
+
 .page-dashboard .grafana-app .main-view {
   background: $page-background-color;
 }

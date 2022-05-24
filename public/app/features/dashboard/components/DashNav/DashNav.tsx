@@ -645,12 +645,13 @@ class DashNav extends PureComponent<Props, State> {
     const { dashboard, kioskMode } = this.props;
     const { canStar, canShare, isStarred } = dashboard.meta;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
 
     if (kioskMode !== KioskMode.Off || this.isPlaylistRunning()) {
       return [];
     }
 
-    if (canStar) {
+    if (canStar && !isLightTheme) {
       let desc = isStarred ? 'Unmark as favorite' : 'Mark as favorite';
       buttons.push(
         <DashNavButton
@@ -664,7 +665,7 @@ class DashNav extends PureComponent<Props, State> {
       );
     }
 
-    if (canShare) {
+    if (canShare && !isLightTheme) {
       let desc = 'Share dashboard or panel';
       buttons.push(
         <ModalsController key="button-share">
@@ -711,12 +712,23 @@ class DashNav extends PureComponent<Props, State> {
     );
   }
 
+  findMaintenanceButton = (element: HTMLElement): HTMLElement|null => {
+    if (element.id === "maintenance_button") {
+        return element;
+    } else if (element.parentElement) {
+        return this.findMaintenanceButton(element.parentElement);
+    } else {
+        return null;
+    }
+};
+
   renderRightActionsButton() {
     const { dashboard, onAddPanel, isFullscreen, kioskMode } = this.props;
     const { canEdit, showSettings } = dashboard.meta;
     const { snapshot } = dashboard;
     const snapshotUrl = snapshot && snapshot.originalUrl;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
     const tvButton = (
       <ToolbarButton tooltip="Cycle view mode" icon="monitor" onClick={this.onToggleTVMode} key="tv-button" />
     );
@@ -729,7 +741,7 @@ class DashNav extends PureComponent<Props, State> {
       return [this.renderTimeControls(), tvButton];
     }
 
-    if (canEdit && !isFullscreen) {
+    if (canEdit && !isFullscreen && !isLightTheme) {
       buttons.push(<ToolbarButton tooltip="Add panel" icon="panel-add" onClick={onAddPanel} key="button-panel-add" />);
       buttons.push(
         <ModalsController key="button-save">
@@ -754,7 +766,8 @@ class DashNav extends PureComponent<Props, State> {
         <IirisMaintenanceListModal show={false} key="button-maintenances" allMaintenances={this.state.allMaintenances}>
           {({ showModal }) => {
             return (
-              <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" onClick={() => {
+              <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" id="maintenance_button" onClick={(e) => {
+                this.findMaintenanceButton(e.target as any)?.blur();
                 this.onOpenMaintenanceDialog();
                 showModal();
               }}>
@@ -801,7 +814,7 @@ class DashNav extends PureComponent<Props, State> {
       );
     }
 
-    if (showSettings) {
+    if (showSettings && !isLightTheme) {
       buttons.push(
         <ToolbarButton tooltip="Dashboard settings" icon="cog" onClick={this.onOpenSettings} key="button-settings" />
       );
@@ -810,7 +823,9 @@ class DashNav extends PureComponent<Props, State> {
     this.addCustomContent(customRightActions, buttons);
 
     buttons.push(this.renderTimeControls());
-    buttons.push(tvButton);
+    if (!isLightTheme) {
+      buttons.push(tvButton);
+    }
     return buttons;
   }
 
@@ -821,12 +836,13 @@ class DashNav extends PureComponent<Props, State> {
   render() {
     const { isFullscreen, title, folderTitle } = this.props;
     const onGoBack = isFullscreen ? this.onClose : undefined;
+    const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
 
     const titleHref = locationUtil.updateSearchParams(window.location.href, '?search=open');
     const parentHref = locationUtil.updateSearchParams(window.location.href, '?search=open&folder=current');
 
     return (
-      <>
+      <div className="iiris-custom-toolbar">
         {this.props.dashboard.dashboardLogo ? (
           <div className="iiris-customer-logo">
             <img src={this.props.dashboard.dashboardLogo} />
@@ -835,7 +851,7 @@ class DashNav extends PureComponent<Props, State> {
         <PageToolbar
           pageIcon={isFullscreen ? undefined : 'apps'}
           title={title}
-          parent={folderTitle}
+          parent={folderTitleByTheme}
           titleHref={titleHref}
           parentHref={parentHref}
           onGoBack={onGoBack}
@@ -843,7 +859,7 @@ class DashNav extends PureComponent<Props, State> {
         >
           {this.renderRightActionsButton()}
         </PageToolbar>
-      </>
+      </div>
     );
   }
 }

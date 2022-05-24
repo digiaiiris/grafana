@@ -180,10 +180,19 @@ div[role='dialog'].modal {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
+  padding: 3px 10px;
   img {
     object-fit: contain;
     height: 44px;
+  }
+}
+
+header .iiris-custom-toolbar {
+  display: flex;
+  flex-direction: row;
+  background-color: $panel-background-color;
+  .page-toolbar {
+    flex: 1 1 auto;
   }
 }
 
