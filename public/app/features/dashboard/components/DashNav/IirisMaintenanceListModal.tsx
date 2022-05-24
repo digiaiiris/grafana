@@ -1,15 +1,14 @@
 /* eslint-disable */
 /* tslint:disable */
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { Modal } from '@grafana/ui';
 import { IirisMaintenanceTable } from './IirisMaintenanceTable';
 
 interface Props {
   show: boolean;
-  onDismiss?(): void;
-  onCreateMaintenance?(): void;
+  onDismiss(): void;
   allMaintenances: any[];
-  openMaintenanceModal?(): void;
+  openMaintenanceModal(): void;
   onStopMaintenance?(): void;
   onEditMaintenance?(): void;
   ongoingMaintenanceIds?: any[];
@@ -17,14 +16,10 @@ interface Props {
   confirmIsVisible?: boolean;
   confirmText?: string;
   confirmAction?: string;
-  children: (api: any) => JSX.Element;
 }
 
 export function IirisMaintenanceListModal(props: Props) {
-  const [show, setShow] = useState(props.show);
-  const showModal = useCallback(() => setShow(true), [setShow]);
-  const onClose = useCallback(() => setShow(false), [setShow]);
-  const title = (<h2 className="modal-header">Tulevat huollot</h2>);
+  const title = (<h2 className="modal-header modal-header-title">Tulevat huollot</h2>);
   const columns = [
     {
       Header: 'Tyyppi',
@@ -48,16 +43,27 @@ export function IirisMaintenanceListModal(props: Props) {
       Header: 'Toisto päättyy',
       accessor: 'activeTillString',
     }
-  ]
+  ];
+  const showMaintenanceModal = () => {
+    props.onDismiss();
+    props.openMaintenanceModal();
+  };
 
   return (
     <>
-      <Modal isOpen={show} title={title} onDismiss={onClose} className="modal modal-body">
+      <Modal isOpen={props.show} title={title} onDismiss={props.onDismiss} className="modal modal-body">
         <div className="modal-content">
-          <IirisMaintenanceTable data={props.allMaintenances} columns={columns} />
+          <div className="iiris-table-container">
+            <div className="iiris-event-table">
+              <IirisMaintenanceTable data={props.allMaintenances} columns={columns} />
+            </div>
+          </div>
+          <div className="gf-form-button-row">
+            <a className="btn btn-primary" onClick={() => props.onDismiss()}>Peruuta</a>
+            <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>Luo uusi huolto</a>
+          </div>
         </div>
       </Modal>
-      {props.children({ showModal })}
     </>
   );
 }

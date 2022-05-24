@@ -9,10 +9,14 @@ div[role='dialog'].modal {
   overflow-y: auto;
   max-height: 90%;
   max-width: 1180px;
+  width: auto;
   top: 20px;
 }
 
 .modal-body {
+  > div:first-child {
+    border: none;
+  }
   > div:nth-child(2) {
     padding: 0;
   }
@@ -20,11 +24,12 @@ div[role='dialog'].modal {
     border: none;
     background: $panel-background-color;
     box-shadow: none;
-    .modal-header-title {
+    &.modal-header-title {
       font-size: 1.8rem;
       font-style: normal;
-      margin-left: 2rem;
-      margin-top: 1rem;
+      margin-left: 18px;
+      margin-top: 10px;
+      font-weight: 400;
     }
     .gf-tabs {
       display: none;

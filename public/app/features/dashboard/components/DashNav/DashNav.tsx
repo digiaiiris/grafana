@@ -30,6 +30,7 @@ import { getDashboardSrv } from '../../services/DashboardSrv';
 import appEvents from 'app/core/app_events';
 import { contextSrv } from 'app/core/core';
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
+import { IirisMaintenanceModal } from './IirisMaintenanceModal';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -49,6 +50,8 @@ export interface OwnProps {
 
 interface State {
   allMaintenances: any;
+  showMaintenanceModal: boolean;
+  showMaintenanceListModal: boolean;
 }
 
 interface DashNavButtonModel {
@@ -144,7 +147,7 @@ class DashNav extends PureComponent<Props, State> {
       .catch((err: any) => {
         this.handleError(err);
       });
-    // this.openAllMaintenancesModal();
+    this.openAllMaintenancesModal();
   };
 
   /**
@@ -520,7 +523,8 @@ class DashNav extends PureComponent<Props, State> {
    */
   openMaintenanceModal = (maintenanceID?: string) => {
     console.log('Open maintenance modal');
-    this.clearHostSelection();
+    this.setState({ showMaintenanceModal: true });
+    /* this.clearHostSelection();
     this.modalScope = {};
     this.modalScope.onCreateMaintenance = this.onCreateMaintenance.bind(this);
     this.modalScope.getCurrentTimeEpoch = this.getCurrentTimeEpoch.bind(this);
@@ -539,14 +543,15 @@ class DashNav extends PureComponent<Props, State> {
       templateHtml: template,
       model: this.modalScope,
       backdrop: true,
-    });
+    }); */
   };
 
   /**
    * Open create maintenance modal
    */
   openAllMaintenancesModal = () => {
-    this.clearHostSelection();
+    this.setState({ showMaintenanceListModal: true });
+    /* this.clearHostSelection();
     this.listModalScope = {};
     this.listModalScope.onCreateMaintenance = this.onCreateMaintenance.bind(this);
     this.listModalScope.allMaintenances = this.allMaintenances;
@@ -569,7 +574,7 @@ class DashNav extends PureComponent<Props, State> {
       templateHtml: template,
       model: this.listModalScope,
       backdrop: true,
-    });
+    }); */
   };
 
   /**
@@ -590,7 +595,9 @@ class DashNav extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      allMaintenances: []
+      allMaintenances: [],
+      showMaintenanceModal: false,
+      showMaintenanceListModal: false,
     }
   }
 
@@ -763,29 +770,22 @@ class DashNav extends PureComponent<Props, State> {
 
     if (this.props.dashboard.maintenanceHostGroup) {
       buttons.push(
-        <IirisMaintenanceListModal show={false} key="button-maintenances" allMaintenances={this.state.allMaintenances}>
-          {({ showModal }) => {
-            return (
-              <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" id="maintenance_button" onClick={(e) => {
-                this.findMaintenanceButton(e.target as any)?.blur();
-                this.onOpenMaintenanceDialog();
-                showModal();
-              }}>
-                <div style={{ width: '24px', height: '24px' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
-                    <path
-                      d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
-                      c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
-                      c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
-                    />
-                    <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
-                    <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
-                  </svg>
-                </div>
-              </ToolbarButton>
-            )
-          }}
-        </IirisMaintenanceListModal>
+        <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" id="maintenance_button" onClick={(e) => {
+          this.findMaintenanceButton(e.target as any)?.blur();
+          this.onOpenMaintenanceDialog();
+        }}>
+          <div style={{ width: '24px', height: '24px' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
+              <path
+                d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
+                c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
+                c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
+              />
+              <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
+              <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
+            </svg>
+          </div>
+        </ToolbarButton>
       );
     }
     if (this.props.dashboard.serviceInfoWikiUrl) {
@@ -833,6 +833,14 @@ class DashNav extends PureComponent<Props, State> {
     window.location.href = textUtil.sanitizeUrl(snapshotUrl);
   }
 
+  hideMaintenanceModal = () => {
+    this.setState({ showMaintenanceModal: false });
+  };
+
+  hideMaintenanceListModal = () => {
+    this.setState({ showMaintenanceListModal: false });
+  };
+
   render() {
     const { isFullscreen, title, folderTitle } = this.props;
     const onGoBack = isFullscreen ? this.onClose : undefined;
@@ -859,6 +867,8 @@ class DashNav extends PureComponent<Props, State> {
         >
           {this.renderRightActionsButton()}
         </PageToolbar>
+        <IirisMaintenanceModal show={this.state.showMaintenanceModal} onDismiss={this.hideMaintenanceModal} />
+        <IirisMaintenanceListModal show={this.state.showMaintenanceListModal} allMaintenances={this.state.allMaintenances} openMaintenanceModal={this.openMaintenanceModal} onDismiss={this.hideMaintenanceListModal} />
       </div>
     );
   }
