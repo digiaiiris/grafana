@@ -1,7 +1,7 @@
 /* eslint-disable */
 /* tslint:disable */
 import React, { PureComponent } from 'react';
-import { Modal, Select } from '@grafana/ui';
+import { Modal } from '@grafana/ui';
 import _ from 'lodash';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
 
@@ -21,11 +21,41 @@ interface Props {
   confirmIsVisible?: boolean;
   confirmText?: string;
   confirmAction?: string;
+  openAllMaintenancesModal(): void;
+  hosts: any;
 }
 
 interface State {
   wizardPhase: number;
-  mTypeInput: string;
+  maintenanceType: string;
+  everyNDays: number;
+  everyNWeeks: number;
+  weekdays: any;
+  months: any;
+  dayOfMonthOrWeekSelected: string;
+  dayOfMonth: number;
+  monthlyWeekdays: any;
+  everyDayOfWeekInput: number;
+  dayInput: number;
+  monthInput: number;
+  yearInput: number;
+  hourInput: number;
+  minuteInput: number;
+  dayStopInput: number;
+  monthStopInput: number;
+  yearStopInput: number;
+  strictEndDayInput: number;
+  strictEndMonthInput: number;
+  strictEndYearInput: number;
+  strictEndHourInput: number;
+  strictEndMinuteInput: number;
+  strictEndTimeSelected: boolean;
+  durationInput: number;
+  errorText: string;
+  description: string;
+  searchText: string;
+  allHostsSelected: boolean;
+  selectedHosts: any;
 }
 
 export class IirisMaintenanceModal extends PureComponent<Props, State> {
@@ -137,7 +167,65 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     super(props);
     this.state = {
       wizardPhase: 1,
-      mTypeInput: '0'
+      maintenanceType: '0',
+      everyNDays: 1,
+      everyNWeeks: 1,
+      weekdays: {
+        monday: false,
+        tuesday: false,
+        wednesday: false,
+        thursday: false,
+        friday: false,
+        saturday: false,
+        sunday: false,
+      },
+      months: {
+        january: false,
+        february: false,
+        march: false,
+        april: false,
+        may: false,
+        june: false,
+        july: false,
+        august: false,
+        september: false,
+        october: false,
+        november: false,
+        december: false,
+        all: false,
+      },
+      dayOfMonthOrWeekSelected: MONTH,
+      dayOfMonth: 1,
+      monthlyWeekdays: {
+        monday: false,
+        tuesday: false,
+        wednesday: false,
+        thursday: false,
+        friday: false,
+        saturday: false,
+        sunday: false,
+      },
+      everyDayOfWeekInput: 1,
+      dayInput: 0,
+      monthInput: 0,
+      yearInput: 0,
+      hourInput: 0,
+      minuteInput: 0,
+      dayStopInput: 0,
+      monthStopInput: 0,
+      yearStopInput: 0,
+      strictEndDayInput: 0,
+      strictEndMonthInput: 0,
+      strictEndYearInput: 0,
+      strictEndHourInput: 0,
+      strictEndMinuteInput: 0,
+      strictEndTimeSelected: false,
+      durationInput: 3600,
+      errorText: '',
+      description: '',
+      searchText: '',
+      allHostsSelected: false,
+      selectedHosts: {},
     }
     this.init();
   }
@@ -289,11 +377,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       value: 1,
       text: 'Ensimmäinen',
       options: [
-        { text: 'Ensimmäinen', value: 1 },
-        { text: 'Toinen', value: 2 },
-        { text: 'Kolmas', value: 3 },
-        { text: 'Neljäs', value: 4 },
-        { text: 'Viimeinen', value: 5 },
+        { label: 'Ensimmäinen', value: 1 },
+        { label: 'Toinen', value: 2 },
+        { label: 'Kolmas', value: 3 },
+        { label: 'Neljäs', value: 4 },
+        { label: 'Viimeinen', value: 5 },
       ],
     };
     this.search = {
@@ -474,9 +562,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
 
   /**
    * Callback for starting maintenance
-   * @param {MouseEvent} event
    */
-  onStartMaintenance = (event: MouseEvent) => {
+  onStartMaintenance = () => {
     const maintenanceType = parseInt(this.mTypeInput.value, 10);
     const options: any = {};
     if (maintenanceType === 2) {
@@ -545,10 +632,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
     const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
-      this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
+      this.setState({ errorText: 'Ainakin yhden palvelimen täytyy olla valittu' });
     } else if (maintenanceName.length > 128) {
       const excessLength = maintenanceName.length - 128;
-      this.scope.errorText = "Huollon kuvaus on " + excessLength + " merkkiä liian pitkä";
+      this.setState({ errorText: 'Huollon kuvaus on ' + excessLength + ' merkkiä liian pitkä' });
     } else {
       this.onCreateMaintenance()(
         maintenanceType,
@@ -567,7 +654,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for select value changed
    */
-  onDurationValueChanged = () => {
+  onDurationValueChanged = (value: number) => {
+    this.durationInput.value = value;
     if (this.durationInput.value > 0) {
       this.durationInput.isValid = true;
       this.onHourValueChanged();
@@ -714,14 +802,18 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     return duration;
   }
 
-  onDayValueChanged = () => {
-    this.strictEndDayInput.value = this.dayInput.value;
-    this.strictEndDayInput.text = this.dayInput.text;
-    this.dayStopInput.value = this.dayInput.value;
-    this.dayStopInput.text = this.dayInput.text;
+  onDayValueChanged = (value: number) => {
+    this.setState({ dayInput: value, dayStopInput: value, strictEndDayInput: value });
+    this.dayInput.value = value;
+    this.dayStopInput.value = value;
+    this.strictEndDayInput.value = value;
   }
 
-  onHourValueChanged = () => {
+  onHourValueChanged = (value?: number) => {
+    if (value) {
+      this.setState({ hourInput: value });
+      this.hourInput.value = value;
+    }
     const currentDate = new Date(
       this.yearInput.value,
       this.monthInput.value - 1,
@@ -735,15 +827,18 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.setStrictEndTimeDate(strictEndTimeDate);
   }
 
-  onMinuteValueChanged = () => {
-    this.strictEndMinuteInput.value = this.minuteInput.value;
-    this.strictEndMinuteInput.text = this.minuteInput.text;
+  onMinuteValueChanged = (value: number) => {
+    this.setState({ minuteInput: value, strictEndMinuteInput: value });
+    this.minuteInput.value = value;
+    this.strictEndMinuteInput.value = value;
   }
 
   /**
    * Callback for select month
    */
-  onMonthValueChanged = () => {
+  onMonthValueChanged = (value: number) => {
+    this.setState({ monthInput: value });
+    this.monthInput.value = value;
     this.populateDaySelector();
     this.monthStopInput.value = this.monthInput.value;
     this.monthStopInput.text = this.monthInput.text;
@@ -756,7 +851,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for select year
    */
-  onYearValueChanged = () => {
+  onYearValueChanged = (value: number) => {
+    this.setState({ yearInput: value });
+    this.yearInput.value = value;
     const m = this.monthInput.value;
     const y = this.yearInput.value;
     this.yearStopInput.value = this.yearInput.value;
@@ -770,17 +867,26 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     }
   }
 
+  onDayStopValueChanged = (value: number) => {
+    this.setState({ dayStopInput: value });
+    this.dayStopInput.value = value;
+  }
+
   /**
    * Callback for select month
    */
-  onMonthStopValueChanged = () => {
+  onMonthStopValueChanged = (value: number) => {
+    this.setState({ monthStopInput: value });
+    this.monthStopInput.value = value;
     this.populateDaySelector(true);
   }
 
   /**
    * Callback for select year
    */
-  onYearStopValueChanged = () => {
+  onYearStopValueChanged = (value: number) => {
+    this.setState({ yearStopInput: value });
+    this.yearStopInput.value = value;
     const m = this.monthStopInput.value;
     const y = this.yearStopInput.value;
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
@@ -788,17 +894,36 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     }
   }
 
+  onStrictEndMinuteValueChanged = (value: number) => {
+    this.setState({ strictEndMinuteInput: value });
+    this.strictEndMinuteInput.value = value;
+  }
+
+  onStrictEndHourValueChanged = (value: number) => {
+    this.setState({ strictEndHourInput: value });
+    this.strictEndHourInput.value = value;
+  }
+
+  onStrictEndDayValueChanged = (value: number) => {
+    this.setState({ strictEndDayInput: value });
+    this.strictEndDayInput.value = value;
+  }
+
   /**
    * Callback for select strict end month
    */
-  onStrictEndMonthValueChanged = () => {
+  onStrictEndMonthValueChanged = (value: number) => {
+    this.setState({ strictEndMonthInput: value });
+    this.strictEndMonthInput.value = value;
     this.populateDaySelector(undefined, true);
   }
 
   /**
    * Callback for select strict year
    */
-  onStrictEndYearValueChanged = () => {
+  onStrictEndYearValueChanged = (value: number) => {
+    this.setState({ strictEndYearInput: value });
+    this.strictEndYearInput.value = value;
     const m = this.strictEndMonthInput.value;
     const y = this.strictEndYearInput.value;
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
@@ -809,8 +934,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for selecting all hosts
    */
-  selectAllHosts = () => {
-    const allSelected = this.scope.hosts.allSelected;
+  selectAllHosts = (allSelected: boolean) => {
+    const selectedHosts = { ...this.state.selectedHosts };
+    Object.keys(selectedHosts).forEach(host => {
+      selectedHosts[host] = allSelected;
+    });
+    this.setState({ allHostsSelected: allSelected, selectedHosts });
     this.scope.hosts.options.forEach((option: any, index: number) => {
       this.scope.hosts.options[index].checked = allSelected;
       this.scope.hosts.selected[option.value] = allSelected;
@@ -820,7 +949,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for selecting host
    */
-  selectHost = (id: string) => {
+  selectHost = (id: string, checked: boolean) => {
+    const selectedHosts = { ...this.state.selectedHosts };
+    selectedHosts[id] = checked;
+    this.setState({ selectedHosts });
     const index = this.scope.hosts.options.findIndex((host: any) => host.value === id);
     this.scope.hosts.options[index].checked = !this.scope.hosts.options[index].checked;
     if (!this.scope.hosts.options[index].checked) {
@@ -840,35 +972,41 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for selecting a month; check if all are selected
    */
-  toggleMonthSelection = () => {
+  toggleMonthSelection = (month: string, selected: boolean) => {
+    const months = { ...this.state.months };
+    months[month] = selected;
     let allSelected = true;
-    Object.keys(this.scope.months).map(month => {
-      if (!this.scope.months[month] && month !== 'all') {
+    Object.keys(months).map(monthName => {
+      if (!months[monthName] && monthName !== 'all') {
         allSelected = false;
       }
     });
-    this.scope.months.all = allSelected;
+    months.all = allSelected;
+    this.setState({ months });
   }
 
   /**
    * Callback for toggling all months on/off
    */
-  toggleAllMonthsSelection = () => {
-    Object.keys(this.scope.months).map(month => {
-      if (this.scope.months['all'] && month !== 'all') {
-        this.scope.months[month] = true;
-      } else if (!this.scope.months['all'] && month !== 'all') {
-        this.scope.months[month] = false;
+  toggleAllMonthsSelection = (selected: boolean) => {
+    const months = { ...this.state.months };
+    Object.keys(months).map(month => {
+      if (selected) {
+        months[month] = true;
+      } else {
+        months[month] = false;
       }
     });
+    this.setState({ months });
   }
 
   /**
    * Callback for changing maintenance
    */
   onMaintenanceTypeChanged = (value: string) => {
+    this.setState({ maintenanceType: value });
     this.scope.errorText = '';
-    this.maintenanceType = this.mTypeInput.options.find((option: any) => option.value === this.mTypeInput.value).text;
+    this.maintenanceType = this.mTypeInput.options.find((option: any) => option.value === value).text;
   }
 
   /**
@@ -1009,7 +1147,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ).endOf('day').format('DD.MM.YYYY HH:mm');
         this.displayHosts = '';
         this.scope.hosts.options.forEach((option: any) => {
-          if (this.scope.hosts.selected[option.value]) {
+          if (this.state.selectedHosts[option.value]) {
             if (this.displayHosts) {
               this.displayHosts += ', ';
             }
@@ -1052,12 +1190,16 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for go previous button
    */
   goToPrevious = () => {
-    this.scope.wizardPhase--;
+    this.setState({ wizardPhase: this.state.wizardPhase - 1 });
   }
 
   render() {
-    const { show, onDismiss, selectedMaintenanceId } = this.props;
-    const { wizardPhase, mTypeInput } = this.state;
+    const { show, onDismiss, selectedMaintenanceId, openAllMaintenancesModal } = this.props;
+    const { wizardPhase, maintenanceType, everyNDays, everyNWeeks, weekdays, months, dayOfMonthOrWeekSelected, dayOfMonth,
+      monthlyWeekdays, everyDayOfWeekInput, dayInput, monthInput, yearInput, hourInput, minuteInput, dayStopInput,
+      monthStopInput, yearStopInput, strictEndTimeSelected, durationInput, strictEndMinuteInput, strictEndHourInput,
+      strictEndDayInput, strictEndMonthInput, strictEndYearInput, errorText, description, searchText, allHostsSelected,
+      selectedHosts } = this.state;
     const title = (<h2 className="modal-header modal-header-title">{selectedMaintenanceId ? 'Muokkaa huoltoa' : 'Luo uusi huolto'}</h2>);
 
     return (
@@ -1066,437 +1208,416 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           <div>
             <div className="modal-content">
               { wizardPhase === 1 ? (
-                <div className="gf-form-group maintenance-row-container">
-                  <label className="gf-form-label">Huollon tyyppi</label>
-                  <div className="gf-form-select-wrapper iiris-fixed-width-select">
-                    <Select value={mTypeInput} options={this.mTypeInput.options} onChange={(v: any) => this.onMaintenanceTypeChanged(v.value)} />
-                  </div>
-                </div>) : null }
-                {/* <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='2'">
-                  <label class="gf-form-label">Toistetaan [n] päivän välein</label>
-                  <div>
-                    <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.everyNDays" min="1" step="1" />
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='3'">
-                  <label class="gf-form-label">Toistetaan [n] viikon välein</label>
-                  <div>
-                    <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.everyNWeeks" min="1" step="1" />
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='3'">
-                  <label class="gf-form-label">Toistetaan viikonpäivänä</label>
-                  <div class="checkbox-block">
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.monday" id="monday" />
-                      <label class="gf-form-label checkbox-label" for="monday">Maanantai</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.tuesday" id="tuesday" />
-                      <label class="gf-form-label checkbox-label" for="tuesday">Tiistai</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.wednesday" id="wednesday" />
-                      <label class="gf-form-label checkbox-label" for="wednesday">Keskiviikko</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.thursday" id="thursday" />
-                      <label class="gf-form-label checkbox-label" for="thursday">Torstai</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.friday" id="friday" />
-                      <label class="gf-form-label checkbox-label" for="friday">Perjantai</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.saturday" id="saturday" />
-                      <label class="gf-form-label checkbox-label" for="saturday">Lauantai</label>
-                    </div>
-                    <div class="checkbox-container">
-                      <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.weekdays.sunday" id="sunday" />
-                      <label class="gf-form-label checkbox-label" for="sunday">Sunnuntai</label>
+                <>
+                  <div className="gf-form-group maintenance-row-container">
+                    <label className="gf-form-label">Huollon tyyppi</label>
+                    <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                      <select className="gf-form-input" value={maintenanceType} onChange={(e: any) => this.onMaintenanceTypeChanged(e.target.value)}>
+                        { this.mTypeInput.options.map((option: any) => (
+                          <option value={option.value} key={option.value}>{ option.label }</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container" ng-if="ctrl.mTypeInput.value=='4'">
-                  <label class="gf-form-label">Toistetaan kuukautena</label>
-                  <div class="checkbox-block">
-                    <div class="checkbox-column">
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.january" id="january" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="january">Tammikuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.february" id="february" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="february">Helmikuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.march" id="march" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="march">Maaliskuu</label>
-                      </div>
-                    </div>
-                    <div class="checkbox-column">
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.april" id="april" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="april">Huhtikuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.may" id="may" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="may">Toukokuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.june" id="june" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="june">Kesäkuu</label>
-                      </div>
-                    </div>
-                    <div class="checkbox-column">
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.july" id="july" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="july">Heinäkuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.august" id="august" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="august">Elokuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.september" id="september" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="september">Syyskuu</label>
-                      </div>
-                    </div>
-                    <div class="checkbox-column">
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.october" id="october" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="october">Lokakuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.november" id="november" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="november">Marraskuu</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.december" id="december" ng-change="ctrl.toggleMonthSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="december">Joulukuu</label>
-                      </div>
-                    </div>
-                    <div class="checkbox-column">
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.months.all" id="all" ng-change="ctrl.toggleAllMonthsSelection()" />
-                        <label class="gf-form-label checkbox-label width-8" for="all">Valitse kaikki</label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container iiris-modal-column-container" ng-if="ctrl.mTypeInput.value=='4'">
-                  <div class="iiris-modal-column">
-                    <label class="gf-form-label iiris-radio-button-block">Toistetaan
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="MONTH" id="dayOfMonthSelected" />
-                        <label class="gf-form-label checkbox-label width-12" for="dayOfMonthSelected">Kuukauden päivänä n</label>
-                      </div>
-                      <div class="checkbox-container">
-                        <input class="action-panel-cb" type="radio" name="monthtype" ng-model="ctrl.scope.dayOfMonthOrWeekSelected.value" value="WEEK" id="dayOfWeekSelected" />
-                        <label class="gf-form-label checkbox-label width-12" for="dayOfWeekSelected">Viikonpäivänä n</label>
-                      </div>
-                    </label>
-                  </div>
-                  <div class="iiris-modal-column">
-                    <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
-                      <label class="gf-form-label">Toistetaan kuukauden päivänä</label>
+                  { maintenanceType === '2' ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Toistetaan [n] päivän välein</label>
                       <div>
-                        <input class="input-small gf-form-input iiris-fixed-width-select" type="number" ng-model="ctrl.scope.dayOfMonth" min="1" step="1" />
+                        <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={everyNDays} onChange={(e: any) => this.setState({ everyNDays: e.target.value })} min="1" step="1" />
                       </div>
                     </div>
-                    <div class="gf-form-group" ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
-                      <label class="gf-form-label">Toistetaan viikonpäivänä (esim. kuukauden toinen tiistai)</label>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.everyDayOfWeekInput.value" ng-options="v.value as v.text for v in ctrl.everyDayOfWeekInput.options">
-                          <option value="" ng-hide="ctrl.everyDayOfWeekInput.value">{{ctrl.everyDayOfWeekInput.text}}</option>
-                        </select>
+                  ) : null }
+                  { maintenanceType === '3' ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Toistetaan [n] viikon välein</label>
+                      <div>
+                        <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={everyNWeeks} onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })} min="1" step="1" />
                       </div>
-                      <div class="checkbox-block checkbox-top-spacer">
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.monday" id="monday" />
-                          <label class="gf-form-label checkbox-label" for="monday">Maanantai</label>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '3' ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Toistetaan viikonpäivänä</label>
+                      <div className="checkbox-block">
+                        { Object.keys(weekdays).map((day: string) => (
+                          <div className="checkbox-container" key={day}>
+                            <input className="action-panel-cb" type="checkbox" checked={weekdays[day]} onChange={(e: any) => this.setState({ weekdays: {...weekdays, [day]: e.target.checked }})} id={day} />
+                            <label className="gf-form-label checkbox-label" htmlFor={day}>{ this.weekdayNames[day] }</label>
+                          </div>
+                        )) }
+                      </div>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '4' ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Toistetaan kuukautena</label>
+                      <div className="checkbox-block">
+                        { [0, 3, 6, 9].map(index => (
+                          <div className="checkbox-column" key={'col' + index}>
+                            { Object.keys(months).slice(index, index + 3).map(month => (
+                              <div className="checkbox-container" key={month}>
+                                <input className="action-panel-cb" type="checkbox" checked={months[month]} onChange={(e: any) => this.toggleMonthSelection(month, e.target.checked)} id={month} />
+                                <label className="gf-form-label checkbox-label" htmlFor={month}>{ this.monthNames[month] }</label>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        <div className="checkbox-column">
+                          <div className="checkbox-container">
+                            <input className="action-panel-cb" type="checkbox" checked={months.all} id="all" onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)} />
+                            <label className="gf-form-label checkbox-label width-8" htmlFor="all">Valitse kaikki</label>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.tuesday" id="tuesday" />
-                          <label class="gf-form-label checkbox-label" for="tuesday">Tiistai</label>
+                      </div>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '4' ? (
+                    <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+                      <div className="iiris-modal-column">
+                        <label className="gf-form-label iiris-radio-button-block">Toistetaan
+                          <div className="checkbox-container">
+                            <input className="action-panel-cb" type="radio" name="monthtype" checked={dayOfMonthOrWeekSelected === MONTH} onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })} value={MONTH} id="dayOfMonthSelected" />
+                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">Kuukauden päivänä n</label>
+                          </div>
+                          <div className="checkbox-container">
+                            <input className="action-panel-cb" type="radio" name="monthtype" checked={dayOfMonthOrWeekSelected === WEEK} onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })} value={WEEK} id="dayOfWeekSelected" />
+                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">Viikonpäivänä n</label>
+                          </div>
+                        </label>
+                      </div>
+                      <div className="iiris-modal-column">
+                        { dayOfMonthOrWeekSelected === MONTH ? (
+                          <div className="gf-form-group">
+                            <label className="gf-form-label">Toistetaan kuukauden päivänä</label>
+                            <div>
+                              <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={dayOfMonth} onChange={e => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })} min="1" step="1" />
+                            </div>
+                          </div>
+                        ) : null }
+                        { dayOfMonthOrWeekSelected === WEEK ? (
+                          <div className="gf-form-group">
+                            <label className="gf-form-label">Toistetaan viikonpäivänä (esim. kuukauden toinen tiistai)</label>
+                            <div className="gf-form-select-wrapper">
+                              <select className="gf-form-input" value={everyDayOfWeekInput} onChange={e => this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })}>
+                                { this.everyDayOfWeekInput.options.map((option: any) => (
+                                  <option value={option.value} key={option.value}>{ option.label }</option>
+                                )) }
+                              </select>
+                            </div>
+                            <div className="checkbox-block checkbox-top-spacer">
+                              { Object.keys(monthlyWeekdays).map((day: string) => (
+                                <div className="checkbox-container" key={'w' + day}>
+                                  <input className="action-panel-cb" type="checkbox" checked={monthlyWeekdays[day]} onChange={(e: any) => this.setState({ monthlyWeekdays: {...monthlyWeekdays, [day]: e.target.checked }})} id={'w'+ day} />
+                                  <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>{ this.weekdayNames[day] }</label>
+                                </div>
+                              )) }
+                            </div>
+                          </div>
+                        ) : null }
+                      </div>
+                    </div>
+                  ) : null }
+                  <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+                    <div className="iiris-modal-column">
+                      <label className="gf-form-label">{ maintenanceType === '0' ? 'Huollon alkamisajankohta' : 'Aloita toisto' }</label>
+                      <div className="date-selection-row">
+                        <div className="date-selection-container">
+                          <div>Päivä</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={dayInput} onChange={e => this.onDayValueChanged(parseInt(e.target.value, 10))}>
+                              { this.dayInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.wednesday" id="wednesday" />
-                          <label class="gf-form-label checkbox-label" for="wednesday">Keskiviikko</label>
+                        <div className="date-selection-container">
+                          <div>Kuukausi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={monthInput} onChange={e => this.onMonthValueChanged(parseInt(e.target.value, 10))}>
+                              { this.monthInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.thursday" id="thursday" />
-                          <label class="gf-form-label checkbox-label" for="thursday">Torstai</label>
+                        <div className="date-selection-container">
+                          <div>Vuosi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={yearInput} onChange={e => this.onYearValueChanged(parseInt(e.target.value, 10))}>
+                              { this.yearInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.friday" id="friday" />
-                          <label class="gf-form-label checkbox-label" for="friday">Perjantai</label>
+                        <div className="date-selection-container hour-input">
+                          <div>Tunti</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={hourInput} onChange={e => this.onHourValueChanged(parseInt(e.target.value, 10))}>
+                              { this.hourInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.saturday" id="saturday" />
-                          <label class="gf-form-label checkbox-label" for="saturday">Lauantai</label>
+                        <div className="date-selection-container">
+                          <div>Minuutti</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={minuteInput} onChange={e => this.onMinuteValueChanged(parseInt(e.target.value, 10))}>
+                              { this.minuteInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
-                        <div class="checkbox-container">
-                          <input class="action-panel-cb" type="checkbox" ng-model="ctrl.scope.monthlyWeekdays.sunday" id="sunday" />
-                          <label class="gf-form-label checkbox-label" for="sunday">Sunnuntai</label>
+                      </div>
+                    </div>
+                    <div className="iiris-modal-column" ng-if="ctrl.mTypeInput.value=='2'||ctrl.mTypeInput.value=='3'||ctrl.mTypeInput.value=='4'">
+                      <label className="gf-form-label">Lopeta toisto</label>
+                      <div className="date-selection-row">
+                        <div className="date-selection-container">
+                          <div>Päivä</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={dayStopInput} onChange={e => this.onDayStopValueChanged(parseInt(e.target.value, 10))}>
+                              { this.dayStopInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container">
+                          <div>Kuukausi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={monthStopInput} onChange={e => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}>
+                              { this.monthStopInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container">
+                          <div>Vuosi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={yearStopInput} onChange={e => this.onYearStopValueChanged(parseInt(e.target.value, 10))}>
+                              { this.yearStopInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container iiris-modal-column-container">
-                  <div class="iiris-modal-column">
-                    <label class="gf-form-label" ng-if="ctrl.mTypeInput.value=='0'">Huollon alkamisajankohta</label>
-                    <label class="gf-form-label" ng-if="ctrl.mTypeInput.value!='0'">Aloita toisto</label>
-                    <div class="date-selection-row">
-                      <div class="date-selection-container">
-                        <div>Päivä</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.dayInput.value" ng-options="v.value as v.text for v in ctrl.dayInput.options" ng-change="ctrl.onDayValueChanged()">
-                            <option value="" ng-hide="ctrl.dayInput.value">{{ctrl.dayInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container">
-                        <div>Kuukausi</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.monthInput.value" ng-options="v.value as v.text for v in ctrl.monthInput.options" ng-change="ctrl.onMonthValueChanged()">
-                            <option value="" ng-hide="ctrl.monthInput.value">{{ctrl.monthInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container">
-                        <div>Vuosi</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.yearInput.value" ng-options="v.value as v.text for v in ctrl.yearInput.options" ng-change="ctrl.onYearValueChanged()">
-                            <option value="" ng-hide="ctrl.yearInput.value">{{ctrl.yearInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container hour-input">
-                        <div>Tunti</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.hourInput.value" ng-options="v.value as v.text for v in ctrl.hourInput.options" ng-change="ctrl.onHourValueChanged()">
-                            <option value="" ng-hide="ctrl.hourInput.value">{{ctrl.hourInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container">
-                        <div>Minuutti</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.minuteInput.value" ng-options="v.value as v.text for v in ctrl.minuteInput.options" ng-change="ctrl.onMinuteValueChanged()">
-                            <option value="" ng-hide="ctrl.minuteInput.value">{{ctrl.minuteInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="iiris-modal-column" ng-if="ctrl.mTypeInput.value=='2'||ctrl.mTypeInput.value=='3'||ctrl.mTypeInput.value=='4'">
-                    <label class="gf-form-label">Lopeta toisto</label>
-                    <div class="date-selection-row">
-                      <div class="date-selection-container">
-                        <div>Päivä</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.dayStopInput.value" ng-options="v.value as v.text for v in ctrl.dayStopInput.options">
-                            <option value="" ng-hide="ctrl.dayStopInput.value">{{ctrl.dayStopInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container">
-                        <div>Kuukausi</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.monthStopInput.value" ng-options="v.value as v.text for v in ctrl.monthStopInput.options" ng-change="ctrl.onMonthStopValueChanged()">
-                            <option value="" ng-hide="ctrl.monthStopInput.value">{{ctrl.monthStopInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="date-selection-container">
-                        <div>Vuosi</div>
-                        <div class="gf-form-select-wrapper">
-                          <select class="gf-form-input" ng-model="ctrl.yearStopInput.value" ng-options="v.value as v.text for v in ctrl.yearStopInput.options" ng-change="ctrl.onYearStopValueChanged()">
-                            <option value="" ng-hide="ctrl.yearStopInput.value">{{ctrl.yearStopInput.text}}</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container" ng-if="!ctrl.scope.strictEndTimeSelected">
-                  <label class="gf-form-label">Huollon kesto</label>
-                  <div class="gf-form-select-wrapper iiris-fixed-width-select">
-                    <select class="gf-form-input" ng-model="ctrl.durationInput.value" ng-options="v.value as v.text for v in ctrl.durationInput.options" ng-change="ctrl.onDurationValueChanged()">
-                      <option value="" ng-hide="ctrl.durationInput.value">{{ctrl.durationInput.text}}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container">
-                  <div class="iiris-checkbox">
-                    <input id="strict_end_time" type="checkbox" ng-model="ctrl.scope.strictEndTimeSelected" />
-                    <label class="checkbox-label" for="strict_end_time">Määritä tarkka päättymisajankohta</label>
-                  </div>
-                </div>
-                <div class="gf-form-group maintenance-row-container" ng-if="ctrl.scope.strictEndTimeSelected">
-                  <label class="gf-form-label">Huollon päättymisajankohta</label>
-                  <div class="date-selection-row">
-                    <div class="date-selection-container">
-                      <div>Päivä</div>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.strictEndDayInput.value" ng-options="v.value as v.text for v in ctrl.strictEndDayInput.options">
-                          <option value="" ng-hide="ctrl.strictEndDayInput.value">{{ctrl.strictEndDayInput.text}}</option>
+                  { !strictEndTimeSelected ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Huollon kesto</label>
+                      <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                        <select className="gf-form-input" value={durationInput} onChange={e => this.onDurationValueChanged(parseInt(e.target.value, 10))}>
+                          { this.durationInput.options.map((option: any) => (
+                            <option value={option.value} key={option.value}>{ option.text }</option>
+                          )) }
                         </select>
                       </div>
                     </div>
-                    <div class="date-selection-container">
-                      <div>Kuukausi</div>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.strictEndMonthInput.value" ng-options="v.value as v.text for v in ctrl.strictEndMonthInput.options" ng-change="ctrl.onStrictEndMonthValueChanged()">
-                          <option value="" ng-hide="ctrl.strictEndMonthInput.value">{{ctrl.strictEndMonthInput.text}}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="date-selection-container">
-                      <div>Vuosi</div>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.strictEndYearInput.value" ng-options="v.value as v.text for v in ctrl.strictEndYearInput.options" ng-change="ctrl.onStrictEndYearValueChanged()">
-                          <option value="" ng-hide="ctrl.strictEndYearInput.value">{{ctrl.strictEndYearInput.text}}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="date-selection-container hour-input">
-                      <div>Tunti</div>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.strictEndHourInput.value" ng-options="v.value as v.text for v in ctrl.strictEndHourInput.options">
-                          <option value="" ng-hide="ctrl.strictEndHourInput.value">{{ctrl.strictEndHourInput.text}}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="date-selection-container">
-                      <div>Minuutti</div>
-                      <div class="gf-form-select-wrapper">
-                        <select class="gf-form-input" ng-model="ctrl.strictEndMinuteInput.value" ng-options="v.value as v.text for v in ctrl.strictEndMinuteInput.options">
-                          <option value="" ng-hide="ctrl.strictEndMinuteInput.value">{{ctrl.strictEndMinuteInput.text}}</option>
-                        </select>
-                      </div>
+                  ) : null }
+                  <div className="gf-form-group maintenance-row-container">
+                    <div className="iiris-checkbox">
+                      <input id="strict_end_time" type="checkbox" checked={strictEndTimeSelected} onChange={(e: any) => this.setState({ strictEndTimeSelected: e.target.checked })} />
+                      <label className="checkbox-label" htmlFor="strict_end_time">Määritä tarkka päättymisajankohta</label>
                     </div>
                   </div>
-                </div>
-                <div class="maintenance-config-error-text">{{ctrl.scope.errorText}}</div>
-                <div class="gf-form-button-row">
-                  <a class="btn btn-secondary" ng-click="ctrl.openAllMaintenancesModal()()">Takaisin</a>
-                  <a class="btn btn-secondary" ng-click="ctrl.dismiss()">Peruuta</a>
-                  <a class="btn btn-primary" ng-click="ctrl.goToNext()">Eteenpäin</a>
+                  { strictEndTimeSelected ? (
+                    <div className="gf-form-group maintenance-row-container">
+                      <label className="gf-form-label">Huollon päättymisajankohta</label>
+                      <div className="date-selection-row">
+                        <div className="date-selection-container">
+                          <div>Päivä</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={strictEndDayInput} onChange={e => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}>
+                              { this.strictEndDayInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container">
+                          <div>Kuukausi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={strictEndMonthInput} onChange={e => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}>
+                              { this.strictEndMonthInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container">
+                          <div>Vuosi</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={strictEndYearInput} onChange={e => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}>
+                              { this.strictEndYearInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container hour-input">
+                          <div>Tunti</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={strictEndHourInput} onChange={e => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}>
+                              { this.strictEndHourInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                        <div className="date-selection-container">
+                          <div>Minuutti</div>
+                          <div className="gf-form-select-wrapper">
+                            <select className="gf-form-input" value={strictEndMinuteInput} onChange={e => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}>
+                              { this.strictEndMinuteInput.options.map((option: any) => (
+                                <option value={option.value} key={option.value}>{ option.text }</option>
+                              )) }
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null }
+                  <div className="maintenance-config-error-text">{{errorText}}</div>
+                  <div className="gf-form-button-row">
+                    <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>Takaisin</a>
+                    <a className="btn btn-secondary" onClick={() => onDismiss()}>Peruuta</a>
+                    <a className="btn btn-primary" onClick={() => this.goToNext()}>Eteenpäin</a>
+                  </div>
+                </>
+              ) : null }
+              { wizardPhase === 2 ? (
+                <>
+                  <div className="gf-form-group maintenance-row-container">
+                    <label className="gf-form-label">Huollon kuvaus</label>
+                    <textarea className="gf-form-input" value={description} onChange={(e) => this.setState({ description: e.target.value })} rows={3} maxLength={128}></textarea>
+                  </div>
+                  <label className="gf-form-label">Palvelimien valinta</label>
+                  <div className="iiris-text-search-container">
+                    <span className="iiris-search-icon fa fa-search"></span>
+                    <input className="input-small gf-form-input iiris-fixed-width-select" type="text" value={searchText} onChange={(e) => this.setState({ searchText: e.target.value })} placeholder="Hae nimellä" />
+                  </div>
+                  <div className="gf-form-group maintenance-host-list">
+                    { !searchText ? (
+                      <div className="iiris-checkbox">
+                        <input id="select_all" type="checkbox" checked={allHostsSelected} onChange={e => this.selectAllHosts(e.target.checked)} />
+                        <label className="checkbox-label" htmlFor="select_all">Kaikki palvelimet</label>
+                      </div>
+                    ) : null }
+                    { Object.keys(selectedHosts).filter(fHost => !searchText || fHost.toLowerCase().indexOf(searchText.toLowerCase()) > -1).map(host => (
+                      <div className="iiris-checkbox">
+                        <input id={'cb' + host} type="checkbox" checked={selectedHosts[host]} onChange={e => this.selectHost(host, e.target.checked)} />
+                        <label className="checkbox-label" htmlFor={'cb' + host}>{this.props.hosts[host].text}</label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="maintenance-config-error-text">{errorText}</div>
+                  <div className="gf-form-button-row">
+                    <a className="btn btn-secondary" onClick={e => this.goToPrevious()}>Takaisin</a>
+                    <a className="btn btn-secondary" onClick={e => onDismiss()}>Peruuta</a>
+                    <a className="btn btn-primary" onClick={e => this.goToNext()}>{selectedMaintenanceId ? 'Tallenna muutokset' : 'Luo huolto'}</a>
+                  </div>
+                </>
+              ) : null }
+              { wizardPhase === 3 ? (
+                <>
+                  <div className="iiris-maintenance-modal-text-row">
+                    <div className="iiris-maintenance-modal-text-label">Kuvaus</div>
+                    <div className="iiris-maintenance-modal-text-normal">{description}</div>
+                  </div>
+                  <div className="iiris-maintenance-modal-text-row">
+                    <div className="iiris-maintenance-modal-text-label">Palvelimet</div>
+                    <div className="iiris-maintenance-modal-text-normal">{this.displayHosts}</div>
+                  </div>
+                  <div className="iiris-maintenance-modal-text-row">
+                    <div className="iiris-maintenance-modal-text-label">Huollon tyyppi</div>
+                    <div className="iiris-maintenance-modal-text-normal">{(this.mTypeInput.options.find((item: any) => item.value === maintenanceType)||{text: ''}).text}</div>
+                  </div>
+                  { maintenanceType === '0' ? (
+                    <div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+                      </div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
+                      </div>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '2' ? (
+                    <div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Toistetaan [n] päivän välein</div>
+                        <div className="iiris-maintenance-modal-text-normal">{everyNDays}</div>
+                      </div>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '3' ? (
+                    <div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Toistetaan [n] viikon välein</div>
+                        <div className="iiris-maintenance-modal-text-normal">{everyNWeeks}</div>
+                      </div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Toistetaan viikonpäivänä</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayWeeklyDays}</div>
+                      </div>
+                    </div>
+                  ) : null }
+                  { maintenanceType === '4' ? (
+                    <div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Toistetaan kuukautena</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayMonths}</div>
+                      </div>
+                      <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
+                        <div className="iiris-maintenance-modal-text-row">
+                          <div className="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
+                          <div className="iiris-maintenance-modal-text-normal">{{dayOfMonth}}</div>
+                        </div>
+                      </div>
+                      <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
+                        <div className="iiris-maintenance-modal-text-row">
+                          <div className="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
+                          <div className="iiris-maintenance-modal-text-normal">{this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null }
+                  { parseInt(maintenanceType, 10) > 0 ? (
+                    <div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+                      </div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
+                      </div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Aloita toisto</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+                      </div>
+                      <div className="iiris-maintenance-modal-text-row">
+                        <div className="iiris-maintenance-modal-text-label">Lopeta toisto</div>
+                        <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStopDate}</div>
+                      </div>
+                    </div>
+                  ) : null }
+                </>
+              ) : null }
+              <div className="gf-form-button-row">
+                <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>Takaisin</a>
+                <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>Peruuta</a>
+                <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>{ selectedMaintenanceId ? 'Tallenna muutokset' : 'Luo huolto' }</a>
               </div>
-              ) : null */ }
-              { /* wizardPhase === 2 ? (
-                <div class="gf-form-group maintenance-row-container">
-                  <label class="gf-form-label">Huollon kuvaus</label>
-                  <textarea class="gf-form-input" ng-model="ctrl.description" rows="3" maxlength="128"></textarea>
-                </div>
-                <label class="gf-form-label">Palvelimien valinta</label>
-                <div class="iiris-text-search-container">
-                  <span class="iiris-search-icon fa fa-search"></span>
-                  <input class="input-small gf-form-input iiris-fixed-width-select" type="text" ng-model="ctrl.search.text" placeholder="Hae nimellä">
-                </div>
-                <div class="gf-form-group maintenance-host-list">
-                  <div class="iiris-checkbox" ng-if="!ctrl.search.text">
-                    <input id="select_all" type="checkbox" ng-model="ctrl.scope.hosts.allSelected" ng-change="ctrl.selectAllHosts()" />
-                    <label class="checkbox-label" for="select_all">Kaikki palvelimet</label>
-                  </div>
-                  <div class="iiris-checkbox" ng-repeat="item in ctrl.scope.hosts.options | filter:ctrl.search">
-                    <input id="cb{{item.value}}" type="checkbox" ng-model="ctrl.scope.hosts.selected[item.value]" ng-change="ctrl.selectHost(item.value)" ng-value="item" />
-                    <label class="checkbox-label" for="cb{{item.value}}">{{item.text}}</label>
-                  </div>
-                </div>
-                <div class="maintenance-config-error-text">{{ctrl.scope.errorText}}</div>
-                <div class="gf-form-button-row">
-                  <a class="btn btn-secondary" ng-click="ctrl.goToPrevious()">Takaisin</a>
-                  <a class="btn btn-secondary" ng-click="ctrl.dismiss()">Peruuta</a>
-                  <a class="btn btn-primary" ng-click="ctrl.goToNext()" ng-if="!ctrl.scope.selectedMaintenance">Luo huolto</a>
-                  <a class="btn btn-primary" ng-click="ctrl.goToNext()" ng-if="ctrl.scope.selectedMaintenance">Tallenna muutokset</a>
-                </div>
-              ) : null */}
-              {/* wizardPhase === 3 ? (
-                <div class="iiris-maintenance-modal-text-row">
-                  <div class="iiris-maintenance-modal-text-label">Kuvaus</div>
-                  <div class="iiris-maintenance-modal-text-normal">{{ctrl.description}}</div>
-                </div>
-                <div class="iiris-maintenance-modal-text-row">
-                  <div class="iiris-maintenance-modal-text-label">Palvelimet</div>
-                  <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayHosts}}</div>
-                </div>
-                <div class="iiris-maintenance-modal-text-row">
-                  <div class="iiris-maintenance-modal-text-label">Huollon tyyppi</div>
-                  <div class="iiris-maintenance-modal-text-normal">{{ctrl.maintenanceType}}</div>
-                </div>
-                <div ng-if="ctrl.mTypeInput.value==0">
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
-                  </div>
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStopDate}}</div>
-                  </div>
-                </div>
-                <div ng-if="ctrl.mTypeInput.value==2">
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Toistetaan [n] päivän välein</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.everyNDays}}</div>
-                  </div>
-                </div>
-                <div ng-if="ctrl.mTypeInput.value==3">
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Toistetaan [n] viikon välein</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.everyNWeeks}}</div>
-                  </div>
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Toistetaan viikonpäivänä</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayWeeklyDays}}</div>
-                  </div>
-                </div>
-                <div ng-if="ctrl.mTypeInput.value==4">
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Toistetaan kuukautena</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayMonths}}</div>
-                  </div>
-                  <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
-                    <div class="iiris-maintenance-modal-text-row">
-                      <div class="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
-                      <div class="iiris-maintenance-modal-text-normal">{{ctrl.scope.dayOfMonth}}</div>
-                    </div>
-                  </div>
-                  <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
-                    <div class="iiris-maintenance-modal-text-row">
-                      <div class="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
-                      <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayMonthlyWeekdayNumber + ' ' + ctrl.displayMonthlyWeekdayNames}}</div>
-                    </div>
-                  </div>
-                </div>
-                <div ng-if="ctrl.mTypeInput.value>0">
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
-                  </div>
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStopDate}}</div>
-                  </div>
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Aloita toisto</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayStartDate}}</div>
-                  </div>
-                  <div class="iiris-maintenance-modal-text-row">
-                    <div class="iiris-maintenance-modal-text-label">Lopeta toisto</div>
-                    <div class="iiris-maintenance-modal-text-normal">{{ctrl.displayRepeatStopDate}}</div>
-                  </div>
-                </div>
-                <div class="gf-form-button-row">
-                  <a class="btn btn-secondary" ng-click="ctrl.goToPrevious()">Takaisin</a>
-                  <a class="btn btn-secondary" ng-click="ctrl.dismiss()">Peruuta</a>
-                  <a class="btn btn-primary" ng-click="ctrl.onStartMaintenance()" ng-if="!ctrl.scope.selectedMaintenance">Luo huolto</a>
-                  <a class="btn btn-primary" ng-click="ctrl.onStartMaintenance()" ng-if="ctrl.scope.selectedMaintenance">Tallenna muutokset</a>
-                </div>
-              ) : null */}
             </div>
           </div>
         </Modal>

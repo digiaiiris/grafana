@@ -52,6 +52,7 @@ interface State {
   allMaintenances: any;
   showMaintenanceModal: boolean;
   showMaintenanceListModal: boolean;
+  hosts: any[];
 }
 
 interface DashNavButtonModel {
@@ -139,6 +140,7 @@ class DashNav extends PureComponent<Props, State> {
               }
               return 0;
             });
+          this.setState({ hosts: this.hosts.options });
           this.hostIds = hosts.map((host: any) => host.hostid);
           this.getMaintenanceList(this.hostIds, groupId);
           this.clearHostSelection();
@@ -598,6 +600,7 @@ class DashNav extends PureComponent<Props, State> {
       allMaintenances: [],
       showMaintenanceModal: false,
       showMaintenanceListModal: false,
+      hosts: [],
     }
   }
 
@@ -867,7 +870,7 @@ class DashNav extends PureComponent<Props, State> {
         >
           {this.renderRightActionsButton()}
         </PageToolbar>
-        <IirisMaintenanceModal show={this.state.showMaintenanceModal} onDismiss={this.hideMaintenanceModal} />
+        <IirisMaintenanceModal show={this.state.showMaintenanceModal} onDismiss={this.hideMaintenanceModal} openAllMaintenancesModal={this.openAllMaintenancesModal} hosts={this.stoppingOngoingMaintenance.hosts} />
         <IirisMaintenanceListModal show={this.state.showMaintenanceListModal} allMaintenances={this.state.allMaintenances} openMaintenanceModal={this.openMaintenanceModal} onDismiss={this.hideMaintenanceListModal} />
       </div>
     );
