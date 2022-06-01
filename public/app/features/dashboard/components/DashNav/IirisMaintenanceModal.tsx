@@ -17,7 +17,7 @@ interface Props {
   onStopMaintenance?(): void;
   onEditMaintenance?(): void;
   ongoingMaintenanceIds?: any[];
-  selectedMaintenanceId?: string[];
+  selectedMaintenance?: any;
   confirmIsVisible?: boolean;
   confirmText?: string;
   confirmAction?: string;
@@ -165,6 +165,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
 
   constructor(props: Props) {
     super(props);
+    this.init();
     this.state = {
       wizardPhase: 1,
       maintenanceType: '0',
@@ -206,28 +207,58 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         sunday: false,
       },
       everyDayOfWeekInput: 1,
-      dayInput: 0,
-      monthInput: 0,
-      yearInput: 0,
-      hourInput: 0,
-      minuteInput: 0,
-      dayStopInput: 0,
-      monthStopInput: 0,
-      yearStopInput: 0,
-      strictEndDayInput: 0,
-      strictEndMonthInput: 0,
-      strictEndYearInput: 0,
-      strictEndHourInput: 0,
-      strictEndMinuteInput: 0,
+      dayInput: this.dayInput.value,
+      monthInput: this.monthInput.value,
+      yearInput: this.yearInput.value,
+      hourInput: this.hourInput.value,
+      minuteInput: this.minuteInput.value,
+      dayStopInput: this.dayStopInput.value,
+      monthStopInput: this.monthStopInput.value,
+      yearStopInput: this.yearStopInput.value,
+      strictEndDayInput: this.strictEndDayInput.value,
+      strictEndMonthInput: this.strictEndMonthInput.value,
+      strictEndYearInput: this.strictEndYearInput.value,
+      strictEndHourInput: this.strictEndHourInput.value,
+      strictEndMinuteInput: this.strictEndMinuteInput.value,
       strictEndTimeSelected: false,
       durationInput: 3600,
       errorText: '',
       description: '',
       searchText: '',
-      allHostsSelected: false,
-      selectedHosts: {},
+      allHostsSelected: true,
+      selectedHosts: [],
     }
-    this.init();
+  }
+
+  componentDidUpdate(prevProps: any) {
+    if (this.props.hosts && prevProps.hosts && JSON.stringify(this.props.hosts) !== JSON.stringify(prevProps.hosts) ) {
+      const selectedHosts = this.props.hosts.map((host: any) => ({ ...host, selected: true }));
+      this.setState({ selectedHosts });
+    }
+    if (this.props.selectedMaintenance && prevProps.selectedMaintenance && JSON.stringify(this.props.selectedMaintenance) !== JSON.stringify(prevProps.selectedMaintenance) ) {
+      this.scope.selectedMaintenance = this.props.selectedMaintenance;
+      this.init();
+      this.setState({
+        dayInput: this.dayInput.value,
+        monthInput: this.monthInput.value,
+        yearInput: this.yearInput.value,
+        hourInput: this.hourInput.value,
+        minuteInput: this.minuteInput.value,
+        dayStopInput: this.dayStopInput.value,
+        monthStopInput: this.monthStopInput.value,
+        yearStopInput: this.yearStopInput.value,
+        strictEndDayInput: this.strictEndDayInput.value,
+        strictEndMonthInput: this.strictEndMonthInput.value,
+        strictEndYearInput: this.strictEndYearInput.value,
+        strictEndHourInput: this.strictEndHourInput.value,
+        strictEndMinuteInput: this.strictEndMinuteInput.value,
+        durationInput: this.durationInput.value,
+        description: this.description,
+        maintenanceType: this.mTypeInput.value,
+        everyNDays: this.scope.everyNDays,
+        everyNWeeks: this.scope.everyNWeeks,
+      });
+    }
   }
 
   /**
@@ -535,9 +566,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
       // Set host selection based on selected maintenance
       const maintenanceHostIds: string[] = this.scope.selectedMaintenance.hosts.map((host: any) => host.hostid);
-      this.scope.hosts.options.map((option: any, index: number) => {
+      const selectedHosts = [...this.state.selectedHosts];
+      selectedHosts.map((option: any, index: number) => {
         if (maintenanceHostIds.indexOf(option.value) === -1) {
-          this.scope.hosts.options[index].checked = false;
+          selectedHosts[index].selected = false;
           this.scope.hosts.selected[option.value] = false;
           this.scope.hosts.allSelected = false;
         }
@@ -623,8 +655,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     }
     let anyHostSelected = false;
     const hostIds: string[] = [];
-    this.scope.hosts.options.forEach((option: any) => {
-      if (this.scope.hosts.selected[option.value]) {
+    this.state.selectedHosts.forEach((option: any) => {
+      if (option.selected) {
         anyHostSelected = true;
         hostIds.push(option.value);
       }
@@ -655,6 +687,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for select value changed
    */
   onDurationValueChanged = (value: number) => {
+    this.setState({ durationInput: value });
     this.durationInput.value = value;
     if (this.durationInput.value > 0) {
       this.durationInput.isValid = true;
@@ -935,38 +968,24 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for selecting all hosts
    */
   selectAllHosts = (allSelected: boolean) => {
-    const selectedHosts = { ...this.state.selectedHosts };
-    Object.keys(selectedHosts).forEach(host => {
-      selectedHosts[host] = allSelected;
+    const selectedHosts = [...this.state.selectedHosts];
+    selectedHosts.forEach((host: any) => {
+      host.selected = allSelected;
     });
     this.setState({ allHostsSelected: allSelected, selectedHosts });
-    this.scope.hosts.options.forEach((option: any, index: number) => {
-      this.scope.hosts.options[index].checked = allSelected;
-      this.scope.hosts.selected[option.value] = allSelected;
-    });
   }
 
   /**
    * Callback for selecting host
    */
   selectHost = (id: string, checked: boolean) => {
-    const selectedHosts = { ...this.state.selectedHosts };
-    selectedHosts[id] = checked;
-    this.setState({ selectedHosts });
-    const index = this.scope.hosts.options.findIndex((host: any) => host.value === id);
-    this.scope.hosts.options[index].checked = !this.scope.hosts.options[index].checked;
-    if (!this.scope.hosts.options[index].checked) {
-      this.scope.hosts.allSelected = false;
-    } else {
-      // Check if all checkboxes are selected
-      let allSelected = true;
-      this.scope.hosts.options.forEach((option: any) => {
-        if (!this.scope.hosts.selected[option.value]) {
-          allSelected = false;
-        }
-      });
-      this.scope.hosts.allSelected = allSelected;
+    const selectedHosts: any = [...this.state.selectedHosts];
+    const index = selectedHosts.findIndex((host: any) => host.value === id);
+    if (index > -1) {
+      selectedHosts[index].selected = checked;
     }
+    const allHostsSelected = !selectedHosts.some((item: any) => !item.selected);
+    this.setState({ selectedHosts, allHostsSelected });
   }
 
   /**
@@ -1013,23 +1032,24 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for go next button
    */
   goToNext = () => {
+    const { maintenanceType, wizardPhase } = this.state;
     let valid = true;
     this.scope.errorText = '';
     // Check for validity
-    if (this.scope.wizardPhase === 1) {
-      if (this.mTypeInput.value === '2') {
-        if (!this.scope.everyNDays || !/^[0-9]*$/.test(this.scope.everyNDays)) {
+    if (wizardPhase === 1) {
+      if (maintenanceType === '2') {
+        if (!this.state.everyNDays || !/^[0-9]*$/.test(this.state.everyNDays + '')) {
           valid = false;
           this.scope.errorText += 'Kentän "Toistetaan n päivän välein" täytyy sisältää kokonaisluku. ';
         }
-      } else if (this.mTypeInput.value === '3') {
-        if (!this.scope.everyNWeeks || !/^[0-9]*$/.test(this.scope.everyNWeeks)) {
+      } else if (maintenanceType === '3') {
+        if (!this.state.everyNWeeks || !/^[0-9]*$/.test(this.state.everyNWeeks + '')) {
           valid = false;
           this.scope.errorText += 'Kentän "Toistetaan n viikon välein" täytyy sisältää kokonaisluku. ';
         }
         let someWeekdaySelected = false;
-        Object.keys(this.scope.weekdays).map(weekday => {
-          if (this.scope.weekdays[weekday]) {
+        Object.keys(this.state.weekdays).map(weekday => {
+          if (this.state.weekdays[weekday]) {
             someWeekdaySelected = true;
           }
         });
@@ -1037,10 +1057,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           valid = false;
           this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
         }
-      } else if (this.mTypeInput.value === '4') {
+      } else if (maintenanceType === '4') {
         let someMonthSelected = false;
-        Object.keys(this.scope.months).map(month => {
-          if (this.scope.months[month]) {
+        Object.keys(this.state.months).map(month => {
+          if (this.state.months[month]) {
             someMonthSelected = true;
           }
         });
@@ -1048,15 +1068,15 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           valid = false;
           this.scope.errorText += 'Ainakin yhden kuukauden täytyy olla valittu. ';
         }
-        if (this.scope.dayOfMonthOrWeekSelected.value === MONTH) {
-          if (!this.scope.dayOfMonth || !/^[0-9]*$/.test(this.scope.dayOfMonth)) {
+        if (this.state.dayOfMonthOrWeekSelected === MONTH) {
+          if (!this.state.dayOfMonth || !/^[0-9]*$/.test(this.state.dayOfMonth + '')) {
             valid = false;
             this.scope.errorText += 'Kentän "Toistetaan kuukauden päivänä" täytyy sisältää kokonaisluku. ';
           }
-        } else if (this.scope.dayOfMonthOrWeekSelected.value === WEEK) {
+        } else if (this.state.dayOfMonthOrWeekSelected === WEEK) {
           let someWeekdaySelected = false;
-          Object.keys(this.scope.monthlyWeekdays).map(weekday => {
-            if (this.scope.monthlyWeekdays[weekday]) {
+          Object.keys(this.state.monthlyWeekdays).map(weekday => {
+            if (this.state.monthlyWeekdays[weekday]) {
               someWeekdaySelected = true;
             }
           });
@@ -1080,9 +1100,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           this.dayStopInput.value)
         ).endOf('day').toDate();
       const currentDate = new Date();
-      const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
+      const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
       const stopDateTime = moment(startDate).add(duration, 'second').toDate();
-      if (this.mTypeInput.value === '2' || this.mTypeInput.value === '3' || this.mTypeInput.value === '4') {
+      if (maintenanceType === '2' || maintenanceType === '3' || maintenanceType === '4') {
         if (stopPeriodDate <= startDate) {
           valid = false;
           this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
@@ -1105,16 +1125,17 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
       }
-      if (this.mTypeInput.value === '0' && this.scope.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
+      if (maintenanceType === '0' && this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
         valid = false;
         this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
       }
-      if (this.mTypeInput.value === '0' && stopDateTime < currentDate) {
+      if (maintenanceType === '0' && stopDateTime < currentDate) {
         valid = false;
         this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
       }
       if (valid) {
         this.scope.wizardPhase = 2;
+        this.setState({ wizardPhase: 2 });
       }
     } else {
       let anyHostSelected = false;
@@ -1134,6 +1155,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
       if (valid) {
         this.scope.wizardPhase = 3;
+        this.setState({ wizardPhase: 3 });
         this.displayStartDate = moment(new Date(
           this.yearInput.value,
           this.monthInput.value - 1,
@@ -1155,8 +1177,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           }
         });
         this.displayWeeklyDays = '';
-        Object.keys(this.scope.weekdays).forEach((weekday: string) => {
-          if (this.scope.weekdays[weekday]) {
+        Object.keys(this.state.weekdays).forEach((weekday: string) => {
+          if (this.state.weekdays[weekday]) {
             if (this.displayWeeklyDays) {
               this.displayWeeklyDays += ', ';
             }
@@ -1164,8 +1186,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           }
         });
         this.displayMonths = '';
-        Object.keys(this.scope.months).forEach((month: string) => {
-          if (this.scope.months[month]) {
+        Object.keys(this.state.months).forEach((month: string) => {
+          if (this.state.months[month]) {
             if (this.displayMonths) {
               this.displayMonths += ', ';
             }
@@ -1174,8 +1196,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         });
         this.displayMonthlyWeekdayNumber = this.everyDayOfWeekInput.options.find((option: any) => option.value === this.everyDayOfWeekInput.value).text;
         this.displayMonthlyWeekdayNames = '';
-        Object.keys(this.scope.monthlyWeekdays).forEach((weekday: string) => {
-          if (this.scope.monthlyWeekdays[weekday]) {
+        Object.keys(this.state.monthlyWeekdays).forEach((weekday: string) => {
+          if (this.state.monthlyWeekdays[weekday]) {
             if (this.displayMonthlyWeekdayNames) {
               this.displayMonthlyWeekdayNames += ', ';
             }
@@ -1184,6 +1206,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         });
       }
     }
+    this.setState({ errorText: this.scope.errorText });
   }
 
   /**
@@ -1194,13 +1217,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   }
 
   render() {
-    const { show, onDismiss, selectedMaintenanceId, openAllMaintenancesModal } = this.props;
+    const { show, onDismiss, selectedMaintenance, openAllMaintenancesModal } = this.props;
     const { wizardPhase, maintenanceType, everyNDays, everyNWeeks, weekdays, months, dayOfMonthOrWeekSelected, dayOfMonth,
       monthlyWeekdays, everyDayOfWeekInput, dayInput, monthInput, yearInput, hourInput, minuteInput, dayStopInput,
       monthStopInput, yearStopInput, strictEndTimeSelected, durationInput, strictEndMinuteInput, strictEndHourInput,
       strictEndDayInput, strictEndMonthInput, strictEndYearInput, errorText, description, searchText, allHostsSelected,
       selectedHosts } = this.state;
-    const title = (<h2 className="modal-header modal-header-title">{selectedMaintenanceId ? 'Muokkaa huoltoa' : 'Luo uusi huolto'}</h2>);
+    const title = (<h2 className="modal-header modal-header-title">{selectedMaintenance ? 'Muokkaa huoltoa' : 'Luo uusi huolto'}</h2>);
 
     return (
       <>
@@ -1326,7 +1349,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={dayInput} onChange={e => this.onDayValueChanged(parseInt(e.target.value, 10))}>
                               { this.dayInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'d' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1336,7 +1359,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={monthInput} onChange={e => this.onMonthValueChanged(parseInt(e.target.value, 10))}>
                               { this.monthInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'m' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1346,7 +1369,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={yearInput} onChange={e => this.onYearValueChanged(parseInt(e.target.value, 10))}>
                               { this.yearInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'y' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1356,7 +1379,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={hourInput} onChange={e => this.onHourValueChanged(parseInt(e.target.value, 10))}>
                               { this.hourInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'h' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1366,7 +1389,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={minuteInput} onChange={e => this.onMinuteValueChanged(parseInt(e.target.value, 10))}>
                               { this.minuteInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'mi' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1381,7 +1404,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={dayStopInput} onChange={e => this.onDayStopValueChanged(parseInt(e.target.value, 10))}>
                               { this.dayStopInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'ds' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1391,7 +1414,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={monthStopInput} onChange={e => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}>
                               { this.monthStopInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'ms' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1401,7 +1424,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={yearStopInput} onChange={e => this.onYearStopValueChanged(parseInt(e.target.value, 10))}>
                               { this.yearStopInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'ys' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1436,7 +1459,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndDayInput} onChange={e => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndDayInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'sd' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1446,7 +1469,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndMonthInput} onChange={e => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndMonthInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'sm' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1456,7 +1479,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndYearInput} onChange={e => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndYearInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'sy' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1466,7 +1489,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndHourInput} onChange={e => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndHourInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'sh' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1476,7 +1499,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndMinuteInput} onChange={e => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndMinuteInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>{ option.text }</option>
+                                <option value={option.value} key={'smi' + option.value}>{ option.text }</option>
                               )) }
                             </select>
                           </div>
@@ -1484,7 +1507,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                       </div>
                     </div>
                   ) : null }
-                  <div className="maintenance-config-error-text">{{errorText}}</div>
+                  <div className="maintenance-config-error-text">{errorText}</div>
                   <div className="gf-form-button-row">
                     <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>Takaisin</a>
                     <a className="btn btn-secondary" onClick={() => onDismiss()}>Peruuta</a>
@@ -1510,10 +1533,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         <label className="checkbox-label" htmlFor="select_all">Kaikki palvelimet</label>
                       </div>
                     ) : null }
-                    { Object.keys(selectedHosts).filter(fHost => !searchText || fHost.toLowerCase().indexOf(searchText.toLowerCase()) > -1).map(host => (
-                      <div className="iiris-checkbox">
-                        <input id={'cb' + host} type="checkbox" checked={selectedHosts[host]} onChange={e => this.selectHost(host, e.target.checked)} />
-                        <label className="checkbox-label" htmlFor={'cb' + host}>{this.props.hosts[host].text}</label>
+                    { selectedHosts.filter((fHost: any) => !searchText || fHost.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1).map((host: any) => (
+                      <div className="iiris-checkbox" key={host.value}>
+                        <input id={'cb' + host.value} type="checkbox" checked={host.selected} onChange={e => this.selectHost(host.value, e.target.checked)} />
+                        <label className="checkbox-label" htmlFor={'cb' + host.value}>{host.text}</label>
                       </div>
                     ))}
                   </div>
@@ -1521,7 +1544,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   <div className="gf-form-button-row">
                     <a className="btn btn-secondary" onClick={e => this.goToPrevious()}>Takaisin</a>
                     <a className="btn btn-secondary" onClick={e => onDismiss()}>Peruuta</a>
-                    <a className="btn btn-primary" onClick={e => this.goToNext()}>{selectedMaintenanceId ? 'Tallenna muutokset' : 'Luo huolto'}</a>
+                    <a className="btn btn-primary" onClick={e => this.goToNext()}>{selectedMaintenance ? 'Tallenna muutokset' : 'Luo huolto'}</a>
                   </div>
                 </>
               ) : null }
@@ -1611,13 +1634,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                       </div>
                     </div>
                   ) : null }
+                  <div className="gf-form-button-row">
+                    <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>Takaisin</a>
+                    <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>Peruuta</a>
+                    <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>{ selectedMaintenance ? 'Tallenna muutokset' : 'Luo huolto' }</a>
+                  </div>
                 </>
               ) : null }
-              <div className="gf-form-button-row">
-                <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>Takaisin</a>
-                <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>Peruuta</a>
-                <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>{ selectedMaintenanceId ? 'Tallenna muutokset' : 'Luo huolto' }</a>
-              </div>
             </div>
           </div>
         </Modal>

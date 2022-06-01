@@ -140,12 +140,19 @@ div[role='dialog'].modal {
   margin-bottom: 15px;
 }
 
-.modal-body .modal-content .gf-form-label.checkbox-label {
-  background: none;
-  border: none;
-  margin: 0 0 0 5px;
-  font-weight: 400;
-  height: 21px;
+.modal-body .modal-content {
+  .checkbox-label {
+    background: none;
+    border: none;
+    margin: 0 0 0 5px;
+    font-weight: 400;
+    height: 21px;
+  }
+  .iiris-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 .checkbox-block {

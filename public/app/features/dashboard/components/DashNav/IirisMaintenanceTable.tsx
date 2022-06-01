@@ -11,6 +11,8 @@ interface ColumnType {
 interface Props {
   data: any[];
   columns: ColumnType[];
+  onEditMaintenance: (maintenanceId: string) => void;
+  onStopMaintenance: (maintenanceId: string) => void;
 }
  
 export function IirisMaintenanceTable(props: Props) {
@@ -43,6 +45,7 @@ export function IirisMaintenanceTable(props: Props) {
                 {column.render('Header')}
               </th>
             ))}
+            <th></th>
           </tr>
         ))}
       </thead>
@@ -61,6 +64,10 @@ export function IirisMaintenanceTable(props: Props) {
                   </td>
                 )
               })}
+              <td className="iiris-button-cell">
+                <div className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button" onClick={() => props.onEditMaintenance(props.data[row.index].id)} title="Muokkaa huoltoa"><span className="fa fa-edit"></span></div>
+                <div className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button primary" onClick={() => props.onStopMaintenance(props.data[row.index].id)} title="Lopeta huolto"><span className="fa fa-remove"></span></div>
+              </td>
             </tr>
           )
         })}

@@ -525,6 +525,7 @@ class DashNav extends PureComponent<Props, State> {
    */
   openMaintenanceModal = (maintenanceID?: string) => {
     console.log('Open maintenance modal');
+    this.selectedMaintenanceId = maintenanceID;
     this.setState({ showMaintenanceModal: true });
     /* this.clearHostSelection();
     this.modalScope = {};
@@ -852,6 +853,8 @@ class DashNav extends PureComponent<Props, State> {
     const titleHref = locationUtil.updateSearchParams(window.location.href, '?search=open');
     const parentHref = locationUtil.updateSearchParams(window.location.href, '?search=open&folder=current');
 
+    const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
+
     return (
       <div className="iiris-custom-toolbar">
         {this.props.dashboard.dashboardLogo ? (
@@ -870,8 +873,21 @@ class DashNav extends PureComponent<Props, State> {
         >
           {this.renderRightActionsButton()}
         </PageToolbar>
-        <IirisMaintenanceModal show={this.state.showMaintenanceModal} onDismiss={this.hideMaintenanceModal} openAllMaintenancesModal={this.openAllMaintenancesModal} hosts={this.stoppingOngoingMaintenance.hosts} />
-        <IirisMaintenanceListModal show={this.state.showMaintenanceListModal} allMaintenances={this.state.allMaintenances} openMaintenanceModal={this.openMaintenanceModal} onDismiss={this.hideMaintenanceListModal} />
+        <IirisMaintenanceModal
+          show={this.state.showMaintenanceModal}
+          onDismiss={this.hideMaintenanceModal}
+          openAllMaintenancesModal={this.openAllMaintenancesModal}
+          hosts={this.state.hosts}
+          selectedMaintenance={selectedMaintenance}
+        />
+        <IirisMaintenanceListModal
+          show={this.state.showMaintenanceListModal}
+          allMaintenances={this.state.allMaintenances}
+          openMaintenanceModal={this.openMaintenanceModal}
+          onDismiss={this.hideMaintenanceListModal}
+          onEditMaintenance={this.onEditMaintenance}
+          onStopMaintenance={this.onStopMaintenance}
+        />
       </div>
     );
   }

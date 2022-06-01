@@ -9,8 +9,8 @@ interface Props {
   onDismiss(): void;
   allMaintenances: any[];
   openMaintenanceModal(): void;
-  onStopMaintenance?(): void;
-  onEditMaintenance?(): void;
+  onStopMaintenance(maintenanceId: string): void;
+  onEditMaintenance(maintenanceId: string): void;
   ongoingMaintenanceIds?: any[];
   selectedMaintenanceId?: string[];
   confirmIsVisible?: boolean;
@@ -55,7 +55,12 @@ export function IirisMaintenanceListModal(props: Props) {
         <div className="modal-content">
           <div className="iiris-table-container">
             <div className="iiris-event-table">
-              <IirisMaintenanceTable data={props.allMaintenances} columns={columns} />
+              <IirisMaintenanceTable
+                data={props.allMaintenances}
+                columns={columns}
+                onEditMaintenance={props.onEditMaintenance}
+                onStopMaintenance={props.onStopMaintenance}
+              />
             </div>
           </div>
           <div className="gf-form-button-row">
