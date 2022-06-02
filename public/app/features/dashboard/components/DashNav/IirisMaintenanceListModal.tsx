@@ -12,10 +12,11 @@ interface Props {
   onStopMaintenance(maintenanceId: string): void;
   onEditMaintenance(maintenanceId: string): void;
   ongoingMaintenanceIds?: any[];
-  selectedMaintenanceId?: string[];
-  confirmIsVisible?: boolean;
-  confirmText?: string;
-  confirmAction?: string;
+  selectedMaintenanceId?: string;
+  confirmIsVisible: boolean;
+  confirmText: string;
+  confirmAction: any;
+  onCloseConfirmation: () => void;
 }
 
 export function IirisMaintenanceListModal(props: Props) {
@@ -48,25 +49,43 @@ export function IirisMaintenanceListModal(props: Props) {
     props.onDismiss();
     props.openMaintenanceModal();
   };
+  const onAcceptConfirmation = () => {
+    props.confirmAction(props.selectedMaintenanceId);
+    props.onCloseConfirmation();
+  };
 
   return (
     <>
       <Modal isOpen={props.show} title={title} onDismiss={props.onDismiss} className="modal modal-body">
         <div className="modal-content">
-          <div className="iiris-table-container">
-            <div className="iiris-event-table">
-              <IirisMaintenanceTable
-                data={props.allMaintenances}
-                columns={columns}
-                onEditMaintenance={props.onEditMaintenance}
-                onStopMaintenance={props.onStopMaintenance}
-              />
+          { !props.confirmIsVisible ? (
+            <>
+              <div className="iiris-table-container">
+                <div className="iiris-event-table">
+                  <IirisMaintenanceTable
+                    data={props.allMaintenances}
+                    columns={columns}
+                    onEditMaintenance={props.onEditMaintenance}
+                    onStopMaintenance={props.onStopMaintenance}
+                  />
+                </div>
+              </div>
+              <div className="gf-form-button-row">
+                <a className="btn btn-primary" onClick={() => props.onDismiss()}>Peruuta</a>
+                <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>Luo uusi huolto</a>
+              </div>
+            </>
+          ) : (
+            <div>
+              <div className="remove-maintenance-confirmation-text">{ props.confirmText }</div>
+              <div className="gf-form-button-row">
+                { props.confirmAction ? (
+                  <a className="btn btn-secondary" onClick={() => props.onCloseConfirmation()}>Peruuta</a>
+                ) : null }
+                <a className="btn btn-primary" onClick={() => onAcceptConfirmation()}>OK</a>
+              </div>
             </div>
-          </div>
-          <div className="gf-form-button-row">
-            <a className="btn btn-primary" onClick={() => props.onDismiss()}>Peruuta</a>
-            <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>Luo uusi huolto</a>
-          </div>
+          )}
         </div>
       </Modal>
     </>

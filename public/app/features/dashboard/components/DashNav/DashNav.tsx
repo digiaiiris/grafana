@@ -31,6 +31,7 @@ import appEvents from 'app/core/app_events';
 import { contextSrv } from 'app/core/core';
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
 import { IirisMaintenanceModal } from './IirisMaintenanceModal';
+import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -52,7 +53,12 @@ interface State {
   allMaintenances: any;
   showMaintenanceModal: boolean;
   showMaintenanceListModal: boolean;
+  showMaintenanceConfirmModal: boolean;
   hosts: any[];
+  selectedMaintenance: any;
+  confirmIsVisible: boolean;
+  confirmText: string;
+  confirmAction: any;
 }
 
 interface DashNavButtonModel {
@@ -305,39 +311,40 @@ class DashNav extends PureComponent<Props, State> {
     } else {
       selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     }
-    this.listModalScope.confirmIsVisible = true;
-    this.listModalScope.selectedMaintenanceId = maintenanceID;
+    let confirmIsVisible = true;
+    let confirmText = '';
+    let confirmAction: any;
     if (isOngoing && !selectedMaintenance.maintenanceType) {
       // In case of ongoing single maintenance we just set the end time
-      this.listModalScope.confirmText = 'Haluatko varmasti keskeyttää huollon?';
-      this.listModalScope.confirmAction = this.onUpdateMaintenanceEndTime.bind(this);
+      confirmText = 'Haluatko varmasti keskeyttää huollon?';
+      confirmAction = this.onUpdateMaintenanceEndTime;
     } else {
       // Handle all other maintenances
       if (!selectedMaintenance.maintenanceType) {
         // Single maintenance
-        this.listModalScope.confirmText = 'Haluatko varmasti poistaa huollon?';
+        confirmText = 'Haluatko varmasti poistaa huollon?';
       } else {
         // Periodic maintenances
         if (isOngoing) {
-          this.listModalScope.confirmText = 'Käynnissä olevaa ajastettua huoltoa ei voi keskeyttää.\n';
-          this.listModalScope.confirmText += 'Valitsemasi toiminto poistaa kaikki samaan sarjaan kuuluvat huollot.\n';
-          this.listModalScope.confirmText += 'Haluatko varmasti jatkaa?';
+          confirmText = 'Käynnissä olevaa ajastettua huoltoa ei voi keskeyttää.\n';
+          confirmText += 'Valitsemasi toiminto poistaa kaikki samaan sarjaan kuuluvat huollot.\n';
+          confirmText += 'Haluatko varmasti jatkaa?';
         } else {
-          this.listModalScope.confirmText = 'Haluatko varmasti poistaa ajastetun huollon?\n';
-          this.listModalScope.confirmText += 'Kaikki samaan sarjaan kuuluvat tulevat huollot poistetaan.';
+          confirmText = 'Haluatko varmasti poistaa ajastetun huollon?\n';
+          confirmText += 'Kaikki samaan sarjaan kuuluvat tulevat huollot poistetaan.';
         }
       }
       if (selectedMaintenance.activeSince > curTime) {
         // Maintenance period hasn't started yet so it can be safely removed
         // NOTE: This is temporarily commented because 'maintenance.delete' causes error
         // this.listModalScope.confirmAction = this.onRemoveMaintenance.bind(this);
-        this.listModalScope.confirmAction = this.onUpdateMaintenanceEndTime.bind(this);
+        confirmAction = this.onUpdateMaintenanceEndTime;
       } else {
         // Period has already started so we can just set the end time of period
-        this.listModalScope.confirmAction = this.onUpdateMaintenanceEndTime.bind(this);
+        confirmAction = this.onUpdateMaintenanceEndTime;
       }
     }
-    this.listModalScope.$apply();
+    this.setState({ selectedMaintenance, confirmIsVisible, confirmText, confirmAction });
   };
 
   setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
@@ -368,6 +375,7 @@ class DashNav extends PureComponent<Props, State> {
    * @param {number} endTime epoch
    */
   onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
+    console.log('update end time ' + maintenanceID);
     const curTime = this.getCurrentTimeEpoch();
     if (!endTime) {
       endTime = curTime;
@@ -523,30 +531,11 @@ class DashNav extends PureComponent<Props, State> {
    * Open create maintenance modal
    * @param {string} maintenanceID (optional)
    */
-  openMaintenanceModal = (maintenanceID?: string) => {
-    console.log('Open maintenance modal');
+  openMaintenanceModal = (maintenanceID = '') => {
+    console.log('Open maintenance modal ' + maintenanceID);
     this.selectedMaintenanceId = maintenanceID;
-    this.setState({ showMaintenanceModal: true });
-    /* this.clearHostSelection();
-    this.modalScope = {};
-    this.modalScope.onCreateMaintenance = this.onCreateMaintenance.bind(this);
-    this.modalScope.getCurrentTimeEpoch = this.getCurrentTimeEpoch.bind(this);
-    this.modalScope.hosts = this.hosts;
-    this.modalScope.user = this.user;
-    this.modalScope.openAllMaintenancesModal = this.openAllMaintenancesModal.bind(this);
-    if (maintenanceID) {
-      this.modalScope.selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
-    }
-    const template =
-      '<iiris-maintenance-modal hosts="hosts" on-create-maintenance="onCreateMaintenance" ' +
-      'selected-maintenance="selectedMaintenance" user="user" ' +
-      'get-current-time-epoch="getCurrentTimeEpoch" open-all-maintenances-modal="openAllMaintenancesModal"' +
-      '></iiris-maintenance-modal>';
-    appEvents.emit('show-modal', {
-      templateHtml: template,
-      model: this.modalScope,
-      backdrop: true,
-    }); */
+    const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
+    this.setState({ showMaintenanceModal: true, selectedMaintenance });
   };
 
   /**
@@ -554,44 +543,13 @@ class DashNav extends PureComponent<Props, State> {
    */
   openAllMaintenancesModal = () => {
     this.setState({ showMaintenanceListModal: true });
-    /* this.clearHostSelection();
-    this.listModalScope = {};
-    this.listModalScope.onCreateMaintenance = this.onCreateMaintenance.bind(this);
-    this.listModalScope.allMaintenances = this.allMaintenances;
-    this.listModalScope.openMaintenanceModal = this.openMaintenanceModal.bind(this);
-    this.listModalScope.onStopMaintenance = this.onStopMaintenance.bind(this);
-    this.listModalScope.onEditMaintenance = this.onEditMaintenance.bind(this);
-    this.listModalScope.ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
-    this.listModalScope.selectedMaintenanceId = this.selectedMaintenanceId;
-    this.listModalScope.confirmIsVisible = false;
-    this.listModalScope.confirmText = '';
-    this.listModalScope.confirmAction = null;
-    const template =
-      '<iiris-maintenance-list-modal on-create-maintenance="onCreateMaintenance" ' +
-      'all-maintenances="allMaintenances" open-maintenance-modal="openMaintenanceModal" ' +
-      'on-stop-maintenance="onStopMaintenance" on-edit-maintenance="onEditMaintenance" ' +
-      'ongoing-maintenance-ids="ongoingMaintenanceIds" selected-maintenance-id="selectedMaintenanceId" ' +
-      'confirm-is-visible="confirmIsVisible" confirm-action="confirmAction" ' +
-      'confirm-text="confirmText"></iiris-maintenance-list-modal>';
-    appEvents.emit('show-modal', {
-      templateHtml: template,
-      model: this.listModalScope,
-      backdrop: true,
-    }); */
   };
 
   /**
    * Open maintenance confirmation modal
    */
-   openConfirmMaintenanceModal = (confirmText: string) => {
-    this.confirmModalScope = {};
-    this.confirmModalScope.confirmText = confirmText;
-    const template = '<iiris-maintenance-confirm-modal confirm-text="confirmText"></iiris-maintenance-confirm-modal>';
-    appEvents.emit('show-modal', {
-      templateHtml: template,
-      model: this.confirmModalScope,
-      backdrop: true,
-    });
+  openConfirmMaintenanceModal = (confirmText: string) => {
+    this.setState({ showMaintenanceConfirmModal: true, confirmText });
   };
   /* tslint:enable */
 
@@ -601,7 +559,12 @@ class DashNav extends PureComponent<Props, State> {
       allMaintenances: [],
       showMaintenanceModal: false,
       showMaintenanceListModal: false,
+      showMaintenanceConfirmModal: false,
       hosts: [],
+      selectedMaintenance: undefined,
+      confirmIsVisible: false,
+      confirmText: '',
+      confirmAction: undefined,
     }
   }
 
@@ -853,8 +816,6 @@ class DashNav extends PureComponent<Props, State> {
     const titleHref = locationUtil.updateSearchParams(window.location.href, '?search=open');
     const parentHref = locationUtil.updateSearchParams(window.location.href, '?search=open&folder=current');
 
-    const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
-
     return (
       <div className="iiris-custom-toolbar">
         {this.props.dashboard.dashboardLogo ? (
@@ -878,7 +839,9 @@ class DashNav extends PureComponent<Props, State> {
           onDismiss={this.hideMaintenanceModal}
           openAllMaintenancesModal={this.openAllMaintenancesModal}
           hosts={this.state.hosts}
-          selectedMaintenance={selectedMaintenance}
+          selectedMaintenance={this.state.selectedMaintenance}
+          user={contextSrv.user.email || ''}
+          onCreateMaintenance={this.onCreateMaintenance}
         />
         <IirisMaintenanceListModal
           show={this.state.showMaintenanceListModal}
@@ -887,6 +850,16 @@ class DashNav extends PureComponent<Props, State> {
           onDismiss={this.hideMaintenanceListModal}
           onEditMaintenance={this.onEditMaintenance}
           onStopMaintenance={this.onStopMaintenance}
+          confirmIsVisible={this.state.confirmIsVisible}
+          confirmText={this.state.confirmText}
+          confirmAction={this.state.confirmAction}
+          selectedMaintenanceId={this.state.selectedMaintenance?.id}
+          onCloseConfirmation={() => this.setState({ confirmIsVisible: false })}
+        />
+        <IirisMaintenanceConfirmModal
+          show={this.state.showMaintenanceConfirmModal}
+          onDismiss={() => this.setState({ showMaintenanceConfirmModal: false })}
+          confirmText={this.state.confirmText}
         />
       </div>
     );

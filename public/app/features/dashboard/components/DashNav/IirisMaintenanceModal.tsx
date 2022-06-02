@@ -11,18 +11,11 @@ const MONTH = 'MONTH';
 interface Props {
   show: boolean;
   onDismiss(): void;
-  onCreateMaintenance?(): void;
-  allMaintenances?: any[];
-  openMaintenanceModal?(): void;
-  onStopMaintenance?(): void;
-  onEditMaintenance?(): void;
-  ongoingMaintenanceIds?: any[];
+  onCreateMaintenance: any;
   selectedMaintenance?: any;
-  confirmIsVisible?: boolean;
-  confirmText?: string;
-  confirmAction?: string;
   openAllMaintenancesModal(): void;
   hosts: any;
+  user: string;
 }
 
 interface State {
@@ -62,9 +55,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   scope: any;
   hosts: any;
   user: any;
-  onCreateMaintenance: any;
   selectedMaintenance: any;
-  getCurrentTimeEpoch: any;
   description: any;
   durationInput: {
     options: any;
@@ -162,6 +153,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   displayMonthlyDays: any;
   displayMonthlyWeekdayNumber: any;
   displayMonthlyWeekdayNames: any;
+  selectedHosts: any;
+  allHostsSelected = true;
 
   constructor(props: Props) {
     super(props);
@@ -225,20 +218,19 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       errorText: '',
       description: '',
       searchText: '',
-      allHostsSelected: true,
-      selectedHosts: [],
+      allHostsSelected: this.allHostsSelected,
+      selectedHosts: this.selectedHosts,
     }
   }
 
   componentDidUpdate(prevProps: any) {
-    if (this.props.hosts && prevProps.hosts && JSON.stringify(this.props.hosts) !== JSON.stringify(prevProps.hosts) ) {
-      const selectedHosts = this.props.hosts.map((host: any) => ({ ...host, selected: true }));
-      this.setState({ selectedHosts });
-    }
-    if (this.props.selectedMaintenance && prevProps.selectedMaintenance && JSON.stringify(this.props.selectedMaintenance) !== JSON.stringify(prevProps.selectedMaintenance) ) {
-      this.scope.selectedMaintenance = this.props.selectedMaintenance;
+    if (this.props.show && this.props.show !== prevProps.show) {
+      this.selectedMaintenance = this.props.selectedMaintenance;
       this.init();
       this.setState({
+        wizardPhase: 1,
+        searchText: '',
+        errorText: '',
         dayInput: this.dayInput.value,
         monthInput: this.monthInput.value,
         yearInput: this.yearInput.value,
@@ -252,11 +244,20 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         strictEndYearInput: this.strictEndYearInput.value,
         strictEndHourInput: this.strictEndHourInput.value,
         strictEndMinuteInput: this.strictEndMinuteInput.value,
+        strictEndTimeSelected: this.scope.strictEndTimeSelected,
         durationInput: this.durationInput.value,
         description: this.description,
         maintenanceType: this.mTypeInput.value,
         everyNDays: this.scope.everyNDays,
         everyNWeeks: this.scope.everyNWeeks,
+        everyDayOfWeekInput: this.everyDayOfWeekInput.value,
+        selectedHosts: this.selectedHosts,
+        allHostsSelected: this.allHostsSelected,
+        monthlyWeekdays: this.scope.monthlyWeekdays,
+        dayOfMonth: this.scope.dayOfMonth,
+        dayOfMonthOrWeekSelected: this.scope.dayOfMonthOrWeekSelected.value,
+        months: this.scope.months,
+        weekdays: this.scope.weekdays,
       });
     }
   }
@@ -493,6 +494,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       .add(duration, 'second')
       .toDate();
     this.setStrictEndTimeDate(strictEndTimeDate);
+    this.selectedHosts = this.props.hosts.map((host: any) => ({ ...host, selected: true }));
+    this.allHostsSelected = true;
     // Populate form with preselected maintenance values
     if (this.scope.selectedMaintenance) {
       const m = this.scope.selectedMaintenance;
@@ -566,12 +569,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
       // Set host selection based on selected maintenance
       const maintenanceHostIds: string[] = this.scope.selectedMaintenance.hosts.map((host: any) => host.hostid);
-      const selectedHosts = [...this.state.selectedHosts];
-      selectedHosts.map((option: any, index: number) => {
+      this.selectedHosts.map((option: any, index: number) => {
         if (maintenanceHostIds.indexOf(option.value) === -1) {
-          selectedHosts[index].selected = false;
-          this.scope.hosts.selected[option.value] = false;
-          this.scope.hosts.allSelected = false;
+          this.selectedHosts[index].selected = false;
+          this.allHostsSelected = false;
+        } else {
+          this.selectedHosts[index].selected = true;
         }
       });
     }
@@ -661,7 +664,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         hostIds.push(option.value);
       }
     });
-    const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
+    const maintenanceName = (this.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
     const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
       this.setState({ errorText: 'Ainakin yhden palvelimen täytyy olla valittu' });
@@ -669,7 +672,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       const excessLength = maintenanceName.length - 128;
       this.setState({ errorText: 'Huollon kuvaus on ' + excessLength + ' merkkiä liian pitkä' });
     } else {
-      this.onCreateMaintenance()(
+      this.props.onCreateMaintenance(
         maintenanceType,
         maintenanceName,
         duration,
@@ -1023,10 +1026,25 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for changing maintenance
    */
   onMaintenanceTypeChanged = (value: string) => {
-    this.setState({ maintenanceType: value });
-    this.scope.errorText = '';
+    this.setState({ maintenanceType: value, errorText: '' });
     this.maintenanceType = this.mTypeInput.options.find((option: any) => option.value === value).text;
   }
+
+  getCurrentTimeEpoch = (currentTime?: Date) => {
+    if (!currentTime) {
+      currentTime = new Date();
+    }
+    return (
+      Date.UTC(
+        currentTime.getUTCFullYear(),
+        currentTime.getUTCMonth(),
+        currentTime.getUTCDate(),
+        currentTime.getUTCHours(),
+        currentTime.getUTCMinutes(),
+        currentTime.getUTCSeconds()
+      ) / 1000
+    );
+  };
 
   /**
    * Callback for go next button
@@ -1139,12 +1157,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
     } else {
       let anyHostSelected = false;
-      this.scope.hosts.options.forEach((option: any) => {
-        if (this.scope.hosts.selected[option.value]) {
+      this.state.selectedHosts.forEach((option: any) => {
+        if (option.value) {
           anyHostSelected = true;
         }
       });
-      const maintenanceName = (this.description || '') + '|' + this.scope.user + '|' + this.getCurrentTimeEpoch()();
+      const maintenanceName = (this.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
       if (!anyHostSelected) {
         this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
         valid = false;
@@ -1168,8 +1186,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
         ).endOf('day').format('DD.MM.YYYY HH:mm');
         this.displayHosts = '';
-        this.scope.hosts.options.forEach((option: any) => {
-          if (this.state.selectedHosts[option.value]) {
+        this.state.selectedHosts.forEach((option: any) => {
+          if (option.value) {
             if (this.displayHosts) {
               this.displayHosts += ', ';
             }
@@ -1560,7 +1578,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   </div>
                   <div className="iiris-maintenance-modal-text-row">
                     <div className="iiris-maintenance-modal-text-label">Huollon tyyppi</div>
-                    <div className="iiris-maintenance-modal-text-normal">{(this.mTypeInput.options.find((item: any) => item.value === maintenanceType)||{text: ''}).text}</div>
+                    <div className="iiris-maintenance-modal-text-normal">{(this.mTypeInput.options.find((item: any) => item.value === maintenanceType)||{label: ''}).label}</div>
                   </div>
                   { maintenanceType === '0' ? (
                     <div>
