@@ -720,6 +720,9 @@ li[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
     width: auto;
     min-width: 150px;
     margin-right: 10px;
+    &:focus {
+      outline: none;
+    }
   }
   input {
     padding: 3px 6px;

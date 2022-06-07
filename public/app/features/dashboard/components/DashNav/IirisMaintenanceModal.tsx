@@ -1625,7 +1625,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         <div>
                           <div className="iiris-maintenance-modal-text-row">
                             <div className="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
-                            <div className="iiris-maintenance-modal-text-normal">{{dayOfMonth}}</div>
+                            <div className="iiris-maintenance-modal-text-normal">{dayOfMonth}</div>
                           </div>
                         </div>
                       ) : (

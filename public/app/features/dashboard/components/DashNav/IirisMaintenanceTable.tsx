@@ -59,13 +59,13 @@ export function IirisMaintenanceTable(props: Props) {
                 return (
                   <td
                     {...cell.getCellProps()}
-                    className={'iiris-table-cell ' + (props.ongoingMaintenanceIds.indexOf(props.data[row.index].id) > -1 ? 'iiris-colored-row' : '')}
+                    className={'iiris-table-cell ' + (props.ongoingMaintenanceIds.indexOf(props.data[row.index].internalId) > -1 ? 'iiris-colored-row' : '')}
                   >
                     {cell.render('Cell')}
                   </td>
                 )
               })}
-              <td className="iiris-button-cell">
+              <td className={'iiris-button-cell ' + (props.ongoingMaintenanceIds.indexOf(props.data[row.index].internalId) > -1 ? 'iiris-colored-row' : '')}>
                 <div className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button" onClick={() => props.onEditMaintenance(props.data[row.index].id)} title="Muokkaa huoltoa"><span className="fa fa-edit"></span></div>
                 <div className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button primary" onClick={() => props.onStopMaintenance(props.data[row.index].id)} title="Lopeta huolto"><span className="fa fa-remove"></span></div>
               </td>

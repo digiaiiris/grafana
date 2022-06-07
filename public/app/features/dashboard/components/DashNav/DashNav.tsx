@@ -248,7 +248,7 @@ class DashNav extends PureComponent<Props, State> {
           this.allMaintenances = [];
         }
         // this.listModalScope.allMaintenances = this.allMaintenances;
-        const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.id);
+        const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId + '');
         this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
         console.log('all maintenances');
         console.log(this.allMaintenances);
