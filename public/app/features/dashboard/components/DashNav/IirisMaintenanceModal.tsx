@@ -496,6 +496,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.setStrictEndTimeDate(strictEndTimeDate);
     this.selectedHosts = this.props.hosts.map((host: any) => ({ ...host, selected: true }));
     this.allHostsSelected = true;
+    this.description = '';
     // Populate form with preselected maintenance values
     if (this.scope.selectedMaintenance) {
       const m = this.scope.selectedMaintenance;
@@ -603,13 +604,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     const options: any = {};
     if (maintenanceType === 2) {
       // Daily maintenance
-      options.every = this.scope.everyNDays;
+      options.every = this.state.everyNDays;
     } else if (maintenanceType === 3) {
       // Weekly maintenance
-      options.every = this.scope.everyNWeeks;
+      options.every = this.state.everyNWeeks;
       let dayOfWeekBinary = '';
-      Object.keys(this.scope.weekdays).map(weekday => {
-        if (this.scope.weekdays[weekday]) {
+      Object.keys(this.state.weekdays).map(weekday => {
+        if (this.state.weekdays[weekday]) {
           dayOfWeekBinary = '1' + dayOfWeekBinary;
         } else {
           dayOfWeekBinary = '0' + dayOfWeekBinary;
@@ -619,21 +620,21 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     } else if (maintenanceType === 4) {
       // Monthly maintenance
       let monthBinary = '';
-      Object.keys(this.scope.months).map(month => {
-        if (this.scope.months[month] && month !== 'all') {
+      Object.keys(this.state.months).map(month => {
+        if (this.state.months[month] && month !== 'all') {
           monthBinary = '1' + monthBinary;
         } else {
           monthBinary = '0' + monthBinary;
         }
       });
       options.month = parseInt(monthBinary, 2);
-      if (this.scope.dayOfMonthOrWeekSelected.value === MONTH) {
-        options.day = this.scope.dayOfMonth;
-      } else if (this.scope.dayOfMonthOrWeekSelected.value === WEEK) {
+      if (this.state.dayOfMonthOrWeekSelected.value === MONTH) {
+        options.day = this.state.dayOfMonth;
+      } else if (this.state.dayOfMonthOrWeekSelected.value === WEEK) {
         options.every = this.everyDayOfWeekInput.value;
         let dayOfWeekBinary = '';
-        Object.keys(this.scope.monthlyWeekdays).map(weekday => {
-          if (this.scope.monthlyWeekdays[weekday]) {
+        Object.keys(this.state.monthlyWeekdays).map(weekday => {
+          if (this.state.monthlyWeekdays[weekday]) {
             dayOfWeekBinary = '1' + dayOfWeekBinary;
           } else {
             dayOfWeekBinary = '0' + dayOfWeekBinary;
@@ -665,7 +666,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
     });
     const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
-    const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
+    const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
       this.setState({ errorText: 'Ainakin yhden palvelimen täytyy olla valittu' });
     } else if (maintenanceName.length > 128) {
@@ -680,7 +681,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         options,
         startDate,
         stopDate,
-        this.scope.selectedMaintenance ? this.scope.selectedMaintenance.id : null
+        this.props.selectedMaintenance ? this.props.selectedMaintenance.id : null
       );
       this.props.onDismiss();
     }
