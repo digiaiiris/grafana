@@ -599,7 +599,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for starting maintenance
    */
   onStartMaintenance = () => {
-    const maintenanceType = parseInt(this.mTypeInput.value, 10);
+    const maintenanceType = parseInt(this.state.maintenanceType, 10);
     const options: any = {};
     if (maintenanceType === 2) {
       // Daily maintenance

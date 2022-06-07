@@ -535,21 +535,21 @@ class DashNav extends PureComponent<Props, State> {
     console.log('Open maintenance modal ' + maintenanceID);
     this.selectedMaintenanceId = maintenanceID;
     const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
-    this.setState({ showMaintenanceModal: true, selectedMaintenance });
+    this.setState({ showMaintenanceModal: true, selectedMaintenance, showMaintenanceListModal: false, showMaintenanceConfirmModal: false });
   };
 
   /**
    * Open create maintenance modal
    */
   openAllMaintenancesModal = () => {
-    this.setState({ showMaintenanceListModal: true });
+    this.setState({ showMaintenanceListModal: true, showMaintenanceModal: false, showMaintenanceConfirmModal: false });
   };
 
   /**
    * Open maintenance confirmation modal
    */
   openConfirmMaintenanceModal = (confirmText: string) => {
-    this.setState({ showMaintenanceConfirmModal: true, confirmText });
+    this.setState({ showMaintenanceConfirmModal: true, confirmText, showMaintenanceListModal: false, showMaintenanceModal: false });
   };
   /* tslint:enable */
 
