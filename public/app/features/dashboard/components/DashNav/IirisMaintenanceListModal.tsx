@@ -11,7 +11,7 @@ interface Props {
   openMaintenanceModal(): void;
   onStopMaintenance(maintenanceId: string): void;
   onEditMaintenance(maintenanceId: string): void;
-  ongoingMaintenanceIds?: any[];
+  ongoingMaintenanceIds: string[];
   selectedMaintenanceId?: string;
   confirmIsVisible: boolean;
   confirmText: string;
@@ -67,6 +67,7 @@ export function IirisMaintenanceListModal(props: Props) {
                     columns={columns}
                     onEditMaintenance={props.onEditMaintenance}
                     onStopMaintenance={props.onStopMaintenance}
+                    ongoingMaintenanceIds={props.ongoingMaintenanceIds}
                   />
                 </div>
               </div>

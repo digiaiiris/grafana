@@ -5,7 +5,8 @@ $button-background-secondary-color: #505050;
 $button-text-color: #ffffff;
 $table-line-color: #cccccc;
 
-div[role='dialog'].modal {
+div[role='dialog'].modal,
+.modal {
   overflow-y: auto;
   max-height: 90%;
   max-width: 1180px;
@@ -13,18 +14,20 @@ div[role='dialog'].modal {
   top: 20px;
 }
 
+div[role='dialog'].modal-body > div:nth-child(2) {
+  padding: 0;
+}
+
 .modal-body {
   > div:first-child {
     border: none;
-  }
-  > div:nth-child(2) {
-    padding: 0;
   }
   .modal-header {
     border: none;
     background: $panel-background-color;
     box-shadow: none;
-    &.modal-header-title {
+    &.modal-header-title,
+    .modal-header-title {
       font-size: 1.8rem;
       font-style: normal;
       margin-left: 18px;

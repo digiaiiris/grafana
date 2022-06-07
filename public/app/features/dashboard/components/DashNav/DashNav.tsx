@@ -59,6 +59,7 @@ interface State {
   confirmIsVisible: boolean;
   confirmText: string;
   confirmAction: any;
+  ongoingMaintenanceIds: string[];
 }
 
 interface DashNavButtonModel {
@@ -247,11 +248,10 @@ class DashNav extends PureComponent<Props, State> {
           this.allMaintenances = [];
         }
         // this.listModalScope.allMaintenances = this.allMaintenances;
-        this.setState({ allMaintenances: this.allMaintenances });
+        const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
+        this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
         console.log('all maintenances');
         console.log(this.allMaintenances);
-        // this.listModalScope.ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
-        // this.listModalScope.$apply();
       }).catch((err: any) => {
         this.handleError(err);
       });
@@ -565,6 +565,7 @@ class DashNav extends PureComponent<Props, State> {
       confirmIsVisible: false,
       confirmText: '',
       confirmAction: undefined,
+      ongoingMaintenanceIds: [],
     }
   }
 
@@ -855,6 +856,7 @@ class DashNav extends PureComponent<Props, State> {
           confirmAction={this.state.confirmAction}
           selectedMaintenanceId={this.state.selectedMaintenance?.id}
           onCloseConfirmation={() => this.setState({ confirmIsVisible: false })}
+          ongoingMaintenanceIds={this.state.ongoingMaintenanceIds}
         />
         <IirisMaintenanceConfirmModal
           show={this.state.showMaintenanceConfirmModal}

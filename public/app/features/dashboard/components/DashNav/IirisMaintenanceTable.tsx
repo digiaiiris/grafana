@@ -13,6 +13,7 @@ interface Props {
   columns: ColumnType[];
   onEditMaintenance: (maintenanceId: string) => void;
   onStopMaintenance: (maintenanceId: string) => void;
+  ongoingMaintenanceIds: string[];
 }
  
 export function IirisMaintenanceTable(props: Props) {
@@ -58,7 +59,7 @@ export function IirisMaintenanceTable(props: Props) {
                 return (
                   <td
                     {...cell.getCellProps()}
-                    className="iiris-table-cell"
+                    className={'iiris-table-cell ' + props.ongoingMaintenanceIds.indexOf(props.data[row.index].id) > -1 ? 'iiris-colored-row' : ''}
                   >
                     {cell.render('Cell')}
                   </td>

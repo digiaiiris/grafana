@@ -664,7 +664,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         hostIds.push(option.value);
       }
     });
-    const maintenanceName = (this.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
+    const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
     const duration = this.scope.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
       this.setState({ errorText: 'Ainakin yhden palvelimen täytyy olla valittu' });
@@ -1162,7 +1162,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           anyHostSelected = true;
         }
       });
-      const maintenanceName = (this.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
+      const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
       if (!anyHostSelected) {
         this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
         valid = false;
@@ -1414,41 +1414,43 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         </div>
                       </div>
                     </div>
-                    <div className="iiris-modal-column" ng-if="ctrl.mTypeInput.value=='2'||ctrl.mTypeInput.value=='3'||ctrl.mTypeInput.value=='4'">
-                      <label className="gf-form-label">Lopeta toisto</label>
-                      <div className="date-selection-row">
-                        <div className="date-selection-container">
-                          <div>Päivä</div>
-                          <div className="gf-form-select-wrapper">
-                            <select className="gf-form-input" value={dayStopInput} onChange={e => this.onDayStopValueChanged(parseInt(e.target.value, 10))}>
-                              { this.dayStopInput.options.map((option: any) => (
-                                <option value={option.value} key={'ds' + option.value}>{ option.text }</option>
-                              )) }
-                            </select>
+                    { parseInt(maintenanceType, 10) > 0 ? (
+                      <div className="iiris-modal-column">
+                        <label className="gf-form-label">Lopeta toisto</label>
+                        <div className="date-selection-row">
+                          <div className="date-selection-container">
+                            <div>Päivä</div>
+                            <div className="gf-form-select-wrapper">
+                              <select className="gf-form-input" value={dayStopInput} onChange={e => this.onDayStopValueChanged(parseInt(e.target.value, 10))}>
+                                { this.dayStopInput.options.map((option: any) => (
+                                  <option value={option.value} key={'ds' + option.value}>{ option.text }</option>
+                                )) }
+                              </select>
+                            </div>
                           </div>
-                        </div>
-                        <div className="date-selection-container">
-                          <div>Kuukausi</div>
-                          <div className="gf-form-select-wrapper">
-                            <select className="gf-form-input" value={monthStopInput} onChange={e => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}>
-                              { this.monthStopInput.options.map((option: any) => (
-                                <option value={option.value} key={'ms' + option.value}>{ option.text }</option>
-                              )) }
-                            </select>
+                          <div className="date-selection-container">
+                            <div>Kuukausi</div>
+                            <div className="gf-form-select-wrapper">
+                              <select className="gf-form-input" value={monthStopInput} onChange={e => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}>
+                                { this.monthStopInput.options.map((option: any) => (
+                                  <option value={option.value} key={'ms' + option.value}>{ option.text }</option>
+                                )) }
+                              </select>
+                            </div>
                           </div>
-                        </div>
-                        <div className="date-selection-container">
-                          <div>Vuosi</div>
-                          <div className="gf-form-select-wrapper">
-                            <select className="gf-form-input" value={yearStopInput} onChange={e => this.onYearStopValueChanged(parseInt(e.target.value, 10))}>
-                              { this.yearStopInput.options.map((option: any) => (
-                                <option value={option.value} key={'ys' + option.value}>{ option.text }</option>
-                              )) }
-                            </select>
+                          <div className="date-selection-container">
+                            <div>Vuosi</div>
+                            <div className="gf-form-select-wrapper">
+                              <select className="gf-form-input" value={yearStopInput} onChange={e => this.onYearStopValueChanged(parseInt(e.target.value, 10))}>
+                                { this.yearStopInput.options.map((option: any) => (
+                                  <option value={option.value} key={'ys' + option.value}>{ option.text }</option>
+                                )) }
+                              </select>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ) : null }
                   </div>
                   { !strictEndTimeSelected ? (
                     <div className="gf-form-group maintenance-row-container">
@@ -1618,18 +1620,21 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         <div className="iiris-maintenance-modal-text-label">Toistetaan kuukautena</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayMonths}</div>
                       </div>
-                      <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='MONTH'">
-                        <div className="iiris-maintenance-modal-text-row">
-                          <div className="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
-                          <div className="iiris-maintenance-modal-text-normal">{{dayOfMonth}}</div>
+                      { dayOfMonthOrWeekSelected === MONTH ? (
+                        <div>
+                          <div className="iiris-maintenance-modal-text-row">
+                            <div className="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
+                            <div className="iiris-maintenance-modal-text-normal">{{dayOfMonth}}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div ng-if="ctrl.scope.dayOfMonthOrWeekSelected.value=='WEEK'">
-                        <div className="iiris-maintenance-modal-text-row">
-                          <div className="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
-                          <div className="iiris-maintenance-modal-text-normal">{this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}</div>
+                      ) : (
+                        <div>
+                          <div className="iiris-maintenance-modal-text-row">
+                            <div className="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
+                            <div className="iiris-maintenance-modal-text-normal">{this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}</div>
+                          </div>
                         </div>
-                      </div>
+                      ) }
                     </div>
                   ) : null }
                   { parseInt(maintenanceType, 10) > 0 ? (
