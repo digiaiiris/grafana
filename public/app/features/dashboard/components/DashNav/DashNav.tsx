@@ -103,7 +103,6 @@ class DashNav extends PureComponent<Props, State> {
   confirmModalScope: any;
 
   onOpenMaintenanceDialog = () => {
-    console.log('Open maintenance dialog');
     const { dashboard } = this.props;
     const templateSrv = getTemplateSrv();
     this.datasourceSrv = getDataSourceSrv();
@@ -126,13 +125,10 @@ class DashNav extends PureComponent<Props, State> {
       allSelected: true,
     };
     this.hostGroup = replaceTemplateVars(dashboard.maintenanceHostGroup, templateSrv);
-    console.log('get hostsgroups');
     getHostGroups(this.hostGroup, this.availableDatasources, this.datasourceSrv)
       .then((groupId: string) => {
         this.groupId = groupId;
-        console.log(groupId);
         getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
-          console.log(hosts);
           // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
           this.hosts.options = hosts
             .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
@@ -250,8 +246,6 @@ class DashNav extends PureComponent<Props, State> {
         // this.listModalScope.allMaintenances = this.allMaintenances;
         const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
         this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
-        console.log('all maintenances');
-        console.log(this.allMaintenances);
       }).catch((err: any) => {
         this.handleError(err);
       });
@@ -375,7 +369,6 @@ class DashNav extends PureComponent<Props, State> {
    * @param {number} endTime epoch
    */
   onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
-    console.log('update end time ' + maintenanceID);
     const curTime = this.getCurrentTimeEpoch();
     if (!endTime) {
       endTime = curTime;
@@ -532,7 +525,6 @@ class DashNav extends PureComponent<Props, State> {
    * @param {string} maintenanceID (optional)
    */
   openMaintenanceModal = (maintenanceID = '') => {
-    console.log('Open maintenance modal ' + maintenanceID);
     this.selectedMaintenanceId = maintenanceID;
     const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
     this.setState({ showMaintenanceModal: true, selectedMaintenance, showMaintenanceListModal: false, showMaintenanceConfirmModal: false });
