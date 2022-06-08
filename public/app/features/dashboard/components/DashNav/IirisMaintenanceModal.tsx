@@ -1213,7 +1213,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             this.displayMonths += this.monthNames[month];
           }
         });
-        this.displayMonthlyWeekdayNumber = this.everyDayOfWeekInput.options.find((option: any) => option.value === this.state.everyDayOfWeekInput).text;
+        this.displayMonthlyWeekdayNumber = this.everyDayOfWeekInput.options.find((option: any) => option.value === this.state.everyDayOfWeekInput).label;
         this.displayMonthlyWeekdayNames = '';
         Object.keys(this.state.monthlyWeekdays).forEach((weekday: string) => {
           if (this.state.monthlyWeekdays[weekday]) {
