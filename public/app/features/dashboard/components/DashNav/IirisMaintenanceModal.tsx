@@ -628,9 +628,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
       });
       options.month = parseInt(monthBinary, 2);
-      if (this.state.dayOfMonthOrWeekSelected.value === MONTH) {
+      if (this.state.dayOfMonthOrWeekSelected === MONTH) {
         options.day = this.state.dayOfMonth;
-      } else if (this.state.dayOfMonthOrWeekSelected.value === WEEK) {
+      } else if (this.state.dayOfMonthOrWeekSelected === WEEK) {
         options.every = this.everyDayOfWeekInput.value;
         let dayOfWeekBinary = '';
         Object.keys(this.state.monthlyWeekdays).map(weekday => {
