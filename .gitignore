@@ -6,7 +6,10 @@ coverage/
 awsconfig
 /.awcache
 /dist
+/public/build
 public/dist/tsconfig.tsbuildinfo
+/public/views/index.html
+/public/views/error.html
 /emails/dist
 /reports
 /e2e/tmp
@@ -14,6 +17,7 @@ public/dist/tsconfig.tsbuildinfo
 vendor/
 /docs/menu.yaml
 /requests
+grafana-build.tar.gz
 
 # Yarn
 .yarn/*
