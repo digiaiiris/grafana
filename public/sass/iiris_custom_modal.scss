@@ -158,6 +158,22 @@ div[role='dialog'].modal-body > div:nth-child(2) {
   }
 }
 
+.iiris-modal-box {
+  max-width: 1020px;
+  width: 100%;
+  & > div:first-child {
+    border: none;
+  }
+}
+
+.iiris-modal-title-text {
+  margin-left: 10px;
+  margin-top: 10px;
+  align-self: center;
+  font-weight: 400;
+  font-size: 1.8rem;
+}
+
 .checkbox-block {
   display: flex;
   flex-direction: row;
