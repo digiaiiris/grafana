@@ -1,47 +1,31 @@
-![Grafana](docs/logo-horizontal.png)
+# Grafana
 
-The open-source platform for monitoring and observability.
+This is Digia Iiris's custom version of Grafana app with some added features
 
-[![License](https://img.shields.io/github/license/grafana/grafana)](LICENSE)
-[![Drone](https://drone.grafana.net/api/badges/grafana/grafana/status.svg)](https://drone.grafana.net/grafana/grafana)
-[![Go Report Card](https://goreportcard.com/badge/github.com/grafana/grafana)](https://goreportcard.com/report/github.com/grafana/grafana)
+## Setting Up Development Environment
 
-Grafana allows you to query, visualize, alert on and understand your metrics no matter where they are stored. Create, explore, and share dashboards with your team and foster a data driven culture:
+In short you need: Go, Node and Yarn to develop Grafana.
+Read the instructions from Grafana site:
+[Grafana Developer Guide](https://github.com/grafana/grafana/blob/main/contribute/developer-guide.md)
 
-- **Visualize:** Fast and flexible client side graphs with a multitude of options. Panel plugins offer many different ways to visualize metrics and logs.
-- **Dynamic Dashboards:** Create dynamic & reusable dashboards with template variables that appear as dropdowns at the top of the dashboard.
-- **Explore Metrics:** Explore your data through ad-hoc queries and dynamic drilldown. Split view and compare different time ranges, queries and data sources side by side.
-- **Explore Logs:** Experience the magic of switching from metrics to logs with preserved label filters. Quickly search through all your logs or streaming them live.
-- **Alerting:** Visually define alert rules for your most important metrics. Grafana will continuously evaluate and send notifications to systems like Slack, PagerDuty, VictorOps, OpsGenie.
-- **Mixed Data Sources:** Mix different data sources in the same graph! You can specify a data source on a per-query basis. This works for even custom datasources.
+First start Grafana backend:
+`make run`
 
-## Get started
+Then start Grafana frontend:
+`yarn start`
 
-- [Get Grafana](https://grafana.com/get)
-- [Installation guides](http://docs.grafana.org/installation/)
+Open browser from http://localhost:3000
 
-Unsure if Grafana is for you? Watch Grafana in action on [play.grafana.org](https://play.grafana.org/)!
+Note: You need to have Iiris frontend also running in http://localhost:8080 because our custom code will expect to find
+Grafana in an iFrame under Iiris. You also need to set Grafana's config `allow_embed = true` in `conf/defaults.ini`.
 
-## Documentation
+## Make a Build
 
-The Grafana documentation is available at [grafana.com/docs](https://grafana.com/docs/).
+To build Grafana run:
+`yarn build`
 
-## Contributing
+This will make a compiled version of Grafana to public-folder.
 
-If you're interested in contributing to the Grafana project:
-
-- Start by reading the [Contributing guide](https://github.com/grafana/grafana/blob/HEAD/CONTRIBUTING.md).
-- Learn how to set up your local environment, in our [Developer guide](https://github.com/grafana/grafana/blob/HEAD/contribute/developer-guide.md).
-- Explore our [beginner-friendly issues](https://github.com/grafana/grafana/issues?q=is%3Aopen+is%3Aissue+label%3A%22beginner+friendly%22).
-- Look through our [style guide and Storybook](https://developers.grafana.com/ui/latest/index.html).
-
-## Get involved
-
-- Follow [@grafana on Twitter](https://twitter.com/grafana/).
-- Read and subscribe to the [Grafana blog](https://grafana.com/blog/).
-- If you have a specific question, check out our [discussion forums](https://community.grafana.com/).
-- For general discussions, join us on the [official Slack](https://slack.grafana.com) team.
-
-## License
-
-Grafana is distributed under [AGPL-3.0-only](LICENSE). For Apache-2.0 exceptions, see [LICENSING.md](https://github.com/grafana/grafana/blob/HEAD/LICENSING.md).
+Finally run `. create-tarball.sh` which will create you `grafana-build.tar.gz` file.
+You need to add this tarball to the release in github when tagging a new version. Tarball is loaded by Grafana's
+Docker build in docker-hub.

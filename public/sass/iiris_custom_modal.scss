@@ -1,27 +1,38 @@
 $panel-background-color: #ffffff;
-$panel-background-color-dark: #000000;
+$panel-background-color-dark: #181b1f;
 $button-background-color: #d01d00;
 $button-background-secondary-color: #505050;
 $button-text-color: #ffffff;
 $table-line-color: #cccccc;
 
+div[role='dialog'].modal,
 .modal {
   overflow-y: auto;
   max-height: 90%;
   max-width: 1180px;
+  width: auto;
   top: 20px;
 }
 
+div[role='dialog'].modal-body > div:nth-child(2) {
+  padding: 0;
+}
+
 .modal-body {
+  > div:first-child {
+    border: none;
+  }
   .modal-header {
     border: none;
     background: $panel-background-color;
     box-shadow: none;
+    &.modal-header-title,
     .modal-header-title {
       font-size: 1.8rem;
       font-style: normal;
-      margin-left: 2rem;
-      margin-top: 1rem;
+      margin-left: 18px;
+      margin-top: 10px;
+      font-weight: 400;
     }
     .gf-tabs {
       display: none;
@@ -132,12 +143,35 @@ $table-line-color: #cccccc;
   margin-bottom: 15px;
 }
 
-.modal-body .modal-content .gf-form-label.checkbox-label {
-  background: none;
-  border: none;
-  margin: 0 0 0 5px;
+.modal-body .modal-content {
+  .checkbox-label {
+    background: none;
+    border: none;
+    margin: 0 0 0 5px;
+    font-weight: 400;
+    height: 21px;
+  }
+  .iiris-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.iiris-modal-box {
+  max-width: 1020px;
+  width: 100%;
+  & > div:first-child {
+    border: none;
+  }
+}
+
+.iiris-modal-title-text {
+  margin-left: 10px;
+  margin-top: 10px;
+  align-self: center;
   font-weight: 400;
-  height: 21px;
+  font-size: 1.8rem;
 }
 
 .checkbox-block {
@@ -177,10 +211,19 @@ $table-line-color: #cccccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
+  padding: 3px 10px;
   img {
     object-fit: contain;
     height: 44px;
+  }
+}
+
+header .iiris-custom-toolbar {
+  display: flex;
+  flex-direction: row;
+  background-color: $panel-background-color;
+  .page-toolbar {
+    flex: 1 1 auto;
   }
 }
 

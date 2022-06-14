@@ -17,6 +17,7 @@ public/dist/tsconfig.tsbuildinfo
 vendor/
 /docs/menu.yaml
 /requests
+grafana-build.tar.gz
 
 # Yarn
 .yarn/*

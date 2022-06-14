@@ -79,6 +79,11 @@ export interface DashboardLink {
 }
 
 export class DashboardModel {
+  maintenanceHostGroup: string;
+  selectedDatasource: string;
+  serviceInfoWikiUrl: string;
+  serviceInfoWikiUrlIsExternal: boolean;
+  dashboardLogo: string;
   id: any;
   uid: string;
   title: string;
@@ -148,6 +153,11 @@ export class DashboardModel {
     this.uid = data.uid || null;
     this.revision = data.revision;
     this.title = data.title ?? 'No Title';
+    this.maintenanceHostGroup = data.maintenanceHostGroup;
+    this.selectedDatasource = data.selectedDatasource;
+    this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
+    this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
+    this.dashboardLogo = data.dashboardLogo;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
     this.tags = data.tags ?? [];
@@ -297,6 +307,9 @@ export class DashboardModel {
           return true;
         }
         if (panel.type === 'add-panel') {
+          return false;
+        }
+        if (panel.isTabPanel) {
           return false;
         }
         // skip repeated panels in the saved model
@@ -458,15 +471,15 @@ export class DashboardModel {
     return data;
   }
 
-  getNextPanelId() {
-    let max = 0;
+  getNextPanelId(previousMaxId?: number) {
+    let max = previousMaxId || 0;
 
     for (const panel of this.panels) {
       if (panel.id > max) {
         max = panel.id;
       }
 
-      if (panel.collapsed) {
+      if (panel.collapsed || (panel.type === 'iiris-tab-row-panel' && panel.panels)) {
         for (const rowPanel of panel.panels) {
           if (rowPanel.id > max) {
             max = rowPanel.id;
@@ -507,7 +520,14 @@ export class DashboardModel {
   }
 
   addPanel(panelData: any) {
-    panelData.id = this.getNextPanelId();
+    let nextPanelId = this.getNextPanelId();
+    panelData.id = nextPanelId;
+    if (panelData.type === 'iiris-tab-row-panel' && panelData.panels && panelData.panels.length > 0) {
+      panelData.panels.map((tabRowPanel: any, index: number) => {
+        nextPanelId = this.getNextPanelId(nextPanelId);
+        panelData.panels[index].id = nextPanelId;
+      });
+    }
 
     this.panels.unshift(new PanelModel(panelData));
 
@@ -555,7 +575,9 @@ export class DashboardModel {
 
     for (let i = 0; i < this.panels.length; i++) {
       const panel = this.panels[i];
-      if ((!panel.repeat || panel.repeatedByRow) && panel.repeatPanelId && panel.repeatIteration !== this.iteration) {
+      /* eslint-disable */
+      /* tslint:disable */
+      if ((!panel.repeat || panel.repeatedByRow) && panel.repeatPanelId && panel.repeatIteration !== this.iteration && !panel.isTabPanel) {
         panelsToRemove.push(panel);
       }
     }
@@ -993,10 +1015,16 @@ export class DashboardModel {
       return;
     }
 
-    const rowPanels = this.getRowPanels(rowIndex);
+    let rowPanels = this.getRowPanels(rowIndex);
 
     // remove panels
     pull(this.panels, ...rowPanels);
+
+    // Filter out tab panels under regular row
+    if (row.type === 'row') {
+      rowPanels = rowPanels.filter((panel: any) => !panel.isTabPanel);
+    }
+    
     // save panel models inside row panel
     row.panels = map(rowPanels, (panel: PanelModel) => panel.getSaveModel());
     row.collapsed = true;

@@ -1204,10 +1204,10 @@ export function fetchStatusData(
             .toPromise()
             .then((result: any) => {
               // Map SQL results to status data object
-              // Result contains only a single row, so map row data to matching columns in object
+              // Result contains only a single row, so map row data to matching fields in object
               // e.g. { A: { status: 2, duration: 12456 }, B: { status: 0, severity: 5, time_since_last: 2345 } }
               //
-              // Result contains different columns based on status:
+              // Result contains different fields based on status:
               // status  root_cause_duration  root_cause_description  root_cause_comments  root_cause_severity
               // -1 	   7460                 testi                   null                 4
               // status  duration
@@ -1221,8 +1221,8 @@ export function fetchStatusData(
               const statusData: any = {};
               result.data.map((item: any) => {
                 const statusItem: any = {};
-                item.columns.map((column: any, index: number) => {
-                  statusItem[column.text] = item.rows[0][index];
+                item.fields.map((field: any) => {
+                  statusItem[field.name] = field.values.buffer[0];
                 });
                 statusData[item.refId] = statusItem;
               });

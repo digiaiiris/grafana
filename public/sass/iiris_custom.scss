@@ -27,11 +27,24 @@ $table-line-color: #cccccc;
 .navbar,
 .user-activity-low .navbar,
 .view-mode--inactive .navbar,
-.playlist-active .navbar {
+.playlist-active .navbar,
+header .page-toolbar {
   background: $panel-background-color;
   padding-left: 10px;
   border-bottom: none;
-  padding: 2px !important;
+  padding: 5px 10px;
+}
+
+header .page-toolbar {
+  & > div:first-child {
+    display: none;
+  }
+  nav a {
+    font-size: 24px;
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+  }
 }
 
 .page-dashboard .grafana-app .main-view {
@@ -121,7 +134,8 @@ $table-line-color: #cccccc;
 }
 
 .navbar .navbar-button,
-.navbar .navbar-button:hover {
+.navbar .navbar-button:hover,
+header .page-toolbar .toolbar-button {
   color: $button-text-color;
   background-image: none;
   background-color: $button-background-secondary-color;
@@ -154,19 +168,21 @@ body.page-dashboard {
   background-color: $page-background-color;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6 {
-  font-family: $text-font-family;
+.theme-light {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .h1,
+  .h2,
+  .h3,
+  .h4,
+  .h5,
+  .h6 {
+    font-family: $text-font-family;
+  }
 }
 
 h2,
@@ -704,6 +720,9 @@ li[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
     width: auto;
     min-width: 150px;
     margin-right: 10px;
+    &:focus {
+      outline: none;
+    }
   }
   input {
     padding: 3px 6px;

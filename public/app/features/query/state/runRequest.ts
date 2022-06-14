@@ -6,6 +6,7 @@ import { catchError, map, mapTo, share, takeUntil, tap } from 'rxjs/operators';
 import { backendSrv } from 'app/core/services/backend_srv';
 // Types
 import {
+  AppEvents,
   DataFrame,
   DataQueryError,
   DataQueryRequest,
@@ -26,6 +27,7 @@ import { dataSource as expressionDatasource } from 'app/features/expressions/Exp
 import { ExpressionQuery } from 'app/features/expressions/types';
 import { cancelNetworkRequestsOnUnsubscribe } from './processing/canceler';
 import { isExpressionReference } from '@grafana/runtime/src/utils/DataSourceWithBackend';
+import appEvents from 'app/core/app_events';
 
 type MapOfResponsePackets = { [str: string]: DataQueryResponse };
 
@@ -144,6 +146,13 @@ export function runRequest(
     // handle errors
     catchError((err) => {
       const errLog = typeof err === 'string' ? err : JSON.stringify(err);
+      if (err && err.data && err.data.message) {
+        appEvents.emit(AppEvents.alertError, [err.data.message]);
+      } else if (err && err.status) {
+        appEvents.emit(AppEvents.alertError, [err.status]);
+      } else {
+        appEvents.emit(AppEvents.alertError, [JSON.stringify(err)]);
+      }
       console.error('runRequest.catchError', errLog);
       return of({
         ...state.panelData,
