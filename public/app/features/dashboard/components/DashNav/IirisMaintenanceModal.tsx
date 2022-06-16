@@ -4,6 +4,7 @@ import React, { PureComponent } from 'react';
 import { Modal } from '@grafana/ui';
 import _ from 'lodash';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
+import { contextSrv } from 'app/core/core';
 
 const WEEK = 'WEEK';
 const MONTH = 'MONTH';
@@ -155,9 +156,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   displayMonthlyWeekdayNames: any;
   selectedHosts: any;
   allHostsSelected = true;
+  texts: any;
 
   constructor(props: Props) {
     super(props);
+    this.texts = contextSrv.getLocalizedTexts();
     this.init();
     this.state = {
       wizardPhase: 1,
@@ -331,12 +334,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     };
     this.mTypeInput = {
       value: '0',
-      text: 'Yksittäinen',
+      text: this.texts.oneTime,
       options: [
-        { label: 'Yksittäinen', value: '0' },
-        { label: 'Päivittäinen', value: '2' },
-        { label: 'Viikottainen', value: '3' },
-        { label: 'Kuukausittainen', value: '4' },
+        { label: this.texts.oneTime, value: '0' },
+        { label: this.texts.daily, value: '2' },
+        { label: this.texts.weekly, value: '3' },
+        { label: this.texts.monthly, value: '4' },
       ],
     };
     this.maintenanceType = this.mTypeInput.text;
@@ -407,40 +410,40 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     };
     this.everyDayOfWeekInput = {
       value: 1,
-      text: 'Ensimmäinen',
+      text: this.texts.first,
       options: [
-        { label: 'Ensimmäinen', value: 1 },
-        { label: 'Toinen', value: 2 },
-        { label: 'Kolmas', value: 3 },
-        { label: 'Neljäs', value: 4 },
-        { label: 'Viimeinen', value: 5 },
+        { label: this.texts.first, value: 1 },
+        { label: this.texts.second, value: 2 },
+        { label: this.texts.third, value: 3 },
+        { label: this.texts.fourth, value: 4 },
+        { label: this.texts.last, value: 5 },
       ],
     };
     this.search = {
       text: ''
     };
     this.weekdayNames = {
-      monday: 'Maanantai',
-      tuesday: 'Tiistai',
-      wednesday: 'Keskiviikko',
-      thursday: 'Torstai',
-      friday: 'Perjantai',
-      saturday: 'Lauantai',
-      sunday: 'Sunnuntai',
+      monday: this.texts.monday,
+      tuesday: this.texts.tuesday,
+      wednesday: this.texts.wednesday,
+      thursday: this.texts.thursday,
+      friday: this.texts.friday,
+      saturday: this.texts.saturday,
+      sunday: this.texts.sunday,
     };
     this.monthNames = {
-      january: 'Tammikuu',
-      february: 'Helmikuu',
-      march: 'Maaliskuu',
-      april: 'Huhtikuu',
-      may: 'Toukokuu',
-      june: 'Kesäkuu',
-      july: 'Heinäkuu',
-      august: 'Elokuu',
-      september: 'Syyskuu',
-      october: 'Lokakuu',
-      november: 'Marraskuu',
-      december: 'Joulukuu',
+      january: this.texts.january,
+      february: this.texts.february,
+      march: this.texts.march,
+      april: this.texts.april,
+      may: this.texts.may,
+      june: this.texts.june,
+      july: this.texts.july,
+      august: this.texts.august,
+      september: this.texts.september,
+      october: this.texts.october,
+      november: this.texts.november,
+      december: this.texts.december,
     };
     let currentDate = new Date();
     let currentHours = currentDate.getHours();
@@ -668,10 +671,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
     const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
     if (!anyHostSelected) {
-      this.setState({ errorText: 'Ainakin yhden palvelimen täytyy olla valittu' });
+      this.setState({ errorText: this.texts.atLeastOneHostMustBeSelected });
     } else if (maintenanceName.length > 128) {
       const excessLength = maintenanceName.length - 128;
-      this.setState({ errorText: 'Huollon kuvaus on ' + excessLength + ' merkkiä liian pitkä' });
+      this.setState({ errorText: this.texts.maintenanceDescriptionIs + ' ' + excessLength + ' ' + this.texts.charsTooLong });
     } else {
       this.props.onCreateMaintenance(
         maintenanceType,
@@ -1059,12 +1062,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       if (maintenanceType === '2') {
         if (!this.state.everyNDays || !/^[0-9]*$/.test(this.state.everyNDays + '')) {
           valid = false;
-          this.scope.errorText += 'Kentän "Toistetaan n päivän välein" täytyy sisältää kokonaisluku. ';
+          this.scope.errorText += this.texts.dayFieldMustContainInteger + ' ';
         }
       } else if (maintenanceType === '3') {
         if (!this.state.everyNWeeks || !/^[0-9]*$/.test(this.state.everyNWeeks + '')) {
           valid = false;
-          this.scope.errorText += 'Kentän "Toistetaan n viikon välein" täytyy sisältää kokonaisluku. ';
+          this.scope.errorText += this.texts.weekFieldMustContainInteger + ' ';
         }
         let someWeekdaySelected = false;
         Object.keys(this.state.weekdays).map(weekday => {
@@ -1074,7 +1077,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         });
         if (!someWeekdaySelected) {
           valid = false;
-          this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
+          this.scope.errorText += this.texts.oneWeekdayMustBeChosen + ' ';
         }
       } else if (maintenanceType === '4') {
         let someMonthSelected = false;
@@ -1085,12 +1088,12 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         });
         if (!someMonthSelected) {
           valid = false;
-          this.scope.errorText += 'Ainakin yhden kuukauden täytyy olla valittu. ';
+          this.scope.errorText += this.texts.oneMonthMustBeChosen + ' ';
         }
         if (this.state.dayOfMonthOrWeekSelected === MONTH) {
           if (!this.state.dayOfMonth || !/^[0-9]*$/.test(this.state.dayOfMonth + '')) {
             valid = false;
-            this.scope.errorText += 'Kentän "Toistetaan kuukauden päivänä" täytyy sisältää kokonaisluku. ';
+            this.scope.errorText += this.texts.monthFieldMustContainInteger + ' ';
           }
         } else if (this.state.dayOfMonthOrWeekSelected === WEEK) {
           let someWeekdaySelected = false;
@@ -1101,7 +1104,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           });
           if (!someWeekdaySelected) {
             valid = false;
-            this.scope.errorText += 'Ainakin yhden viikonpäivän täytyy olla valittu. ';
+            this.scope.errorText += this.texts.oneWeekdayMustBeChosen + ' ';
           }
         }
       }
@@ -1124,10 +1127,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       if (maintenanceType === '2' || maintenanceType === '3' || maintenanceType === '4') {
         if (stopPeriodDate <= startDate) {
           valid = false;
-          this.scope.errorText += 'Toiston päättymisaika pitää olla huollon alkamisajan jälkeen. ';
+          this.scope.errorText += this.texts.repeatMustEndAfterStartTime + ' ';
         } else if (stopPeriodDate < currentDate) {
           valid = false;
-          this.scope.errorText += 'Toiston päättymisaika ei voi olla menneisyydessä. ';
+          this.scope.errorText += this.texts.repeatEndTimeCantBeInPast + ' ';
         }
         // Check if period continues over next DST change
         const curYear = new Date().getFullYear();
@@ -1140,17 +1143,17 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
         if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
           valid = false;
-          this.scope.errorText += 'Toiston päättymisaika ei voi ylittää kesä/talviaika vaihdosta ' + 
+          this.scope.errorText += this.texts.repeatEndTimeCantOverlapDaylight + ' ' + 
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
       }
       if (maintenanceType === '0' && this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
         valid = false;
-        this.scope.errorText += 'Huollon päättymisajan pitää olla huollon alkamisajan jälkeen. ';
+        this.scope.errorText += this.texts.maintenanceEndMustBeAfterStart + ' ';
       }
       if (maintenanceType === '0' && stopDateTime < currentDate) {
         valid = false;
-        this.scope.errorText += 'Huollon päättymisaika ei voi olla menneisyydessä. ';
+        this.scope.errorText += this.texts.maintenanceEndCantBeInPast + ' ';
       }
       if (valid) {
         this.scope.wizardPhase = 2;
@@ -1165,11 +1168,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       });
       const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
       if (!anyHostSelected) {
-        this.scope.errorText = "Ainakin yhden palvelimen täytyy olla valittu";
+        this.scope.errorText = this.texts.atLeastOneHostMustBeSelected;
         valid = false;
       } else if (maintenanceName.length > 128) {
         const excessLength = maintenanceName.length - 128;
-        this.scope.errorText = "Huollon kuvaus on " + excessLength + " merkkiä liian pitkä";
+        this.scope.errorText = this.texts.maintenanceDescriptionIs + ' ' + excessLength + ' ' + this.texts.charsTooLong;
         valid = false;
       }
       if (valid) {

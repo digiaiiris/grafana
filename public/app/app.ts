@@ -90,9 +90,14 @@ if (process.env.NODE_ENV === 'development') {
 
 export class GrafanaApp {
   angularApp: AngularApp;
+  storedLanguage: string;
 
   constructor() {
     this.angularApp = new AngularApp();
+    // Check for Iiris language
+    this.storedLanguage = localStorage.getItem('iiris_language') || 'fi';
+    console.log('this.storedLanguage: ' + this.storedLanguage);
+    contextSrv.setStoredLanguage(this.storedLanguage);
   }
 
   async init() {

@@ -98,7 +98,6 @@ class DashNav extends PureComponent<Props, State> {
   allMaintenances: any;
   selectedMaintenanceId: any;
   maintenanceIconStyle: any;
-  allHostsTitle = 'Kaikki palvelimet';
   stoppingOngoingMaintenance: any;
   confirmModalScope: any;
 
