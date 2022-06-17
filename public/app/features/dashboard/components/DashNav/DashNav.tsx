@@ -100,6 +100,7 @@ class DashNav extends PureComponent<Props, State> {
   maintenanceIconStyle: any;
   stoppingOngoingMaintenance: any;
   confirmModalScope: any;
+  texts: any = {};
 
   onOpenMaintenanceDialog = () => {
     const { dashboard } = this.props;
@@ -212,17 +213,17 @@ class DashNav extends PureComponent<Props, State> {
           this.allMaintenances = [];
           maintenances.map((maintenance: any) => {
             if (maintenance.maintenanceType === 0) {
-              maintenance.maintenanceTypeString = 'yksi';
-              maintenance.maintenanceTypeStringFull = 'Yksittäinen huolto';
+              maintenance.maintenanceTypeString = this.texts.oneTimeAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.oneTime + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 2) {
-              maintenance.maintenanceTypeString = 'pvä';
-              maintenance.maintenanceTypeStringFull = 'Päivittäinen huolto';
+              maintenance.maintenanceTypeString = this.texts.dailyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.daily + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 3) {
-              maintenance.maintenanceTypeString = 'vko';
-              maintenance.maintenanceTypeStringFull = 'Viikottainen huolto';
+              maintenance.maintenanceTypeString = this.texts.weeklyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.weekly + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 4) {
-              maintenance.maintenanceTypeString = 'kk';
-              maintenance.maintenanceTypeStringFull = 'Kuukausittainen huolto';
+              maintenance.maintenanceTypeString = this.texts.monthlyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.monthly + ' ' + this.texts.maintenance;
             } else {
               maintenance.maintenanceTypeString = '';
             }
@@ -309,22 +310,22 @@ class DashNav extends PureComponent<Props, State> {
     let confirmAction: any;
     if (isOngoing && !selectedMaintenance.maintenanceType) {
       // In case of ongoing single maintenance we just set the end time
-      confirmText = 'Haluatko varmasti keskeyttää huollon?';
+      confirmText = this.texts.areYouSureWantToCancelMaintenance;
       confirmAction = this.onUpdateMaintenanceEndTime;
     } else {
       // Handle all other maintenances
       if (!selectedMaintenance.maintenanceType) {
         // Single maintenance
-        confirmText = 'Haluatko varmasti poistaa huollon?';
+        confirmText = this.texts.areYouSureWantToDeleteMaintenance;
       } else {
         // Periodic maintenances
         if (isOngoing) {
-          confirmText = 'Käynnissä olevaa ajastettua huoltoa ei voi keskeyttää.\n';
-          confirmText += 'Valitsemasi toiminto poistaa kaikki samaan sarjaan kuuluvat huollot.\n';
-          confirmText += 'Haluatko varmasti jatkaa?';
+          confirmText = this.texts.cantCancelStartedPeriodicMaintenance + '\n';
+          confirmText += this.texts.selectedActionWillDeleteAllMaintenancesInSeries + '\n';
+          confirmText += this.texts.areYouSureWantToContinue;
         } else {
-          confirmText = 'Haluatko varmasti poistaa ajastetun huollon?\n';
-          confirmText += 'Kaikki samaan sarjaan kuuluvat tulevat huollot poistetaan.';
+          confirmText = this.texts.areYouSureWantToDeletePeriodicMaintenance + '\n';
+          confirmText += this.texts.allMaintenancesInSeriesWillBeDeleted;
         }
       }
       if (selectedMaintenance.activeSince > curTime) {
@@ -403,9 +404,9 @@ class DashNav extends PureComponent<Props, State> {
             .request('maintenance.update', options)
             .then((answer: any) => {
               let showModal = true;
-              let infoText = 'Huolto on poistettu onnistuneesti.';
+              let infoText = this.texts.maintenanceHasBeenDeleted;
               if (this.stoppingOngoingMaintenance) {
-                infoText = 'Huolto on keskeytetty. Järjestelmän tila päivittyy 1-2 minuutissa.';
+                infoText = this.texts.maintenancehasBeenCanceled + ' ' + this.texts.systemStatusWillBeUpdated;
               }
               this.setMaintenanceUpdateTimeOut(infoText, showModal);
             })
@@ -432,7 +433,7 @@ class DashNav extends PureComponent<Props, State> {
           zabbix.zabbixAPI
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
-              this.setMaintenanceUpdateTimeOut('Huolto on poistettu onnistuneesti.', true);
+              this.setMaintenanceUpdateTimeOut(this.texts.maintenanceHasBeenDeleted, true);
             }).catch((err: any) => {
               this.handleError(err);
             });
@@ -495,17 +496,17 @@ class DashNav extends PureComponent<Props, State> {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            let infoText = 'Uusi huolto on käynnistetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.';
+            let infoText = this.texts.newMaintenanceHasBeenStarted + ' ' + this.texts.systemStatusWillBeUpdated;
             if (maintenanceId) {
-              infoText = 'Huolto on päivitetty onnistuneesti. Järjestelmän tila päivittyy 1-2 minuutissa.';
+              infoText = this.texts.maintenanceHasBeenUpdated + ' ' + this.texts.systemStatusWillBeUpdated;
             }
             let showModal = true;
             // Show only info popup if maintenance is in future
             if (this.getCurrentTimeEpoch(startDate) > this.getCurrentTimeEpoch()) {
               if (maintenanceId) {
-                infoText = 'Huolto on päivitetty onnistuneesti.';
+                infoText = this.texts.maintenanceHasBeenUpdated;
               } else {
-                infoText = 'Uusi huolto luotu onnistuneesti.';
+                infoText = this.texts.newMaintenanceHasBeenCreated;
               }
             }
             this.setMaintenanceUpdateTimeOut(infoText, showModal);
@@ -558,6 +559,7 @@ class DashNav extends PureComponent<Props, State> {
       confirmAction: undefined,
       ongoingMaintenanceIds: [],
     }
+    this.texts = contextSrv.getLocalizedTexts();
   }
 
   onClose = () => {

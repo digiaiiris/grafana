@@ -1255,7 +1255,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
               { wizardPhase === 1 ? (
                 <>
                   <div className="gf-form-group maintenance-row-container">
-                    <label className="gf-form-label">Huollon tyyppi</label>
+                    <label className="gf-form-label">{this.texts.maintenanceType}</label>
                     <div className="gf-form-select-wrapper iiris-fixed-width-select">
                       <select className="gf-form-input" value={maintenanceType} onChange={(e: any) => this.onMaintenanceTypeChanged(e.target.value)}>
                         { this.mTypeInput.options.map((option: any) => (
@@ -1266,7 +1266,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   </div>
                   { maintenanceType === '2' ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Toistetaan [n] päivän välein</label>
+                      <label className="gf-form-label">{this.texts.repeatEveryNDays}</label>
                       <div>
                         <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={everyNDays} onChange={(e: any) => this.setState({ everyNDays: e.target.value })} min="1" step="1" />
                       </div>
@@ -1274,7 +1274,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ) : null }
                   { maintenanceType === '3' ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Toistetaan [n] viikon välein</label>
+                      <label className="gf-form-label">{this.texts.repeatEveryNWeeks}</label>
                       <div>
                         <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={everyNWeeks} onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })} min="1" step="1" />
                       </div>
@@ -1282,7 +1282,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ) : null }
                   { maintenanceType === '3' ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Toistetaan viikonpäivänä</label>
+                      <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
                       <div className="checkbox-block">
                         { Object.keys(weekdays).map((day: string) => (
                           <div className="checkbox-container" key={day}>
@@ -1295,7 +1295,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ) : null }
                   { maintenanceType === '4' ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Toistetaan kuukautena</label>
+                      <label className="gf-form-label">{this.texts.repeatOnMonth}</label>
                       <div className="checkbox-block">
                         { [0, 3, 6, 9].map(index => (
                           <div className="checkbox-column" key={'col' + index}>
@@ -1310,7 +1310,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         <div className="checkbox-column">
                           <div className="checkbox-container">
                             <input className="action-panel-cb" type="checkbox" checked={months.all} id="all" onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)} />
-                            <label className="gf-form-label checkbox-label width-8" htmlFor="all">Valitse kaikki</label>
+                            <label className="gf-form-label checkbox-label width-8" htmlFor="all">{this.texts.selectAll}</label>
                           </div>
                         </div>
                       </div>
@@ -1319,21 +1319,21 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   { maintenanceType === '4' ? (
                     <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
                       <div className="iiris-modal-column">
-                        <label className="gf-form-label iiris-radio-button-block">Toistetaan
+                        <label className="gf-form-label iiris-radio-button-block">{this.texts.repeatOn}
                           <div className="checkbox-container">
                             <input className="action-panel-cb" type="radio" name="monthtype" checked={dayOfMonthOrWeekSelected === MONTH} onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })} value={MONTH} id="dayOfMonthSelected" />
-                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">Kuukauden päivänä n</label>
+                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">{this.texts.nthDayOfMonth}</label>
                           </div>
                           <div className="checkbox-container">
                             <input className="action-panel-cb" type="radio" name="monthtype" checked={dayOfMonthOrWeekSelected === WEEK} onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })} value={WEEK} id="dayOfWeekSelected" />
-                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">Viikonpäivänä n</label>
+                            <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">{this.texts.nthDayOfWeek}</label>
                           </div>
                         </label>
                       </div>
                       <div className="iiris-modal-column">
                         { dayOfMonthOrWeekSelected === MONTH ? (
                           <div className="gf-form-group">
-                            <label className="gf-form-label">Toistetaan kuukauden päivänä</label>
+                            <label className="gf-form-label">{this.texts.repeatOnDayOfMonth}</label>
                             <div>
                               <input className="input-small gf-form-input iiris-fixed-width-select" type="number" value={dayOfMonth} onChange={e => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })} min="1" step="1" />
                             </div>
@@ -1341,7 +1341,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         ) : null }
                         { dayOfMonthOrWeekSelected === WEEK ? (
                           <div className="gf-form-group">
-                            <label className="gf-form-label">Toistetaan viikonpäivänä (esim. kuukauden toinen tiistai)</label>
+                            <label className="gf-form-label">{this.texts.repeatOnDayOfWeek + ' ' + this.texts.secondTuesdayOfApril}</label>
                             <div className="gf-form-select-wrapper">
                               <select className="gf-form-input" value={everyDayOfWeekInput} onChange={e => this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })}>
                                 { this.everyDayOfWeekInput.options.map((option: any) => (
@@ -1367,7 +1367,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                       <label className="gf-form-label">{ maintenanceType === '0' ? 'Huollon alkamisajankohta' : 'Aloita toisto' }</label>
                       <div className="date-selection-row">
                         <div className="date-selection-container">
-                          <div>Päivä</div>
+                          <div>{this.texts.day}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={dayInput} onChange={e => this.onDayValueChanged(parseInt(e.target.value, 10))}>
                               { this.dayInput.options.map((option: any) => (
@@ -1377,7 +1377,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Kuukausi</div>
+                          <div>{this.texts.month}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={monthInput} onChange={e => this.onMonthValueChanged(parseInt(e.target.value, 10))}>
                               { this.monthInput.options.map((option: any) => (
@@ -1387,7 +1387,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Vuosi</div>
+                          <div>{this.texts.year}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={yearInput} onChange={e => this.onYearValueChanged(parseInt(e.target.value, 10))}>
                               { this.yearInput.options.map((option: any) => (
@@ -1397,7 +1397,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container hour-input">
-                          <div>Tunti</div>
+                          <div>{this.texts.hour}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={hourInput} onChange={e => this.onHourValueChanged(parseInt(e.target.value, 10))}>
                               { this.hourInput.options.map((option: any) => (
@@ -1407,7 +1407,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Minuutti</div>
+                          <div>{this.texts.minute}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={minuteInput} onChange={e => this.onMinuteValueChanged(parseInt(e.target.value, 10))}>
                               { this.minuteInput.options.map((option: any) => (
@@ -1420,10 +1420,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                     </div>
                     { parseInt(maintenanceType, 10) > 0 ? (
                       <div className="iiris-modal-column">
-                        <label className="gf-form-label">Lopeta toisto</label>
+                        <label className="gf-form-label">{this.texts.endRepeat}</label>
                         <div className="date-selection-row">
                           <div className="date-selection-container">
-                            <div>Päivä</div>
+                            <div>{this.texts.day}</div>
                             <div className="gf-form-select-wrapper">
                               <select className="gf-form-input" value={dayStopInput} onChange={e => this.onDayStopValueChanged(parseInt(e.target.value, 10))}>
                                 { this.dayStopInput.options.map((option: any) => (
@@ -1433,7 +1433,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                             </div>
                           </div>
                           <div className="date-selection-container">
-                            <div>Kuukausi</div>
+                            <div>{this.texts.month}</div>
                             <div className="gf-form-select-wrapper">
                               <select className="gf-form-input" value={monthStopInput} onChange={e => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}>
                                 { this.monthStopInput.options.map((option: any) => (
@@ -1443,7 +1443,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                             </div>
                           </div>
                           <div className="date-selection-container">
-                            <div>Vuosi</div>
+                            <div>{this.texts.year}</div>
                             <div className="gf-form-select-wrapper">
                               <select className="gf-form-input" value={yearStopInput} onChange={e => this.onYearStopValueChanged(parseInt(e.target.value, 10))}>
                                 { this.yearStopInput.options.map((option: any) => (
@@ -1458,7 +1458,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   </div>
                   { !strictEndTimeSelected ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Huollon kesto</label>
+                      <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
                       <div className="gf-form-select-wrapper iiris-fixed-width-select">
                         <select className="gf-form-input" value={durationInput} onChange={e => this.onDurationValueChanged(parseInt(e.target.value, 10))}>
                           { this.durationInput.options.map((option: any) => (
@@ -1471,15 +1471,15 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   <div className="gf-form-group maintenance-row-container">
                     <div className="iiris-checkbox">
                       <input id="strict_end_time" type="checkbox" checked={strictEndTimeSelected} onChange={(e: any) => this.setState({ strictEndTimeSelected: e.target.checked })} />
-                      <label className="checkbox-label" htmlFor="strict_end_time">Määritä tarkka päättymisajankohta</label>
+                      <label className="checkbox-label" htmlFor="strict_end_time">{this.texts.setPreciseEndTime}</label>
                     </div>
                   </div>
                   { strictEndTimeSelected ? (
                     <div className="gf-form-group maintenance-row-container">
-                      <label className="gf-form-label">Huollon päättymisajankohta</label>
+                      <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
                       <div className="date-selection-row">
                         <div className="date-selection-container">
-                          <div>Päivä</div>
+                          <div>{this.texts.day}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndDayInput} onChange={e => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndDayInput.options.map((option: any) => (
@@ -1489,7 +1489,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Kuukausi</div>
+                          <div>{this.texts.month}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndMonthInput} onChange={e => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndMonthInput.options.map((option: any) => (
@@ -1499,7 +1499,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Vuosi</div>
+                          <div>{this.texts.year}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndYearInput} onChange={e => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndYearInput.options.map((option: any) => (
@@ -1509,7 +1509,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container hour-input">
-                          <div>Tunti</div>
+                          <div>{this.texts.hour}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndHourInput} onChange={e => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndHourInput.options.map((option: any) => (
@@ -1519,7 +1519,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </div>
                         </div>
                         <div className="date-selection-container">
-                          <div>Minuutti</div>
+                          <div>{this.texts.minute}</div>
                           <div className="gf-form-select-wrapper">
                             <select className="gf-form-input" value={strictEndMinuteInput} onChange={e => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}>
                               { this.strictEndMinuteInput.options.map((option: any) => (
@@ -1533,19 +1533,19 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ) : null }
                   <div className="maintenance-config-error-text">{errorText}</div>
                   <div className="gf-form-button-row">
-                    <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>Takaisin</a>
-                    <a className="btn btn-secondary" onClick={() => onDismiss()}>Peruuta</a>
-                    <a className="btn btn-primary" onClick={() => this.goToNext()}>Eteenpäin</a>
+                    <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>{this.texts.back}</a>
+                    <a className="btn btn-secondary" onClick={() => onDismiss()}>{this.texts.cancel}</a>
+                    <a className="btn btn-primary" onClick={() => this.goToNext()}>{this.texts.next}</a>
                   </div>
                 </>
               ) : null }
               { wizardPhase === 2 ? (
                 <>
                   <div className="gf-form-group maintenance-row-container">
-                    <label className="gf-form-label">Huollon kuvaus</label>
+                    <label className="gf-form-label">{this.texts.maintenanceDescription}</label>
                     <textarea className="gf-form-input" value={description} onChange={(e) => this.setState({ description: e.target.value })} rows={3} maxLength={128}></textarea>
                   </div>
-                  <label className="gf-form-label">Palvelimien valinta</label>
+                  <label className="gf-form-label">{this.texts.selectHosts}</label>
                   <div className="iiris-text-search-container">
                     <span className="iiris-search-icon fa fa-search"></span>
                     <input className="input-small gf-form-input iiris-fixed-width-select" type="text" value={searchText} onChange={(e) => this.setState({ searchText: e.target.value })} placeholder="Hae nimellä" />
@@ -1554,7 +1554,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                     { !searchText ? (
                       <div className="iiris-checkbox">
                         <input id="select_all" type="checkbox" checked={allHostsSelected} onChange={e => this.selectAllHosts(e.target.checked)} />
-                        <label className="checkbox-label" htmlFor="select_all">Kaikki palvelimet</label>
+                        <label className="checkbox-label" htmlFor="select_all">{this.texts.allHosts}</label>
                       </div>
                     ) : null }
                     { selectedHosts.filter((fHost: any) => !searchText || fHost.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1).map((host: any) => (
@@ -1566,34 +1566,34 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   </div>
                   <div className="maintenance-config-error-text">{errorText}</div>
                   <div className="gf-form-button-row">
-                    <a className="btn btn-secondary" onClick={e => this.goToPrevious()}>Takaisin</a>
-                    <a className="btn btn-secondary" onClick={e => onDismiss()}>Peruuta</a>
-                    <a className="btn btn-primary" onClick={e => this.goToNext()}>{selectedMaintenance ? 'Tallenna muutokset' : 'Luo huolto'}</a>
+                    <a className="btn btn-secondary" onClick={e => this.goToPrevious()}>{this.texts.back}</a>
+                    <a className="btn btn-secondary" onClick={e => onDismiss()}>{this.texts.cancel}</a>
+                    <a className="btn btn-primary" onClick={e => this.goToNext()}>{selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance}</a>
                   </div>
                 </>
               ) : null }
               { wizardPhase === 3 ? (
                 <>
                   <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">Kuvaus</div>
+                    <div className="iiris-maintenance-modal-text-label">{this.texts.description}</div>
                     <div className="iiris-maintenance-modal-text-normal">{description}</div>
                   </div>
                   <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">Palvelimet</div>
+                    <div className="iiris-maintenance-modal-text-label">{this.texts.hosts}</div>
                     <div className="iiris-maintenance-modal-text-normal">{this.displayHosts}</div>
                   </div>
                   <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">Huollon tyyppi</div>
+                    <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceType}</div>
                     <div className="iiris-maintenance-modal-text-normal">{(this.mTypeInput.options.find((item: any) => item.value === maintenanceType)||{label: ''}).label}</div>
                   </div>
                   { maintenanceType === '0' ? (
                     <div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
                       </div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
                       </div>
                     </div>
@@ -1601,7 +1601,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   { maintenanceType === '2' ? (
                     <div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Toistetaan [n] päivän välein</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNDays}</div>
                         <div className="iiris-maintenance-modal-text-normal">{everyNDays}</div>
                       </div>
                     </div>
@@ -1609,11 +1609,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   { maintenanceType === '3' ? (
                     <div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Toistetaan [n] viikon välein</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNWeeks}</div>
                         <div className="iiris-maintenance-modal-text-normal">{everyNWeeks}</div>
                       </div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Toistetaan viikonpäivänä</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnWeekday}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayWeeklyDays}</div>
                       </div>
                     </div>
@@ -1621,20 +1621,20 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   { maintenanceType === '4' ? (
                     <div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Toistetaan kuukautena</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnMonth}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayMonths}</div>
                       </div>
                       { dayOfMonthOrWeekSelected === MONTH ? (
                         <div>
                           <div className="iiris-maintenance-modal-text-row">
-                            <div className="iiris-maintenance-modal-text-label">Toistetaan kuukauden päivänä n</div>
+                            <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfMonth}</div>
                             <div className="iiris-maintenance-modal-text-normal">{dayOfMonth}</div>
                           </div>
                         </div>
                       ) : (
                         <div>
                           <div className="iiris-maintenance-modal-text-row">
-                            <div className="iiris-maintenance-modal-text-label">Toistetaan viikon päivänä</div>
+                            <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfWeek}</div>
                             <div className="iiris-maintenance-modal-text-normal">{this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}</div>
                           </div>
                         </div>
@@ -1644,27 +1644,27 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   { parseInt(maintenanceType, 10) > 0 ? (
                     <div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Huollon alkamisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
                       </div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Huollon päättymisajankohta</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
                       </div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Aloita toisto</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatStarts}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
                       </div>
                       <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">Lopeta toisto</div>
+                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEnds}</div>
                         <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStopDate}</div>
                       </div>
                     </div>
                   ) : null }
                   <div className="gf-form-button-row">
-                    <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>Takaisin</a>
-                    <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>Peruuta</a>
-                    <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>{ selectedMaintenance ? 'Tallenna muutokset' : 'Luo huolto' }</a>
+                    <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>{this.texts.back}</a>
+                    <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>{this.texts.cancel}</a>
+                    <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>{ selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance }</a>
                   </div>
                 </>
               ) : null }
