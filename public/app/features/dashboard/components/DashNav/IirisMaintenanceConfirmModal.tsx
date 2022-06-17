@@ -7,12 +7,14 @@ interface Props {
   show: boolean;
   onDismiss(): void;
   confirmText: string;
+  confirmTitle: string;
 }
 
 export function IirisMaintenanceConfirmModal(props: Props) {
+  const title = (<h2 className="modal-header modal-header-title">{props.confirmTitle}</h2>);
   return (
     <>
-      <Modal isOpen={props.show} title='' onDismiss={props.onDismiss} className="modal modal-body">
+      <Modal isOpen={props.show} title={title} onDismiss={props.onDismiss} className="modal modal-body">
         <div className="modal-content">
           <div className="remove-maintenance-confirmation-text">{ props.confirmText }</div>
           <div className="gf-form-button-row">

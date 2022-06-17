@@ -855,6 +855,7 @@ class DashNav extends PureComponent<Props, State> {
           show={this.state.showMaintenanceConfirmModal}
           onDismiss={() => this.setState({ showMaintenanceConfirmModal: false })}
           confirmText={this.state.confirmText}
+          confirmTitle={this.texts.maintenance}
         />
       </div>
     );
