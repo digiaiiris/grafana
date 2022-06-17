@@ -1162,7 +1162,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     } else {
       let anyHostSelected = false;
       this.state.selectedHosts.forEach((option: any) => {
-        if (option.value) {
+        if (option.selected) {
           anyHostSelected = true;
         }
       });
@@ -1191,7 +1191,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ).endOf('day').format('DD.MM.YYYY HH:mm');
         this.displayHosts = '';
         this.state.selectedHosts.forEach((option: any) => {
-          if (option.value) {
+          if (option.selected) {
             if (this.displayHosts) {
               this.displayHosts += ', ';
             }
@@ -1245,7 +1245,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       monthStopInput, yearStopInput, strictEndTimeSelected, durationInput, strictEndMinuteInput, strictEndHourInput,
       strictEndDayInput, strictEndMonthInput, strictEndYearInput, errorText, description, searchText, allHostsSelected,
       selectedHosts } = this.state;
-    const title = (<h2 className="modal-header modal-header-title">{selectedMaintenance ? 'Muokkaa huoltoa' : 'Luo uusi huolto'}</h2>);
+    const title = (<h2 className="modal-header modal-header-title">{selectedMaintenance ? this.texts.modifyMaintenance : this.texts.createNewMaintenance}</h2>);
 
     return (
       <>
@@ -1364,7 +1364,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ) : null }
                   <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
                     <div className="iiris-modal-column">
-                      <label className="gf-form-label">{ maintenanceType === '0' ? 'Huollon alkamisajankohta' : 'Aloita toisto' }</label>
+                      <label className="gf-form-label">{ maintenanceType === '0' ? this.texts.maintenanceStartTime : this.texts.startRepeat }</label>
                       <div className="date-selection-row">
                         <div className="date-selection-container">
                           <div>{this.texts.day}</div>
@@ -1548,7 +1548,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   <label className="gf-form-label">{this.texts.selectHosts}</label>
                   <div className="iiris-text-search-container">
                     <span className="iiris-search-icon fa fa-search"></span>
-                    <input className="input-small gf-form-input iiris-fixed-width-select" type="text" value={searchText} onChange={(e) => this.setState({ searchText: e.target.value })} placeholder="Hae nimellä" />
+                    <input className="input-small gf-form-input iiris-fixed-width-select" type="text" value={searchText} onChange={(e) => this.setState({ searchText: e.target.value })} placeholder={this.texts.searchWithName} />
                   </div>
                   <div className="gf-form-group maintenance-host-list">
                     { !searchText ? (

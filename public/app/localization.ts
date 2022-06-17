@@ -74,6 +74,7 @@ export const localizations: any = {
     hour: 'Tunti',
     minute: 'Minuutti',
     endRepeat: 'Lopeta toisto',
+    startRepeat: 'Aloita toisto',
     maintenanceDuration: 'Huollon kesto',
     setPreciseEndTime: 'Määritä tarkka päättymisaika',
     maintenanceEndTime: 'Huollon päättymisaika',
@@ -102,6 +103,8 @@ export const localizations: any = {
     newMaintenanceHasBeenStarted: 'Uusi huolto on käynnistetty onnistuneesti.',
     maintenanceHasBeenUpdated: 'Huolto on päivitetty onnistuneesti.',
     newMaintenanceHasBeenCreated: 'Uusi huolto luotu onnistuneesti.',
+    modifyMaintenance: 'Muokkaa huoltoa',
+    searchWithName: 'Hae nimellä',
   },
   en: {
     upcomingMaintenances: 'Upcoming Maintenances',
@@ -178,6 +181,7 @@ export const localizations: any = {
     hour: 'Hour',
     minute: 'Minute',
     endRepeat: 'End repeat',
+    startRepeat: 'Start repeat',
     maintenanceDuration: 'Maintenance duration',
     setPreciseEndTime: 'Set precise end time',
     maintenanceEndTime: 'Maintenance end time',
@@ -206,5 +210,7 @@ export const localizations: any = {
     newMaintenanceHasBeenStarted: 'New maintenance has been started succesfully.',
     maintenanceHasBeenUpdated: 'Maintenance has been updated succesfully.',
     newMaintenanceHasBeenCreated: 'New maintenance has been created succesfully.',
+    modifyMaintenance: 'Modify maintenance',
+    searchWithName: 'Search with name',
   },
 };
