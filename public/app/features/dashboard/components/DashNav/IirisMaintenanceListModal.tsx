@@ -3,6 +3,7 @@
 import React from 'react';
 import { Modal } from '@grafana/ui';
 import { IirisMaintenanceTable } from './IirisMaintenanceTable';
+import { contextSrv } from 'app/core/core';
 
 interface Props {
   show: boolean;
@@ -20,28 +21,29 @@ interface Props {
 }
 
 export function IirisMaintenanceListModal(props: Props) {
-  const title = (<h2 className="modal-header modal-header-title">Tulevat huollot</h2>);
+  const texts = contextSrv.getLocalizedTexts();
+  const title = (<h2 className="modal-header modal-header-title">{texts.upcomingMaintenances}</h2>);
   const columns = [
     {
-      Header: 'Tyyppi',
+      Header: texts.type,
       accessor: 'maintenanceTypeString', 
     }, {
-      Header: 'Kuvaus',
+      Header: texts.description,
       accessor: 'description',
     }, {
-      Header: 'Käynnistäjä',
+      Header: texts.createdBy,
       accessor: 'caller',
     }, {
-      Header: 'Aloitusaika',
+      Header: texts.startTime,
       accessor: 'startTimeString',
     }, {
-      Header: 'Päätösaika',
+      Header: texts.endTime,
       accessor: 'endTimeString',
     }, {
-      Header: 'Kesto',
+      Header: texts.duration,
       accessor: 'durationString',
     }, {
-      Header: 'Toisto päättyy',
+      Header: texts.repeatEnds,
       accessor: 'activeTillString',
     }
   ];
@@ -72,8 +74,8 @@ export function IirisMaintenanceListModal(props: Props) {
                 </div>
               </div>
               <div className="gf-form-button-row">
-                <a className="btn btn-primary" onClick={() => props.onDismiss()}>Peruuta</a>
-                <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>Luo uusi huolto</a>
+                <a className="btn btn-primary" onClick={() => props.onDismiss()}>{texts.cancel}</a>
+                <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>{texts.createNewMaintenance}</a>
               </div>
             </>
           ) : (
@@ -81,9 +83,9 @@ export function IirisMaintenanceListModal(props: Props) {
               <div className="remove-maintenance-confirmation-text">{ props.confirmText }</div>
               <div className="gf-form-button-row">
                 { props.confirmAction ? (
-                  <a className="btn btn-secondary" onClick={() => props.onCloseConfirmation()}>Peruuta</a>
+                  <a className="btn btn-secondary" onClick={() => props.onCloseConfirmation()}>{texts.cancel}</a>
                 ) : null }
-                <a className="btn btn-primary" onClick={() => onAcceptConfirmation()}>OK</a>
+                <a className="btn btn-primary" onClick={() => onAcceptConfirmation()}>{texts.ok}</a>
               </div>
             </div>
           )}
