@@ -300,3 +300,8 @@ header .iiris-custom-toolbar {
     }
   }
 }
+
+.maintenance-row-container .gf-form-select-wrapper select.gf-form-input {
+    text-indent: 0;
+    text-overflow: clip;
+}
