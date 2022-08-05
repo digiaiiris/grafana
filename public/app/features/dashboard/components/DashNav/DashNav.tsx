@@ -116,9 +116,6 @@ class DashNav extends PureComponent<Props, State> {
   onOpenMaintenanceDialog = (loadAllHosts?: boolean, givenHostGroup?: string, givenDataSources?: string[]) => {
     const { dashboard } = this.props;
     const templateSrv = getTemplateSrv();
-    console.log('loadAllHosts: ' + loadAllHosts);
-    console.log('givenHostGroup: ' + givenHostGroup);
-    console.log('givenDataSources: ' + givenDataSources);
     this.datasourceSrv = getDataSourceSrv();
     this.ongoingMaintenances = [];
     this.error = false;
