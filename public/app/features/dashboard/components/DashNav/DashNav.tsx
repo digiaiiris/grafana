@@ -102,7 +102,18 @@ class DashNav extends PureComponent<Props, State> {
   confirmModalScope: any;
   texts: any = {};
 
-  onOpenMaintenanceDialog = () => {
+  sortHostNames = (hostA: any, hostB: any) => {
+    const nameA = hostA.text.toLowerCase();
+    const nameB = hostB.text.toLowerCase();
+    if (nameA < nameB) {
+      return -1;
+    } else if (nameA > nameB) {
+      return 1;
+    }
+    return 0;
+  };
+
+  onOpenMaintenanceDialog = (loadAllHosts?: boolean, givenHostGroup?: string, givenDataSources?: string[]) => {
     const { dashboard } = this.props;
     const templateSrv = getTemplateSrv();
     this.datasourceSrv = getDataSourceSrv();
@@ -111,7 +122,9 @@ class DashNav extends PureComponent<Props, State> {
     this.user = contextSrv.user.email;
     this.selectedMaintenanceId = '';
     this.maintenanceIconStyle = '';
-    if (dashboard.selectedDatasource) {
+    if (givenDataSources && givenDataSources.length > 0) {
+      this.availableDatasources = givenDataSources;
+    } else if (dashboard.selectedDatasource) {
       this.availableDatasources = [dashboard.selectedDatasource];
     } else {
       this.availableDatasources = this.datasourceSrv
@@ -119,35 +132,46 @@ class DashNav extends PureComponent<Props, State> {
         .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
         .map((ds: any) => ds.name);
     }
+    if (givenHostGroup) {
+      this.hostGroup = givenHostGroup;
+    } else {
+      this.hostGroup = dashboard.maintenanceHostGroup;
+    }
     this.hosts = {
       selected: {},
       options: [],
       allSelected: true,
     };
-    this.hostGroup = replaceTemplateVars(dashboard.maintenanceHostGroup, templateSrv);
+    this.hostGroup = replaceTemplateVars(this.hostGroup, templateSrv);
     getHostGroups(this.hostGroup, this.availableDatasources, this.datasourceSrv)
       .then((groupId: string) => {
         this.groupId = groupId;
-        getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
-          // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-          this.hosts.options = hosts
-            .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
-            .map((host: any) => ({ text: host.name, value: host.hostid }))
-            .sort((hostA: any, hostB: any) => {
-              const nameA = hostA.text.toLowerCase();
-              const nameB = hostB.text.toLowerCase();
-              if (nameA < nameB) {
-                return -1;
-              } else if (nameA > nameB) {
-                return 1;
-              }
-              return 0;
+        if (loadAllHosts) {
+          getZabbix(this.availableDatasources, this.datasourceSrv)
+            .then((zabbix: any) => {
+              zabbix.zabbixAPI.request('host.get', { output: ['host', 'hostid', 'name'] }).then((hosts: any) => {
+                this.hosts.options = hosts
+                  .map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid }))
+                  .sort(this.sortHostNames);
+                this.setState({ hosts: this.hosts.options });
+                this.hostIds = hosts.map((host: any) => host.hostid);
+                this.getMaintenanceList(this.hostIds);
+                this.clearHostSelection();
+              });
             });
-          this.setState({ hosts: this.hosts.options });
-          this.hostIds = hosts.map((host: any) => host.hostid);
-          this.getMaintenanceList(this.hostIds, groupId);
-          this.clearHostSelection();
-        });
+        } else {
+          getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
+            // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
+            this.hosts.options = hosts
+              .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
+              .map((host: any) => ({ text: host.name, value: host.hostid }))
+              .sort(this.sortHostNames);
+            this.setState({ hosts: this.hosts.options });
+            this.hostIds = hosts.map((host: any) => host.hostid);
+            this.getMaintenanceList(this.hostIds, groupId);
+            this.clearHostSelection();
+          });
+        }
       })
       .catch((err: any) => {
         this.handleError(err);
@@ -204,9 +228,13 @@ class DashNav extends PureComponent<Props, State> {
    * Get all maintenances from Zabbix
    * @param {string} groupid Get maintenances from specified group
    */
-  getMaintenanceList = (hostIds: string[], groupId: string) => {
+  getMaintenanceList = (hostIds: string[], groupId?: string) => {
     const showOnlyOneUpcomingPerPeriod = true;
-    getMaintenances(hostIds, [groupId], this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
+    let groupIds: any = null;
+    if (groupId) {
+      groupIds = [groupId];
+    }
+    getMaintenances(hostIds, groupIds, this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
           this.ongoingMaintenances = getOngoingMaintenances(maintenances);
@@ -560,6 +588,22 @@ class DashNav extends PureComponent<Props, State> {
       ongoingMaintenanceIds: [],
     }
     this.texts = contextSrv.getLocalizedTexts();
+  }
+
+  componentDidMount() {
+    document.addEventListener(
+      'iiris-maintenance-dialog-open',
+      (e: any) => this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      false
+    );
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener(
+      'iiris-maintenance-dialog-open',
+      (e: any) => this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      false
+    );
   }
 
   onClose = () => {
