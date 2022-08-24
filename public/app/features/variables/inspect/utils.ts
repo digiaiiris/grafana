@@ -308,7 +308,6 @@ export function getAffectedPanelIdsForVariable(variableId: string, panels: Panel
   const affectedPanelIds: number[] = [];
   const repeatRegex = new RegExp(`"repeat":"${variableId}"`);
   for (const panel of panels) {
-    console.log(panel.getSaveModel);
     const panelAsJson = safeStringifyValue(panel.getSaveModel instanceof Function ? panel.getSaveModel() : {});
 
     // check for repeats that don't use variableRegex
