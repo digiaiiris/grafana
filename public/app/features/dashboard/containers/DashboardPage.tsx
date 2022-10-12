@@ -190,6 +190,11 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
       }
     }
 
+    // Add CSS class for fullScreen
+    if (window.location.search.indexOf('iirisFullScreen=') > -1) {
+      document.body.classList.add('iiris-full-screen');
+    }
+
     // Update breadcrumb when dashboard is loaded
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
       const db = this.props.dashboard;

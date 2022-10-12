@@ -16,6 +16,10 @@ $login-box-background-color: #e5e5e5;
 $table-line-color: #cccccc;
 
 // Hide unnecessary parts of Grafana top bar
+body.iiris-full-screen .iiris-custom-toolbar {
+  display: none;
+}
+
 .grafana-app .sidemenu {
   display: none;
 }
