@@ -204,6 +204,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
         uid: this.props.match.params.uid,
         orgName: contextSrv.user.orgName,
         isGrafanaAdmin: contextSrv.user.isGrafanaAdmin,
+        hideIirisBreadcrumb: db.hideIirisBreadcrumb,
       };
       const query = Object.assign({}, this.props.queryParams)
       if (db.uid) {

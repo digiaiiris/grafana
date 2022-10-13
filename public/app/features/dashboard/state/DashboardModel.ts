@@ -83,6 +83,7 @@ export class DashboardModel {
   selectedDatasource: string;
   serviceInfoWikiUrl: string;
   serviceInfoWikiUrlIsExternal: boolean;
+  hideIirisBreadcrumb: boolean;
   dashboardLogo: string;
   id: any;
   uid: string;
@@ -157,6 +158,7 @@ export class DashboardModel {
     this.selectedDatasource = data.selectedDatasource;
     this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
     this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
+    this.hideIirisBreadcrumb = data.hideIirisBreadcrumb;
     this.dashboardLogo = data.dashboardLogo;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
