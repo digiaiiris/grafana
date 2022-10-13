@@ -167,6 +167,11 @@ export function GeneralSettingsUnconnected({
     setRenderCounter(renderCounter + 1);
   };
 
+  const onHideIirisBreadcrumbChange = (event: any) => {
+    dashboard.hideIirisBreadcrumb = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const editableOptions = [
     { label: 'Editable', value: true },
     { label: 'Read-only', value: false },
@@ -207,6 +212,13 @@ export function GeneralSettingsUnconnected({
             id="serviceInfoWikiUrlIsExternal-toggle"
             value={!!dashboard.serviceInfoWikiUrlIsExternal}
             onChange={onServiceInfoWikiUrlIsExternalChange}
+          />
+        </Field>
+        <Field label="Hide Iiris Breadrumb with This Dashboard">
+          <Switch
+            id="hideIirisBreadcrumb-toggle"
+            value={!!dashboard.hideIirisBreadcrumb}
+            onChange={onHideIirisBreadcrumbChange}
           />
         </Field>
         <Field label="Name">
