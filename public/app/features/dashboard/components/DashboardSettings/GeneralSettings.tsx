@@ -172,6 +172,11 @@ export function GeneralSettingsUnconnected({
     setRenderCounter(renderCounter + 1);
   };
 
+  const onHideGrafanaTopBarChange = (event: any) => {
+    dashboard.hideGrafanaTopBar = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const editableOptions = [
     { label: 'Editable', value: true },
     { label: 'Read-only', value: false },
@@ -219,6 +224,13 @@ export function GeneralSettingsUnconnected({
             id="hideIirisBreadcrumb-toggle"
             value={!!dashboard.hideIirisBreadcrumb}
             onChange={onHideIirisBreadcrumbChange}
+          />
+        </Field>
+        <Field label="Hide Grafana Top Bar with This Dashboard">
+          <Switch
+            id="hideGrafanaTopBar-toggle"
+            value={!!dashboard.hideGrafanaTopBar}
+            onChange={onHideGrafanaTopBarChange}
           />
         </Field>
         <Field label="Name">

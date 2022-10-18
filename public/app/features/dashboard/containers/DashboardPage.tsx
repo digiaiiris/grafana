@@ -195,6 +195,11 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
       document.body.classList.add('iiris-full-screen');
     }
 
+    // Add CSS class for hiding Grafana top bar
+    if (this.props.dashboard && this.props.dashboard.hideGrafanaTopBar) {
+      document.body.classList.add('iiris-hide-grafana-top-bar');
+    }
+
     // Update breadcrumb when dashboard is loaded
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
       const db = this.props.dashboard;

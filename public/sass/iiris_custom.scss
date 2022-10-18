@@ -16,7 +16,8 @@ $login-box-background-color: #e5e5e5;
 $table-line-color: #cccccc;
 
 // Hide unnecessary parts of Grafana top bar
-body.iiris-full-screen .iiris-custom-toolbar {
+body.iiris-full-screen .iiris-custom-toolbar,
+body.iiris-hide-grafana-top-bar .iiris-custom-toolbar {
   display: none;
 }
 
