@@ -290,9 +290,6 @@ header .iiris-custom-toolbar {
 
 .theme-dark .panel-container {
   &.panel-container--no-title {
-    .panel-info-corner {
-      margin-left: -450%;
-    }
     .panel-header {
       width: 10%;
       left: 45%;
@@ -302,6 +299,6 @@ header .iiris-custom-toolbar {
 }
 
 .maintenance-row-container .gf-form-select-wrapper select.gf-form-input {
-    text-indent: 0;
-    text-overflow: clip;
+  text-indent: 0;
+  text-overflow: clip;
 }
