@@ -1152,13 +1152,6 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
       }
-/*
-[Yesterday 10.56] Palomäki Tommi
-VArmaan tossa logiikassa on vika kun katsotaan nextChange aina curYear mukaan. Kun loppuvuodesta talviaikana pitäisi olla seuraava vuosi.
-
-[Yesterday 15.14] Palomäki Tommi
-Kun aika selvä bugi tuossa on koodissa. Pitäisi varmaan katsoa että jos on kuukausi vaikka yli 6 (kesäkuu) niin sitten katsotaan curYear+1
-*/
       if (maintenanceType === '0' && this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
         valid = false;
         this.scope.errorText += this.texts.maintenanceEndMustBeAfterStart + ' ';
