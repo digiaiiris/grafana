@@ -1140,6 +1140,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         if (isCurrentlyDST) {
           nextChange = moment(curYear + '-10-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(4,'hour');
         } else {
+          // Check if we are at beginning or end of year 
           if (curMonth > 6) {
             nextChange = moment((curYear + 1) + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
           } else {
