@@ -1134,12 +1134,18 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
         // Check if period continues over next DST change
         const curYear = new Date().getFullYear();
+        const curMonth = new Date().getMonth();
         const isCurrentlyDST = moment().isDST();
         let nextChange;
         if (isCurrentlyDST) {
           nextChange = moment(curYear + '-10-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(4,'hour');
         } else {
-          nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+          // Check if we are at beginning or end of year 
+          if (curMonth > 6) {
+            nextChange = moment((curYear + 1) + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+          } else {
+            nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+          }
         }
         if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
           valid = false;
