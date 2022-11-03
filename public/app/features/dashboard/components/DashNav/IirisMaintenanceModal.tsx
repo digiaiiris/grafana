@@ -1124,6 +1124,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       const currentDate = new Date();
       const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
       const stopDateTime = moment(startDate).add(duration, 'second').toDate();
+
+      // Periodical maintenance
       if (maintenanceType === '2' || maintenanceType === '3' || maintenanceType === '4') {
         if (stopPeriodDate <= startDate) {
           valid = false;
@@ -1134,20 +1136,19 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
         // Check if period continues over next DST change
         const curYear = new Date().getFullYear();
-        const curMonth = new Date().getMonth();
         const isCurrentlyDST = moment().isDST();
         let nextChange;
         if (isCurrentlyDST) {
-          nextChange = moment(curYear + '-10-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(4,'hour');
+          nextChange = moment(curYear + '-10-01').endOf('month').startOf('isoWeek').subtract(1,'day').add(4,'hour');
         } else {
-          // Check if we are at beginning or end of year 
-          if (curMonth > 6) {
-            nextChange = moment((curYear + 1) + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
-          } else {
-            nextChange = moment(curYear + '-03-01').endOf("month").startOf('isoWeek').subtract(1,'day').add(3,'hour');
+          nextChange = moment(curYear + '-03-01').endOf('month').startOf('isoWeek').subtract(1,'day').add(3,'hour');
+
+          // Increase year if current date has surpassed last DST change
+          if (moment() >= nextChange) {
+            nextChange.add(1, 'year');
           }
         }
-        if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
+      if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
           valid = false;
           this.scope.errorText += this.texts.repeatEndTimeCantOverlapDaylight + ' ' + 
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
