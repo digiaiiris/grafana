@@ -803,11 +803,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   populateMinuteSelector = (minuteInputObject: any, minuteValue: number) => {
     for (let i = 0; i < 60; i++) {
       minuteInputObject.options.push({
-        text: i < 10 ? '0' + i : '' + i,
-        value: i < 10 ? '0' + i : '' + i,
+        text: '' + i,
+        value: '' + i,
       });
     }
-    const givenMinutes = minuteValue < 10 ? '0' + minuteValue : '' + minuteValue;
+    const givenMinutes = '' + minuteValue;
     if (minuteInputObject.options.findIndex((item: any) => item.value === givenMinutes)) {
       minuteInputObject.value = givenMinutes;
     } else {
