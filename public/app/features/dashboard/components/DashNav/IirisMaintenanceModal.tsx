@@ -713,12 +713,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     const currentYear = new Date().getFullYear();
     const startYear = Math.min(currentYear, yearValue);
     const endYear = Math.max(currentYear, yearValue)
-    for (let i = startYear; i < endYear + 2; i++) {
-      yearInputObject.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
+    if (yearInputObject.options.length <= 0) {
+      for (let i = startYear; i < endYear + 2; i++) {
+        yearInputObject.options.push({
+          text: '' + i,
+          value: i,
+        });
+      }
+    };
   }
 
   /**
@@ -727,12 +729,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   populateMonthSelector = (monthInputObject: any, monthValue: number) => {
     monthInputObject.value = monthValue;
     monthInputObject.text = '' + monthValue;
-    for (let i = 1; i < 13; i++) {
-      monthInputObject.options.push({
-        text: '' + i,
-        value: i,
-      });
-    }
+    if (monthInputObject.options.length <= 0) {
+      for (let i = 1; i < 13; i++) {
+        monthInputObject.options.push({
+          text: '' + i,
+          value: i,
+        });
+      }
+    };
   }
 
   /**
@@ -783,12 +787,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Set contents of month selector
    */
   populateHourSelector = (hourInputObject: any, hourValue: number) => {
-    for (let i = 0; i < 24; i++) {
-      hourInputObject.options.push({
-        text: '' + i,
-        value: '' + i,
-      });
-    }
+    if (hourInputObject.options <= 0) {
+      for (let i = 0; i < 24; i++) {
+        hourInputObject.options.push({
+          text: '' + i,
+          value: '' + i,
+        });
+      }
+    };
     if (hourInputObject.options.findIndex((item: any) => item.value === hourValue + '')) {
       hourInputObject.value = hourValue + '';
     } else {
@@ -801,12 +807,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Set contents of month selector
    */
   populateMinuteSelector = (minuteInputObject: any, minuteValue: number) => {
-    for (let i = 0; i < 60; i++) {
-      minuteInputObject.options.push({
-        text: '' + i,
-        value: '' + i,
-      });
-    }
+    if (minuteInputObject.options.length <= 0) {
+      for (let i = 0; i < 60; i++) {
+        minuteInputObject.options.push({
+          text: '' + i,
+          value: '' + i,
+        });
+      }
+    };
     const givenMinutes = '' + minuteValue;
     if (minuteInputObject.options.findIndex((item: any) => item.value === givenMinutes)) {
       minuteInputObject.value = givenMinutes;
