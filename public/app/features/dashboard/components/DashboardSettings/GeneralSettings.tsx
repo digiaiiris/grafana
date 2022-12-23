@@ -77,14 +77,12 @@ export function GeneralSettingsUnconnected({
     const datasourceSrv = getDatasourceSrv();
     const datasources: any[] = [];
     datasourceSrv.getMetricSources().map((datasource: { name: string }) => datasources.push(datasource.name));
+    datasources.unshift('');
     setDatasourceOptions(datasources);
     const availableDatasources = datasourceSrv
       .getMetricSources()
       .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
       .map((ds: any) => ds.name);
-    if (!dashboard.selectedDatasource && availableDatasources.length > 0) {
-      dashboard.selectedDatasource = availableDatasources[0];
-    }
     const dsPointer = dashboard.selectedDatasource ? [dashboard.selectedDatasource] : availableDatasources;
     getHostGroups(dsPointer, datasourceSrv).then((groups: string[]) => setHostGroupOptions(groups));
   }, []);
@@ -145,16 +143,24 @@ export function GeneralSettingsUnconnected({
   };
 
   const onMaintenanceDatasourceChange = (datasource: any) => {
-    dashboard.selectedDatasource = datasource.value;
-    setRenderCounter(renderCounter + 1);
-    const datasourceSrv = getDatasourceSrv();
-    if (datasourceOptions.indexOf(dashboard.selectedDatasource) > -1) {
-      getHostGroups([dashboard.selectedDatasource], datasourceSrv)
-        .then((groups: string[]) => setHostGroupOptions(groups))
-        .catch((err: any) => {
-          setHostGroupOptions([]);
-        });
+    if (datasource != null) {
+      dashboard.selectedDatasource = datasource.value;
+      setRenderCounter(renderCounter + 1);
+      const datasourceSrv = getDatasourceSrv();
+      if (datasourceOptions.indexOf(dashboard.selectedDatasource) > -1) {
+        getHostGroups([dashboard.selectedDatasource], datasourceSrv)
+          .then((groups: string[]) => setHostGroupOptions(groups))
+          .catch((err: any) => {
+            setHostGroupOptions([]);
+          });
+      }
     }
+    else {
+      dashboard.selectedDatasource = '';
+      dashboard.maintenanceHostGroup = '';
+      setRenderCounter(renderCounter + 1);
+      setHostGroupOptions([]);
+    };
   };
 
   const onMaintenanceHostGroupChange = (hostgroup: any) => {
@@ -195,7 +201,8 @@ export function GeneralSettingsUnconnected({
             placeholder="Select datasource"
             value={dashboard.selectedDatasource}
             onChange={onMaintenanceDatasourceChange}
-          />
+            isClearable={true}
+        />
         </Field>
         <Field label="Maintenance Host Group">
           <Select
