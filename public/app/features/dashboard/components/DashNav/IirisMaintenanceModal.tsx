@@ -585,7 +585,6 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   }
 
   setStrictEndTimeDate = (strictEndTimeDate: Date) => {
-    console.log('setStrictEndTimeDate:', strictEndTimeDate);
     const strictEndTimeHours = strictEndTimeDate.getHours();
     const strictEndTimeMinutes = strictEndTimeDate.getMinutes();
     const strictEndTimeYear = strictEndTimeDate.getFullYear();
