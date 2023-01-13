@@ -784,7 +784,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   }
 
   /**
-   * Set contents of month selector
+   * Set contents of hour selector
    */
   populateHourSelector = (hourInputObject: any, hourValue: number) => {
     if (hourInputObject.options <= 0) {
@@ -804,7 +804,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   }
 
   /**
-   * Set contents of month selector
+   * Set contents of minute selector
    */
   populateMinuteSelector = (minuteInputObject: any, minuteValue: number) => {
     if (minuteInputObject.options.length <= 0) {
@@ -851,10 +851,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   }
 
   onDayValueChanged = (value: number) => {
-    this.setState({ dayInput: value, dayStopInput: value, strictEndDayInput: value });
+    this.setState({ dayInput: value, dayStopInput: value });
     this.dayInput.value = value;
     this.dayStopInput.value = value;
-    this.strictEndDayInput.value = value;
+    // Adjust end time if strict end time is not selected
+    if (this.state.strictEndTimeSelected === false) {
+      this.setState({ strictEndDayInput: value });
+      this.strictEndDayInput.value = value;
+    }
   }
 
   onHourValueChanged = (value?: number) => {
@@ -862,23 +866,30 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       this.setState({ hourInput: value });
       this.hourInput.value = value;
     }
-    const currentDate = new Date(
-      this.yearInput.value,
-      this.monthInput.value - 1,
-      this.dayInput.value,
-      parseInt(this.hourInput.value, 10),
-      parseInt(this.minuteInput.value, 10)
-    );
-    let strictEndTimeDate = moment(currentDate)
-      .add(this.durationInput.value, 'second')
-      .toDate();
-    this.setStrictEndTimeDate(strictEndTimeDate);
+    // Adjust end time if strict end time is not selected
+    if (this.state.strictEndTimeSelected === false) {
+      const currentDate = new Date(
+        this.yearInput.value,
+        this.monthInput.value - 1,
+        this.dayInput.value,
+        parseInt(this.hourInput.value, 10),
+        parseInt(this.minuteInput.value, 10)
+      );
+      let strictEndTimeDate = moment(currentDate)
+        .add(this.durationInput.value, 'second')
+        .toDate();
+      this.setStrictEndTimeDate(strictEndTimeDate);
+    }
   }
 
   onMinuteValueChanged = (value: number) => {
-    this.setState({ minuteInput: value, strictEndMinuteInput: value });
+    this.setState({ minuteInput: value });
     this.minuteInput.value = value;
-    this.strictEndMinuteInput.value = value;
+    // Adjust end time if strict end time is not selected
+    if (this.state.strictEndTimeSelected === false) {
+      this.setState({ strictEndMinuteInput: value });
+      this.strictEndMinuteInput.value = value;
+    }
   }
 
   /**
@@ -890,10 +901,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.populateDaySelector();
     this.monthStopInput.value = this.monthInput.value;
     this.monthStopInput.text = this.monthInput.text;
-    this.strictEndMonthInput.value = this.monthInput.value;
-    this.strictEndMonthInput.text = this.monthInput.text;
     this.populateDaySelector(true);
     this.populateDaySelector(undefined, true);
+    // Adjust end time if strict end time is not selected
+    if (this.state.strictEndTimeSelected === false) {
+      this.strictEndMonthInput.value = this.monthInput.value;
+      this.strictEndMonthInput.text = this.monthInput.text;
+    }
   }
 
   /**
@@ -906,8 +920,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     const y = this.yearInput.value;
     this.yearStopInput.value = this.yearInput.value;
     this.yearStopInput.text = this.yearInput.text;
-    this.strictEndYearInput.value = this.yearInput.value;
-    this.strictEndYearInput.text = this.yearInput.text;
+    // Adjust end time if strict end time is not selected
+    if (this.state.strictEndTimeSelected === false) {
+      this.strictEndYearInput.value = this.yearInput.value;
+      this.strictEndYearInput.text = this.yearInput.text;
+    }
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
       this.populateDaySelector();
       this.populateDaySelector(true);
@@ -1158,7 +1175,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
       if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
           valid = false;
-          this.scope.errorText += this.texts.repeatEndTimeCantOverlapDaylight + ' ' + 
+          this.scope.errorText += this.texts.repeatEndTimeCantOverlapDaylight + ' ' +
             nextChange.format(('DD.MM.YYYY HH:mm')) + ' ';
         }
       }
