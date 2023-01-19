@@ -4,6 +4,12 @@ import { OrgRole, rangeUtil, WithAccessControlMetadata } from '@grafana/data';
 import { featureEnabled, getBackendSrv } from '@grafana/runtime';
 import { AccessControlAction, UserPermission } from 'app/types';
 import { CurrentUserInternal } from 'app/types/config';
+import { localizations } from '../../localization';
+
+export const LANGUAGE = {
+  FI: 'fi',
+  EN: 'en',
+};
 
 import config from '../../core/config';
 
@@ -66,6 +72,7 @@ export class ContextSrv {
   sidemenuSmallBreakpoint = false;
   hasEditPermissionInFolders: boolean;
   minRefreshInterval: string;
+  storedLanguage: string = LANGUAGE.FI;
 
   constructor() {
     if (!config.bootData) {
@@ -90,6 +97,14 @@ export class ContextSrv {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  setStoredLanguage(language: string) {
+    this.storedLanguage = language;
+  }
+
+  getLocalizedTexts() {
+    return localizations[this.storedLanguage];
   }
 
   /**
