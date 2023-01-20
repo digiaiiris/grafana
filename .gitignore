@@ -167,3 +167,5 @@ public/locales/**/*.js
 
 deployment_tools_config.json
 
+# iiris
+grafana-build.tar.gz
