@@ -1,20 +1,13 @@
 // tslint:disable
-import React, { FC, ReactNode, PureComponent } from 'react';
-import {
-  replaceTemplateVars,
-  getZabbix,
-  getHostGroups,
-  getHostsFromGroup,
-  getMaintenances,
-  getOngoingMaintenances,
-} from './common_tools';
+import React, { PureComponent, FC, ReactNode } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
-import { useLocation } from 'react-router-dom';
 
 import { locationUtil, textUtil, AppEvents } from '@grafana/data';
 import { locationService, getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
-import { ButtonGroup, ModalsController, ToolbarButton, PageToolbar, useForceUpdate } from '@grafana/ui';
+import { ButtonGroup, ModalsController, ToolbarButton, PageToolbar } from '@grafana/ui';
+import appEvents from 'app/core/app_events';
 import config from 'app/core/config';
+import { contextSrv } from 'app/core/core';
 import { toggleKioskMode } from 'app/core/navigation/kiosk';
 import { DashboardCommentsModal } from 'app/features/dashboard/components/DashboardComments/DashboardCommentsModal';
 import { SaveDashboardProxy } from 'app/features/dashboard/components/SaveDashboard/SaveDashboardProxy';
@@ -28,12 +21,17 @@ import { DashboardModel } from '../../state';
 
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
-
-import appEvents from 'app/core/app_events';
-import { contextSrv } from 'app/core/core';
+import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
 import { IirisMaintenanceModal } from './IirisMaintenanceModal';
-import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
+import {
+  replaceTemplateVars,
+  getZabbix,
+  getHostGroups,
+  getHostsFromGroup,
+  getMaintenances,
+  getOngoingMaintenances,
+} from './common_tools';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -149,18 +147,17 @@ class DashNav extends PureComponent<Props, State> {
       .then((groupId: string) => {
         this.groupId = groupId;
         if (loadAllHosts) {
-          getZabbix(this.availableDatasources, this.datasourceSrv)
-            .then((zabbix: any) => {
-              zabbix.zabbixAPI.request('host.get', { output: ['host', 'hostid', 'name'] }).then((hosts: any) => {
-                this.hosts.options = hosts
-                  .map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid }))
-                  .sort(this.sortHostNames);
-                this.setState({ hosts: this.hosts.options });
-                this.hostIds = hosts.map((host: any) => host.hostid);
-                this.getMaintenanceList(this.hostIds);
-                this.clearHostSelection();
-              });
+          getZabbix(this.availableDatasources, this.datasourceSrv).then((zabbix: any) => {
+            zabbix.zabbixAPI.request('host.get', { output: ['host', 'hostid', 'name'] }).then((hosts: any) => {
+              this.hosts.options = hosts
+                .map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid }))
+                .sort(this.sortHostNames);
+              this.setState({ hosts: this.hosts.options });
+              this.hostIds = hosts.map((host: any) => host.hostid);
+              this.getMaintenanceList(this.hostIds);
+              this.clearHostSelection();
             });
+          });
         } else {
           getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
             // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
@@ -276,7 +273,8 @@ class DashNav extends PureComponent<Props, State> {
         // this.listModalScope.allMaintenances = this.allMaintenances;
         const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
         this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
-      }).catch((err: any) => {
+      })
+      .catch((err: any) => {
         this.handleError(err);
       });
   };
@@ -383,7 +381,7 @@ class DashNav extends PureComponent<Props, State> {
     setTimeout(() => {
       document.dispatchEvent(new Event('iiris-maintenance-update'));
     }, 2 * 60 * 1000);
-  }
+  };
 
   /**
    * Callback for clicking edit maintenance button
@@ -464,10 +462,12 @@ class DashNav extends PureComponent<Props, State> {
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
               this.setMaintenanceUpdateTimeOut(this.texts.maintenanceHasBeenDeleted, true);
-            }).catch((err: any) => {
+            })
+            .catch((err: any) => {
               this.handleError(err);
             });
-        }).catch((err: any) => {
+        })
+        .catch((err: any) => {
           this.handleError(err);
         });
     }
@@ -514,7 +514,7 @@ class DashNav extends PureComponent<Props, State> {
             },
           ],
         };
-        Object.keys(options).map(optionKey => {
+        Object.keys(options).map((optionKey) => {
           maintenanceObj['timeperiods'][0][optionKey] = options[optionKey];
         });
         let apiCommand = 'maintenance.create';
@@ -557,7 +557,12 @@ class DashNav extends PureComponent<Props, State> {
   openMaintenanceModal = (maintenanceID = '') => {
     this.selectedMaintenanceId = maintenanceID;
     const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
-    this.setState({ showMaintenanceModal: true, selectedMaintenance, showMaintenanceListModal: false, showMaintenanceConfirmModal: false });
+    this.setState({
+      showMaintenanceModal: true,
+      selectedMaintenance,
+      showMaintenanceListModal: false,
+      showMaintenanceConfirmModal: false,
+    });
   };
 
   /**
@@ -571,7 +576,12 @@ class DashNav extends PureComponent<Props, State> {
    * Open maintenance confirmation modal
    */
   openConfirmMaintenanceModal = (confirmText: string) => {
-    this.setState({ showMaintenanceConfirmModal: true, confirmText, showMaintenanceListModal: false, showMaintenanceModal: false });
+    this.setState({
+      showMaintenanceConfirmModal: true,
+      confirmText,
+      showMaintenanceListModal: false,
+      showMaintenanceModal: false,
+    });
   };
   /* tslint:enable */
 
@@ -588,14 +598,15 @@ class DashNav extends PureComponent<Props, State> {
       confirmText: '',
       confirmAction: undefined,
       ongoingMaintenanceIds: [],
-    }
+    };
     this.texts = contextSrv.getLocalizedTexts();
   }
 
   componentDidMount() {
     document.addEventListener(
       'iiris-maintenance-dialog-open',
-      (e: any) => this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      (e: any) =>
+        this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
       false
     );
   }
@@ -603,67 +614,66 @@ class DashNav extends PureComponent<Props, State> {
   componentWillUnmount() {
     document.removeEventListener(
       'iiris-maintenance-dialog-open',
-      (e: any) => this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      (e: any) =>
+        this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
       false
     );
   }
-  
-  const forceUpdate = useForceUpdate();
 
-  const onStarDashboard = () => {
-    const dashboardSrv = getDashboardSrv();
-    const { dashboard } = props;
-
-    dashboardSrv.starDashboard(dashboard.id, dashboard.meta.isStarred).then((newState: any) => {
-      dashboard.meta.isStarred = newState;
-      forceUpdate();
-    });
-  };
-
-  const onClose = () => {
+  onClose = () => {
     locationService.partial({ viewPanel: null });
   };
 
-  const onToggleTVMode = () => {
+  onToggleTVMode = () => {
     toggleKioskMode();
   };
 
-  const onOpenSettings = () => {
+  onOpenSettings = () => {
     locationService.partial({ editview: 'settings' });
   };
 
-  const onPlaylistPrev = () => {
-    playlistSrv.prev();
-  };
+  onStarDashboard = () => {
+    const { dashboard } = this.props;
+    const dashboardSrv = getDashboardSrv();
 
-  const onPlaylistNext = () => {
-    playlistSrv.next();
-  };
-
-  const onPlaylistStop = () => {
-    playlistSrv.stop();
-    forceUpdate();
-  };
-
-  const addCustomContent = (actions: DashNavButtonModel[], buttons: ReactNode[]) => {
-    actions.map((action, index) => {
-      const Component = action.component;
-      const element = <Component {...props} key={`button-custom-${index}`} />;
-      typeof action.index === 'number' ? buttons.splice(action.index, 0, element) : buttons.push(element);
+    dashboardSrv.starDashboard(dashboard.id, dashboard.meta.isStarred).then((newState: any) => {
+      dashboard.meta.isStarred = newState;
+      this.forceUpdate();
     });
   };
 
-  const isPlaylistRunning = () => {
-    return playlistSrv.isPlaying;
+  onPlaylistPrev = () => {
+    playlistSrv.prev();
   };
 
-  const renderLeftActionsButton = () => {
-    const { dashboard, kioskMode } = props;
+  onPlaylistNext = () => {
+    playlistSrv.next();
+  };
+
+  onPlaylistStop = () => {
+    playlistSrv.stop();
+    this.forceUpdate();
+  };
+
+  addCustomContent(actions: DashNavButtonModel[], buttons: ReactNode[]) {
+    actions.map((action, index) => {
+      const Component = action.component;
+      const element = <Component {...this.props} key={`button-custom-${index}`} />;
+      typeof action.index === 'number' ? buttons.splice(action.index, 0, element) : buttons.push(element);
+    });
+  }
+
+  isPlaylistRunning() {
+    return playlistSrv.isPlaying;
+  }
+
+  renderLeftActionsButton() {
+    const { dashboard, kioskMode } = this.props;
     const { canStar, canShare, isStarred } = dashboard.meta;
     const buttons: ReactNode[] = [];
     const isLightTheme = contextSrv.user.lightTheme;
 
-    if (kioskMode !== KioskMode.Off || isPlaylistRunning()) {
+    if (kioskMode !== KioskMode.Off || this.isPlaylistRunning()) {
       return [];
     }
 
@@ -675,7 +685,7 @@ class DashNav extends PureComponent<Props, State> {
           icon={isStarred ? 'favorite' : 'star'}
           iconType={isStarred ? 'mono' : 'default'}
           iconSize="lg"
-          onClick={onStarDashboard}
+          onClick={this.onStarDashboard}
           key="button-star"
         />
       );
@@ -722,22 +732,22 @@ class DashNav extends PureComponent<Props, State> {
       );
     }
 
-    addCustomContent(customLeftActions, buttons);
+    this.addCustomContent(customLeftActions, buttons);
     return buttons;
-  };
+  }
 
-  const renderPlaylistControls = () => {
+  renderPlaylistControls() {
     return (
       <ButtonGroup key="playlist-buttons">
-        <ToolbarButton tooltip="Go to previous dashboard" icon="backward" onClick={onPlaylistPrev} narrow />
-        <ToolbarButton onClick={onPlaylistStop}>Stop playlist</ToolbarButton>
-        <ToolbarButton tooltip="Go to next dashboard" icon="forward" onClick={onPlaylistNext} narrow />
+        <ToolbarButton tooltip="Go to previous dashboard" icon="backward" onClick={this.onPlaylistPrev} narrow />
+        <ToolbarButton onClick={this.onPlaylistStop}>Stop playlist</ToolbarButton>
+        <ToolbarButton tooltip="Go to next dashboard" icon="forward" onClick={this.onPlaylistNext} narrow />
       </ButtonGroup>
     );
-  };
+  }
 
-  const renderTimeControls = () => {
-    const { dashboard, updateTimeZoneForSession, hideTimePicker } = props;
+  renderTimeControls() {
+    const { dashboard, updateTimeZoneForSession, hideTimePicker } = this.props;
 
     if (hideTimePicker) {
       return null;
@@ -746,42 +756,42 @@ class DashNav extends PureComponent<Props, State> {
     return (
       <DashNavTimeControls dashboard={dashboard} onChangeTimeZone={updateTimeZoneForSession} key="time-controls" />
     );
-  };
+  }
 
-  findMaintenanceButton = (element: HTMLElement): HTMLElement|null => {
-    if (element.id === "maintenance_button") {
-        return element;
+  findMaintenanceButton = (element: HTMLElement): HTMLElement | null => {
+    if (element.id === 'maintenance_button') {
+      return element;
     } else if (element.parentElement) {
-        return this.findMaintenanceButton(element.parentElement);
+      return this.findMaintenanceButton(element.parentElement);
     } else {
-        return null;
+      return null;
     }
   };
 
-  const renderRightActionsButton = () => {
-    const { dashboard, onAddPanel, isFullscreen, kioskMode } = props;
+  renderRightActionsButton() {
+    const { dashboard, onAddPanel, isFullscreen, kioskMode } = this.props;
     const { canSave, canEdit, showSettings } = dashboard.meta;
     const { snapshot } = dashboard;
     const snapshotUrl = snapshot && snapshot.originalUrl;
     const buttons: ReactNode[] = [];
     const isLightTheme = contextSrv.user.lightTheme;
     const tvButton = (
-      <ToolbarButton tooltip="Cycle view mode" icon="monitor" onClick={onToggleTVMode} key="tv-button" />
+      <ToolbarButton tooltip="Cycle view mode" icon="monitor" onClick={this.onToggleTVMode} key="tv-button" />
     );
 
-    if (isPlaylistRunning()) {
-      return [renderPlaylistControls(), renderTimeControls()];
+    if (this.isPlaylistRunning()) {
+      return [this.renderPlaylistControls(), this.renderTimeControls()];
     }
 
     if (kioskMode === KioskMode.TV) {
-      return [renderTimeControls(), tvButton];
+      return [this.renderTimeControls(), tvButton];
     }
 
     if (canEdit && !isFullscreen && !isLightTheme) {
       buttons.push(<ToolbarButton tooltip="Add panel" icon="panel-add" onClick={onAddPanel} key="button-panel-add" />);
     }
 
-    if (canSave && !isFullscreen) {
+    if (canSave && !isFullscreen && !isLightTheme) {
       buttons.push(
         <ModalsController key="button-save">
           {({ showModal, hideModal }) => (
@@ -802,10 +812,15 @@ class DashNav extends PureComponent<Props, State> {
 
     if (this.props.dashboard.maintenanceHostGroup) {
       buttons.push(
-        <ToolbarButton key="manage_maintenances" tooltip="Manage Maintenances" id="maintenance_button" onClick={(e) => {
-          this.findMaintenanceButton(e.target as any)?.blur();
-          this.onOpenMaintenanceDialog();
-        }}>
+        <ToolbarButton
+          key="manage_maintenances"
+          tooltip="Manage Maintenances"
+          id="maintenance_button"
+          onClick={(e) => {
+            this.findMaintenanceButton(e.target as any)?.blur();
+            this.onOpenMaintenanceDialog();
+          }}
+        >
           <div style={{ width: '24px', height: '24px' }}>
             <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
               <path
@@ -839,7 +854,7 @@ class DashNav extends PureComponent<Props, State> {
       buttons.push(
         <ToolbarButton
           tooltip="Open original dashboard"
-          onClick={() => gotoSnapshotOrigin(snapshotUrl)}
+          onClick={() => this.gotoSnapshotOrigin(snapshotUrl)}
           icon="link"
           key="button-snapshot"
         />
@@ -848,22 +863,22 @@ class DashNav extends PureComponent<Props, State> {
 
     if (showSettings && !isLightTheme) {
       buttons.push(
-        <ToolbarButton tooltip="Dashboard settings" icon="cog" onClick={onOpenSettings} key="button-settings" />
+        <ToolbarButton tooltip="Dashboard settings" icon="cog" onClick={this.onOpenSettings} key="button-settings" />
       );
     }
 
-    addCustomContent(customRightActions, buttons);
+    this.addCustomContent(customRightActions, buttons);
 
-    buttons.push(renderTimeControls());
+    buttons.push(this.renderTimeControls());
     if (!isLightTheme) {
       buttons.push(tvButton);
     }
     return buttons;
-  };
+  }
 
-  const gotoSnapshotOrigin = (snapshotUrl: string) => {
+  gotoSnapshotOrigin(snapshotUrl: string) {
     window.location.href = textUtil.sanitizeUrl(snapshotUrl);
-  };
+  }
 
   hideMaintenanceModal = () => {
     this.setState({ showMaintenanceModal: false });
@@ -873,82 +888,64 @@ class DashNav extends PureComponent<Props, State> {
     this.setState({ showMaintenanceListModal: false });
   };
 
-  const { isFullscreen, title, folderTitle } = props;
-  // this ensures the component rerenders when the location changes
-  const location = useLocation();
-  const titleHref = locationUtil.getUrlForPartial(location, { search: 'open' });
-  const parentHref = locationUtil.getUrlForPartial(location, { search: 'open', folder: 'current' });
-  const onGoBack = isFullscreen ? onClose : undefined;
+  render() {
+    const { isFullscreen, title, folderTitle } = this.props;
+    const onGoBack = isFullscreen ? this.onClose : undefined;
+    const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
 
-  return (
-    hideMaintenanceModal = () => {
-      this.setState({ showMaintenanceModal: false });
-    };
-  
-    hideMaintenanceListModal = () => {
-      this.setState({ showMaintenanceListModal: false });
-    };
-  
-    render() {
-      const { isFullscreen, title, folderTitle } = this.props;
-      const onGoBack = isFullscreen ? this.onClose : undefined;
-      const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
-  
-      const titleHref = locationUtil.updateSearchParams(window.location.href, '?search=open');
-      const parentHref = locationUtil.updateSearchParams(window.location.href, '?search=open&folder=current');
-  
-      return (
-        <div className="iiris-custom-toolbar">
-          {this.props.dashboard.dashboardLogo ? (
-            <div className="iiris-customer-logo">
-              <img src={this.props.dashboard.dashboardLogo} />
-            </div>
-          ) : null}
-          <PageToolbar
-            pageIcon={isFullscreen ? undefined : 'apps'}
-            title={title}
-            parent={folderTitleByTheme}
-            titleHref={titleHref}
-            parentHref={parentHref}
-            onGoBack={onGoBack}
-            leftItems={this.renderLeftActionsButton()}
-          >
-            {this.renderRightActionsButton()}
-          </PageToolbar>
-          <IirisMaintenanceModal
-            show={this.state.showMaintenanceModal}
-            onDismiss={this.hideMaintenanceModal}
-            openAllMaintenancesModal={this.openAllMaintenancesModal}
-            hosts={this.state.hosts}
-            selectedMaintenance={this.state.selectedMaintenance}
-            user={contextSrv.user.email || ''}
-            onCreateMaintenance={this.onCreateMaintenance}
-          />
-          <IirisMaintenanceListModal
-            show={this.state.showMaintenanceListModal}
-            allMaintenances={this.state.allMaintenances}
-            openMaintenanceModal={this.openMaintenanceModal}
-            onDismiss={this.hideMaintenanceListModal}
-            onEditMaintenance={this.onEditMaintenance}
-            onStopMaintenance={this.onStopMaintenance}
-            confirmIsVisible={this.state.confirmIsVisible}
-            confirmText={this.state.confirmText}
-            confirmAction={this.state.confirmAction}
-            selectedMaintenanceId={this.state.selectedMaintenance?.id}
-            onCloseConfirmation={() => this.setState({ confirmIsVisible: false })}
-            ongoingMaintenanceIds={this.state.ongoingMaintenanceIds}
-          />
-          <IirisMaintenanceConfirmModal
-            show={this.state.showMaintenanceConfirmModal}
-            onDismiss={() => this.setState({ showMaintenanceConfirmModal: false })}
-            confirmText={this.state.confirmText}
-            confirmTitle={this.texts.maintenance}
-          />
-        </div>
+    const titleHref = locationUtil.updateSearchParams(window.location.href, '?search=open');
+    const parentHref = locationUtil.updateSearchParams(window.location.href, '?search=open&folder=current');
+
+    return (
+      <div className="iiris-custom-toolbar">
+        {this.props.dashboard.dashboardLogo ? (
+          <div className="iiris-customer-logo">
+            <img src={this.props.dashboard.dashboardLogo} />
+          </div>
+        ) : null}
+        <PageToolbar
+          pageIcon={isFullscreen ? undefined : 'apps'}
+          title={title}
+          parent={folderTitleByTheme}
+          titleHref={titleHref}
+          parentHref={parentHref}
+          onGoBack={onGoBack}
+          leftItems={this.renderLeftActionsButton()}
+        >
+          {this.renderRightActionsButton()}
+        </PageToolbar>
+        <IirisMaintenanceModal
+          show={this.state.showMaintenanceModal}
+          onDismiss={this.hideMaintenanceModal}
+          openAllMaintenancesModal={this.openAllMaintenancesModal}
+          hosts={this.state.hosts}
+          selectedMaintenance={this.state.selectedMaintenance}
+          user={contextSrv.user.email || ''}
+          onCreateMaintenance={this.onCreateMaintenance}
+        />
+        <IirisMaintenanceListModal
+          show={this.state.showMaintenanceListModal}
+          allMaintenances={this.state.allMaintenances}
+          openMaintenanceModal={this.openMaintenanceModal}
+          onDismiss={this.hideMaintenanceListModal}
+          onEditMaintenance={this.onEditMaintenance}
+          onStopMaintenance={this.onStopMaintenance}
+          confirmIsVisible={this.state.confirmIsVisible}
+          confirmText={this.state.confirmText}
+          confirmAction={this.state.confirmAction}
+          selectedMaintenanceId={this.state.selectedMaintenance?.id}
+          onCloseConfirmation={() => this.setState({ confirmIsVisible: false })}
+          ongoingMaintenanceIds={this.state.ongoingMaintenanceIds}
+        />
+        <IirisMaintenanceConfirmModal
+          show={this.state.showMaintenanceConfirmModal}
+          onDismiss={() => this.setState({ showMaintenanceConfirmModal: false })}
+          confirmText={this.state.confirmText}
+          confirmTitle={this.texts.maintenance}
+        />
+      </div>
     );
   }
 }
-
-DashNav.displayName = 'DashNav';
 
 export default connector(DashNav);
