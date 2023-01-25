@@ -8,8 +8,10 @@ import { selectors } from '@grafana/e2e-selectors';
 import { locationService } from '@grafana/runtime';
 import { CustomScrollbar, stylesFactory, Themeable2, withTheme2 } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
+import appEvents from 'app/core/app_events';
 import { Branding } from 'app/core/components/Branding/Branding';
 import { createErrorNotification } from 'app/core/copy/appNotification';
+import { contextSrv } from 'app/core/core';
 import { getKioskMode } from 'app/core/navigation/kiosk';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import { PanelModel } from 'app/features/dashboard/state';
@@ -32,8 +34,6 @@ import { liveTimer } from '../dashgrid/liveTimer';
 import { getTimeSrv } from '../services/TimeSrv';
 import { cleanUpDashboardAndVariables } from '../state/actions';
 import { initDashboard } from '../state/initDashboard';
-import appEvents from 'app/core/app_events';
-import { contextSrv } from 'app/core/core';
 
 export interface DashboardPageRouteParams {
   uid?: string;
@@ -107,7 +107,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
     const messageObj = {
       errorText,
-      dashboard
+      dashboard,
     };
     window.top?.postMessage(messageObj, '*');
   }
@@ -116,14 +116,16 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     this.initDashboard();
     this.forceRouteReloadCounter = (this.props.history.location.state as any)?.routeReloadCounter || 0;
     appEvents.on(AppEvents.alertError, (response: any) => {
-      const errorText = Object.keys(response).map((key: string) => response[key]).join(' ');
+      const errorText = Object.keys(response)
+        .map((key: string) => response[key])
+        .join(' ');
       this.sendError(errorText);
     });
     const sendErrorFunc = this.sendError.bind(this);
-    window.onerror = function(message: any) {
+    window.onerror = function (message: any) {
       sendErrorFunc(message);
       return false;
-    }
+    };
   }
 
   componentWillUnmount() {
@@ -163,7 +165,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
         delete queryObj.orgId;
       }
       let queryParams = '';
-      Object.keys(queryObj).map(pKey => {
+      Object.keys(queryObj).map((pKey) => {
         if (
           pKey !== 'breadcrumb' &&
           pKey !== 'dashboard' &&
@@ -210,7 +212,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
         isGrafanaAdmin: contextSrv.user.isGrafanaAdmin,
         hideIirisBreadcrumb: db.hideIirisBreadcrumb,
       };
-      const query = Object.assign({}, this.props.queryParams)
+      const query = Object.assign({}, this.props.queryParams);
       if (db.uid) {
         notifyContainerWindow(messageObj, query);
       }
