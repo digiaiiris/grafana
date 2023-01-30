@@ -69,17 +69,12 @@ export function addCustomRightAction(content: DashNavButtonModel) {
 type Props = OwnProps & ConnectedProps<typeof connector>;
 
 export const DashNav = React.memo<Props>((props) => {
-  // Duplikaatti-muuttujat:
-  // ----------------------
-  // hosts1 ja hosts2
-  // allMaintenances1 ja allMaintenances2
-
   // Previous state variables
-  const [allMaintenances1, setAllMaintenances1] = useState<any[]>([]);
+  const [allMaintenancesState, setAllMaintenancesState] = useState<any[]>([]);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState<boolean>(false);
   const [showMaintenanceListModal, setShowMaintenanceListModal] = useState<boolean>(false);
   const [showMaintenanceConfirmModal, setShowMaintenanceConfirmModal] = useState<boolean>(false);
-  const [hosts1, setHosts1] = useState<any[]>([]);
+  const [hostsState, setHostsState] = useState<object[]>([]);
   const [selectedMaintenance, setSelectedMaintenance] = useState<any>(undefined);
   const [confirmIsVisible, setConfirmIsVisible] = useState<boolean>(false);
   const [confirmText, setConfirmText] = useState<string>('');
@@ -87,28 +82,27 @@ export const DashNav = React.memo<Props>((props) => {
   const [ongoingMaintenanceIds, setOngoingMaintenanceIds] = useState<string[]>([]);
 
   // Previous class variables
-  const [hosts2, setHosts2] = useState<any>({});
+  const [hostOptions, setHostOptions] = useState<object[]>([]);
+  const [hostSelected, setHostSelected] = useState<object>({});
   const [hostGroup, setHostGroup] = useState<any>({});
   const [groupId, setGroupId] = useState<any>({});
   const [availableDatasources, setAvailableDatasources] = useState<any>({});
   const [datasourceSrv, setDatasourceSrv] = useState<any>({});
-  const [modalScope, setModalScope] = useState<any>({});
-  const [listModalScope, setListModalScope] = useState<any>({});
   const [hostIds, setHostIds] = useState<any>({});
   const [ongoingMaintenances, setOngoingMaintenances] = useState<any>({});
-  const [error, setError] = useState<any>({});
-  const [user, setUser] = useState<any>({});
-  const [allMaintenances2, setAllMaintenances2] = useState<any>({});
+  const [allMaintenancesClass, setAllMaintenancesClass] = useState<object[]>([]);
   const [selectedMaintenanceId, setSelectedMaintenanceId] = useState<any>({});
-  const [maintenanceIconStyle, setMaintenanceIconStyle] = useState<any>({});
   const [stoppingOngoingMaintenance, setStoppingOngoingMaintenance] = useState<any>({});
-  const [confirmModalScope, setConfirmModalScope] = useState<any>({});
   const [texts, setTexts] = useState<any>({});
+  const [language, setLanguage] = useState<string>('fi');
 
-  const [language, setLanguage] = useState<string>(localStorage.getItem('iiris_language') || 'fi');
+  // Uudet muuttujat
+  const [allSelected, setAllSelected] = useState<boolean>(true);
+  console.log(hostSelected, allSelected);
 
   // Iiris language
   //this.texts = contextSrv.getLocalizedTexts();
+  setLanguage(localStorage.getItem('iiris_language') || 'fi');
   useEffect(() => {
     setTexts(language);
   }, [language]);
@@ -129,10 +123,7 @@ export const DashNav = React.memo<Props>((props) => {
     const templateSrv = getTemplateSrv();
     setDatasourceSrv(getDataSourceSrv());
     setOngoingMaintenances([]);
-    setError(false);
-    setUser(contextSrv.user.email);
     setSelectedMaintenanceId('');
-    setMaintenanceIconStyle('');
     if (givenDataSources && givenDataSources.length > 0) {
       setAvailableDatasources(givenDataSources);
     } else if (dashboard.selectedDatasource) {
@@ -150,11 +141,9 @@ export const DashNav = React.memo<Props>((props) => {
     } else {
       setHostGroup(dashboard.maintenanceHostGroup);
     }
-    setHosts2({
-      selected: {},
-      options: [],
-      allSelected: true,
-    });
+    setHostOptions([]);
+    setHostSelected({});
+    setAllSelected(true);
     setHostGroup(replaceTemplateVars(hostGroup, templateSrv));
     getHostGroups(hostGroup, availableDatasources, datasourceSrv)
       .then((groupId: string) => {
@@ -162,13 +151,10 @@ export const DashNav = React.memo<Props>((props) => {
         if (loadAllHosts) {
           getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
             zabbix.zabbixAPI.request('host.get', { output: ['host', 'hostid', 'name'] }).then((hosts: any) => {
-              setHosts2((hosts2) => ({
-                ...hosts2,
-                options: hosts
-                  .map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid }))
-                  .sort(sortHostNames),
-              }));
-              setHosts1(hosts.options);
+              setHostOptions(
+                hosts.map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid })).sort(sortHostNames)
+              );
+              setHostsState(hostOptions);
               setHostIds(hosts.map((host: any) => host.hostid));
               getMaintenanceList(hostIds);
               clearHostSelection();
@@ -177,14 +163,13 @@ export const DashNav = React.memo<Props>((props) => {
         } else {
           getHostsFromGroup(groupId, availableDatasources, datasourceSrv).then((hosts: any[]) => {
             // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-            setHosts2((hosts2) => ({
-              ...hosts2,
-              options: hosts
+            setHostOptions(
+              hosts
                 .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
                 .map((host: any) => ({ text: host.name, value: host.hostid }))
-                .sort(sortHostNames),
-            }));
-            setHosts1(hosts.options);
+                .sort(sortHostNames)
+            );
+            setHostsState(hostOptions);
             setHostIds(hosts.map((host: any) => host.hostid));
             getMaintenanceList(hostIds, groupId);
             clearHostSelection();
@@ -202,6 +187,7 @@ export const DashNav = React.memo<Props>((props) => {
    * @param {Date} newDate
    * @returns {string}
    */
+  /*
   const parseDateToString = (newDate: Date) => {
     const leadingZero = newDate.getMinutes() < 10 ? '0' : '';
     return (
@@ -217,16 +203,16 @@ export const DashNav = React.memo<Props>((props) => {
       newDate.getMinutes()
     );
   };
+  */
 
   /**
    * Clear selection for hosts and set all selected by default
    */
   const clearHostSelection = () => {
-    this.hosts.allSelected = true;
-    if (this.hosts.options.length > 0) {
-      this.hosts.options.forEach((option: any, index: number) => {
-        this.hosts.selected[option.value] = this.hosts.allSelected;
-        this.hosts.options[index].checked = this.hosts.allSelected;
+    setAllSelected(true);
+    if (hostOptions.length > 0) {
+      hostOptions.forEach((option: any, index: number) => {
+        console.log('clearHostSelection:', option, index);
       });
     }
   };
@@ -256,45 +242,41 @@ export const DashNav = React.memo<Props>((props) => {
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
           setOngoingMaintenances(getOngoingMaintenances(maintenances));
-          this.allMaintenances = [];
+          setAllMaintenancesClass([]);
           maintenances.map((maintenance: any) => {
             if (maintenance.maintenanceType === 0) {
-              maintenance.maintenanceTypeString = this.texts.oneTimeAbbr;
-              maintenance.maintenanceTypeStringFull = this.texts.oneTime + ' ' + this.texts.maintenance;
+              maintenance.maintenanceTypeString = texts.oneTimeAbbr;
+              maintenance.maintenanceTypeStringFull = `${texts.oneTime} ${texts.maintenance}`;
             } else if (maintenance.maintenanceType === 2) {
-              maintenance.maintenanceTypeString = this.texts.dailyAbbr;
-              maintenance.maintenanceTypeStringFull = this.texts.daily + ' ' + this.texts.maintenance;
+              maintenance.maintenanceTypeString = texts.dailyAbbr;
+              maintenance.maintenanceTypeStringFull = `${texts.daily} ${texts.maintenance}`;
             } else if (maintenance.maintenanceType === 3) {
-              maintenance.maintenanceTypeString = this.texts.weeklyAbbr;
-              maintenance.maintenanceTypeStringFull = this.texts.weekly + ' ' + this.texts.maintenance;
+              maintenance.maintenanceTypeString = texts.weeklyAbbr;
+              maintenance.maintenanceTypeStringFull = `${texts.weekly} ${texts.maintenance}`;
             } else if (maintenance.maintenanceType === 4) {
-              maintenance.maintenanceTypeString = this.texts.monthlyAbbr;
-              maintenance.maintenanceTypeStringFull = this.texts.monthly + ' ' + this.texts.maintenance;
+              maintenance.maintenanceTypeString = texts.monthlyAbbr;
+              maintenance.maintenanceTypeStringFull = `${texts.monthly} ${texts.maintenance}`;
             } else {
               maintenance.maintenanceTypeString = '';
             }
-            this.allMaintenances.push(maintenance);
+            setAllMaintenancesClass((allMaintenancesClass) => [...allMaintenancesClass, maintenance]);
           });
           const curTime = new Date().getTime() / 1000;
-          this.allMaintenances = this.allMaintenances.filter(
-            (maintenance: any) => maintenance.endTime > curTime && maintenance.activeTill > curTime
+          setAllMaintenancesClass(
+            allMaintenancesClass.filter(
+              (maintenance: any) => maintenance.endTime > curTime && maintenance.activeTill > curTime
+            )
           );
-          if (this.ongoingMaintenances.length > 0) {
-            this.maintenanceIconStyle = 'on-going';
-          } else {
-            this.maintenanceIconStyle = '';
-          }
         } else {
-          this.ongoingMaintenances = [];
-          this.maintenanceIconStyle = '';
-          this.allMaintenances = [];
+          setOngoingMaintenances([]);
+          setAllMaintenancesClass([]);
         }
         // this.listModalScope.allMaintenances = this.allMaintenances;
-        const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
-        this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
+        setOngoingMaintenanceIds(ongoingMaintenances.map((item: any) => item.internalId));
+        setAllMaintenancesState(allMaintenancesClass);
       })
       .catch((err: any) => {
-        this.handleError(err);
+        handleError(err);
       });
   };
 
@@ -302,7 +284,7 @@ export const DashNav = React.memo<Props>((props) => {
    * Callback for clicking wiki icon
    */
   const onOpenWikiPage = () => {
-    const { dashboard } = this.props;
+    const { dashboard } = props;
     if (dashboard.serviceInfoWikiUrlIsExternal) {
       // Navigate directly to given URL
       window.open(dashboard.serviceInfoWikiUrl, '_blank');
@@ -342,58 +324,61 @@ export const DashNav = React.memo<Props>((props) => {
    * @param {string} maintenanceID
    */
   const onStopMaintenance = (maintenanceID: string) => {
-    let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
+    let selectedMaintenance = ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     let isOngoing = false;
-    const curTime = this.getCurrentTimeEpoch();
-    this.stoppingOngoingMaintenance = false;
+    const curTime = getCurrentTimeEpoch();
+    setStoppingOngoingMaintenance(false);
     if (selectedMaintenance) {
       isOngoing = true;
-      this.stoppingOngoingMaintenance = true;
+      setStoppingOngoingMaintenance(true);
     } else {
-      selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
+      selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
     }
     let confirmIsVisible = true;
     let confirmText = '';
     let confirmAction: any;
     if (isOngoing && !selectedMaintenance.maintenanceType) {
       // In case of ongoing single maintenance we just set the end time
-      confirmText = this.texts.areYouSureWantToCancelMaintenance;
-      confirmAction = this.onUpdateMaintenanceEndTime;
+      confirmText = texts.areYouSureWantToCancelMaintenance;
+      confirmAction = onUpdateMaintenanceEndTime;
     } else {
       // Handle all other maintenances
       if (!selectedMaintenance.maintenanceType) {
         // Single maintenance
-        confirmText = this.texts.areYouSureWantToDeleteMaintenance;
+        confirmText = texts.areYouSureWantToDeleteMaintenance;
       } else {
         // Periodic maintenances
         if (isOngoing) {
-          confirmText = this.texts.cantCancelStartedPeriodicMaintenance + '\n';
-          confirmText += this.texts.selectedActionWillDeleteAllMaintenancesInSeries + '\n';
-          confirmText += this.texts.areYouSureWantToContinue;
+          confirmText = texts.cantCancelStartedPeriodicMaintenance + '\n';
+          confirmText += texts.selectedActionWillDeleteAllMaintenancesInSeries + '\n';
+          confirmText += texts.areYouSureWantToContinue;
         } else {
-          confirmText = this.texts.areYouSureWantToDeletePeriodicMaintenance + '\n';
-          confirmText += this.texts.allMaintenancesInSeriesWillBeDeleted;
+          confirmText = texts.areYouSureWantToDeletePeriodicMaintenance + '\n';
+          confirmText += texts.allMaintenancesInSeriesWillBeDeleted;
         }
       }
       if (selectedMaintenance.activeSince > curTime) {
         // Maintenance period hasn't started yet so it can be safely removed
         // NOTE: This is temporarily commented because 'maintenance.delete' causes error
         // this.listModalScope.confirmAction = this.onRemoveMaintenance.bind(this);
-        confirmAction = this.onUpdateMaintenanceEndTime;
+        confirmAction = onUpdateMaintenanceEndTime;
       } else {
         // Period has already started so we can just set the end time of period
-        confirmAction = this.onUpdateMaintenanceEndTime;
+        confirmAction = onUpdateMaintenanceEndTime;
       }
     }
-    this.setState({ selectedMaintenance, confirmIsVisible, confirmText, confirmAction });
+    setSelectedMaintenance(selectedMaintenance);
+    setConfirmIsVisible(confirmIsVisible);
+    setConfirmText(confirmText);
+    setConfirmAction(confirmAction);
   };
 
   const setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
     if (showModal) {
-      this.openConfirmMaintenanceModal(infoText);
+      openConfirmMaintenanceModal(infoText);
     } else {
       setTimeout(() => {
-        this.getMaintenanceList(this.hostIds, this.groupId);
+        getMaintenanceList(hostIds, groupId);
         appEvents.emit(AppEvents.alertSuccess, [infoText]);
       }, 1000);
     }
@@ -407,7 +392,7 @@ export const DashNav = React.memo<Props>((props) => {
    * @param {string} maintenanceID
    */
   const onEditMaintenance = (maintenanceID: string) => {
-    this.openMaintenanceModal(maintenanceID);
+    openMaintenanceModal(maintenanceID);
   };
 
   /**
@@ -416,16 +401,16 @@ export const DashNav = React.memo<Props>((props) => {
    * @param {number} endTime epoch
    */
   const onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
-    const curTime = this.getCurrentTimeEpoch();
+    const curTime = getCurrentTimeEpoch();
     if (!endTime) {
       endTime = curTime;
     }
-    let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
+    let selectedMaintenance = ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     if (!selectedMaintenance) {
-      selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
+      selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
     }
     if (selectedMaintenance) {
-      getZabbix(this.availableDatasources, this.datasourceSrv)
+      getZabbix(availableDatasources, datasourceSrv)
         .then((zabbix: any) => {
           // Set the active_till of selected maintenance to given end time
           const options: any = {
@@ -451,18 +436,18 @@ export const DashNav = React.memo<Props>((props) => {
             .request('maintenance.update', options)
             .then((answer: any) => {
               let showModal = true;
-              let infoText = this.texts.maintenanceHasBeenDeleted;
-              if (this.stoppingOngoingMaintenance) {
-                infoText = this.texts.maintenancehasBeenCanceled + ' ' + this.texts.systemStatusWillBeUpdated;
+              let infoText = texts.maintenanceHasBeenDeleted;
+              if (stoppingOngoingMaintenance) {
+                infoText = texts.maintenancehasBeenCanceled + ' ' + texts.systemStatusWillBeUpdated;
               }
-              this.setMaintenanceUpdateTimeOut(infoText, showModal);
+              setMaintenanceUpdateTimeOut(infoText, showModal);
             })
             .catch((err: any) => {
-              this.handleError(err);
+              handleError(err);
             });
         })
         .catch((err: any) => {
-          this.handleError(err);
+          handleError(err);
         });
     }
   };
@@ -471,26 +456,28 @@ export const DashNav = React.memo<Props>((props) => {
    * Callback for clicking stop maintenance button
    * @param {string} maintenanceID
    */
+  /*
   const onRemoveMaintenance = (maintenanceID: string) => {
-    const selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
+    const selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
     if (selectedMaintenance) {
-      getZabbix(this.availableDatasources, this.datasourceSrv)
+      getZabbix(availableDatasources, datasourceSrv)
         .then((zabbix: any) => {
           // Set the time period of selected maintenance to end now
           zabbix.zabbixAPI
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
-              this.setMaintenanceUpdateTimeOut(this.texts.maintenanceHasBeenDeleted, true);
+              setMaintenanceUpdateTimeOut(texts.maintenanceHasBeenDeleted, true);
             })
             .catch((err: any) => {
-              this.handleError(err);
+              handleError(err);
             });
         })
         .catch((err: any) => {
-          this.handleError(err);
+          handleError(err);
         });
     }
   };
+  */
 
   /**
    * Callback for creating a new maintenance from dialog
@@ -513,9 +500,9 @@ export const DashNav = React.memo<Props>((props) => {
     stopDate: Date,
     maintenanceId?: string
   ) => {
-    getZabbix(this.availableDatasources, this.datasourceSrv)
+    getZabbix(availableDatasources, datasourceSrv)
       .then((zabbix: any) => {
-        const curTime = this.getCurrentTimeEpoch(startDate);
+        const curTime = getCurrentTimeEpoch(startDate);
         let stopTime = curTime + duration;
         if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
           stopTime = Math.floor(stopDate.getTime() / 1000);
@@ -545,27 +532,27 @@ export const DashNav = React.memo<Props>((props) => {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            let infoText = this.texts.newMaintenanceHasBeenStarted + ' ' + this.texts.systemStatusWillBeUpdated;
+            let infoText = texts.newMaintenanceHasBeenStarted + ' ' + texts.systemStatusWillBeUpdated;
             if (maintenanceId) {
-              infoText = this.texts.maintenanceHasBeenUpdated + ' ' + this.texts.systemStatusWillBeUpdated;
+              infoText = texts.maintenanceHasBeenUpdated + ' ' + texts.systemStatusWillBeUpdated;
             }
             let showModal = true;
             // Show only info popup if maintenance is in future
-            if (this.getCurrentTimeEpoch(startDate) > this.getCurrentTimeEpoch()) {
+            if (getCurrentTimeEpoch(startDate) > getCurrentTimeEpoch()) {
               if (maintenanceId) {
-                infoText = this.texts.maintenanceHasBeenUpdated;
+                infoText = texts.maintenanceHasBeenUpdated;
               } else {
-                infoText = this.texts.newMaintenanceHasBeenCreated;
+                infoText = texts.newMaintenanceHasBeenCreated;
               }
             }
-            this.setMaintenanceUpdateTimeOut(infoText, showModal);
+            setMaintenanceUpdateTimeOut(infoText, showModal);
           })
           .catch((err: any) => {
-            this.handleError(err);
+            handleError(err);
           });
       })
       .catch((err: any) => {
-        this.handleError(err);
+        handleError(err);
       });
   };
 
@@ -575,7 +562,7 @@ export const DashNav = React.memo<Props>((props) => {
    */
   const openMaintenanceModal = (maintenanceID = '') => {
     setSelectedMaintenanceId(maintenanceID);
-    const selectedMaintenance = allMaintenances.find((item: any) => item.id === selectedMaintenanceId);
+    const selectedMaintenance = allMaintenancesState.find((item: any) => item.id === selectedMaintenanceId);
     setSelectedMaintenance(selectedMaintenance);
     setShowMaintenanceModal(true);
     setShowMaintenanceListModal(false);
@@ -794,15 +781,15 @@ export const DashNav = React.memo<Props>((props) => {
       );
     }
 
-    if (this.props.dashboard.maintenanceHostGroup) {
+    if (props.dashboard.maintenanceHostGroup) {
       buttons.push(
         <ToolbarButton
           key="manage_maintenances"
           tooltip="Manage Maintenances"
           id="maintenance_button"
           onClick={(e) => {
-            this.findMaintenanceButton(e.target as any)?.blur();
-            this.onOpenMaintenanceDialog();
+            findMaintenanceButton(e.target as any)?.blur();
+            onOpenMaintenanceDialog();
           }}
         >
           <div style={{ width: '24px', height: '24px' }}>
@@ -819,9 +806,9 @@ export const DashNav = React.memo<Props>((props) => {
         </ToolbarButton>
       );
     }
-    if (this.props.dashboard.serviceInfoWikiUrl) {
+    if (props.dashboard.serviceInfoWikiUrl) {
       buttons.push(
-        <ToolbarButton key="open_wiki" tooltip="Go To Wiki" onClick={() => this.onOpenWikiPage()}>
+        <ToolbarButton key="open_wiki" tooltip="Go To Wiki" onClick={() => onOpenWikiPage()}>
           <div style={{ width: '20px', height: '20px' }}>
             <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 140 140" fill="#ffffff">
               <path d="M86.7,10h-6.3H80H24v120h92V46v-0.3v-6.3L86.7,10z M88,22.7L103.3,38H88V22.7z M108,122H32V18h48v28h28V122z" />
@@ -902,14 +889,14 @@ export const DashNav = React.memo<Props>((props) => {
         show={showMaintenanceModal}
         onDismiss={hideMaintenanceModal}
         openAllMaintenancesModal={openAllMaintenancesModal}
-        hosts={hosts1}
+        hosts={hostsState}
         selectedMaintenance={selectedMaintenance}
         user={contextSrv.user.email || ''}
         onCreateMaintenance={onCreateMaintenance}
       />
       <IirisMaintenanceListModal
         show={showMaintenanceListModal}
-        allMaintenances={allMaintenances1}
+        allMaintenances={allMaintenancesState}
         openMaintenanceModal={openMaintenanceModal}
         onDismiss={hideMaintenanceListModal}
         onEditMaintenance={onEditMaintenance}
