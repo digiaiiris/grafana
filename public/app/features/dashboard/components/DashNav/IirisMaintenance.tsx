@@ -1,7 +1,7 @@
 /* eslint-disable */
 /* tslint:disable */
 // Libraries
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import React, { PureComponent } from 'react';
 import {
   replaceTemplateVars,
   getZabbix,
@@ -10,9 +10,14 @@ import {
   getMaintenances,
   getOngoingMaintenances,
 } from './common_tools';
+import { connect, ConnectedProps } from 'react-redux';
 
 // Components
 import { AppEvents } from '@grafana/data';
+import { ToolbarButton } from '@grafana/ui';
+
+// State
+import { updateTimeZoneForSession } from 'app/features/profile/state/reducers';
 
 // Types
 import { DashboardModel } from '../../state';
@@ -25,56 +30,58 @@ import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
 import { IirisMaintenanceModal } from './IirisMaintenanceModal';
 import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
 
+const mapDispatchToProps = {
+  updateTimeZoneForSession,
+};
+
+const connector = connect(null, mapDispatchToProps);
+
 export interface OwnProps {
   dashboard: DashboardModel;
+  key: string;
 }
 
-const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
-  useImperativeHandle(ref, () => ({
-    log() {
-      console.log('IirisMaintenance', onOpenMaintenanceDialog());
-    },
-  }));
+interface State {
+  allMaintenances: any;
+  showMaintenanceModal: boolean;
+  showMaintenanceListModal: boolean;
+  showMaintenanceConfirmModal: boolean;
+  hosts: any[];
+  selectedMaintenance: any;
+  confirmIsVisible: boolean;
+  confirmText: string;
+  confirmAction: any;
+  ongoingMaintenanceIds: string[];
+}
 
-  // Previous state variables
-  const [allMaintenancesState, setAllMaintenancesState] = useState<any[]>([]);
-  const [showMaintenanceModal, setShowMaintenanceModal] = useState<boolean>(false);
-  const [showMaintenanceListModal, setShowMaintenanceListModal] = useState<boolean>(false);
-  const [showMaintenanceConfirmModal, setShowMaintenanceConfirmModal] = useState<boolean>(false);
-  const [hostsState, setHostsState] = useState<object[]>([]);
-  const [selectedMaintenance, setSelectedMaintenance] = useState<any>(undefined);
-  const [confirmIsVisible, setConfirmIsVisible] = useState<boolean>(false);
-  const [confirmText, setConfirmText] = useState<string>('');
-  const [confirmAction, setConfirmAction] = useState<any>(undefined);
-  const [ongoingMaintenanceIds, setOngoingMaintenanceIds] = useState<string[]>([]);
+type Props = OwnProps & ConnectedProps<typeof connector>;
 
-  // Previous class variables
-  const [hostOptions, setHostOptions] = useState<object[]>([]);
-  const [hostSelected, setHostSelected] = useState<object>({});
-  const [hostGroup, setHostGroup] = useState<any>({});
-  const [groupId, setGroupId] = useState<any>({});
-  const [availableDatasources, setAvailableDatasources] = useState<any>({});
-  const [datasourceSrv, setDatasourceSrv] = useState<any>({});
-  const [hostIds, setHostIds] = useState<any>({});
-  const [ongoingMaintenances, setOngoingMaintenances] = useState<any>({});
-  const [allMaintenancesClass, setAllMaintenancesClass] = useState<object[]>([]);
-  const [selectedMaintenanceId, setSelectedMaintenanceId] = useState<any>({});
-  const [stoppingOngoingMaintenance, setStoppingOngoingMaintenance] = useState<any>({});
-  const [texts, setTexts] = useState<any>({});
-  const [language, setLanguage] = useState<string>('fi');
+class IirisMaintenance extends PureComponent<Props, State> {
+  /* eslint-disable */
+  /* tslint:disable */
+  hosts: any;
+  hostGroup: any;
+  groupId: any;
+  availableDatasources: any;
+  datasourceSrv: any;
+  modalScope: any;
+  listModalScope: any;
+  hostIds: any;
+  ongoingMaintenances: any;
+  error: any;
+  user: any;
+  allMaintenances: any;
+  selectedMaintenanceId: any;
+  maintenanceIconStyle: any;
+  stoppingOngoingMaintenance: any;
+  confirmModalScope: any;
+  texts: any = {};
 
-  // Uudet muuttujat
-  const [allSelected, setAllSelected] = useState<boolean>(true);
-  console.log(hostSelected, allSelected);
+  handleActionParent = () => {
+    console.log('handleActionParent');
+  };
 
-  // Iiris language
-  //texts = contextSrv.getLocalizedTexts();
-  setLanguage(localStorage.getItem('iiris_language') || 'fi');
-  useEffect(() => {
-    setTexts(language);
-  }, [language]);
-
-  const sortHostNames = (hostA: any, hostB: any) => {
+  sortHostNames = (hostA: any, hostB: any) => {
     const nameA = hostA.text.toLowerCase();
     const nameB = hostB.text.toLowerCase();
     if (nameA < nameB) {
@@ -85,68 +92,69 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
     return 0;
   };
 
-  const onOpenMaintenanceDialog = (loadAllHosts?: boolean, givenHostGroup?: string, givenDataSources?: string[]) => {
-    const { dashboard } = props;
+  onOpenMaintenanceDialog = (loadAllHosts?: boolean, givenHostGroup?: string, givenDataSources?: string[]) => {
+    const { dashboard } = this.props;
     const templateSrv = getTemplateSrv();
-    setDatasourceSrv(getDataSourceSrv());
-    setOngoingMaintenances([]);
-    setSelectedMaintenanceId('');
+    this.datasourceSrv = getDataSourceSrv();
+    this.ongoingMaintenances = [];
+    this.error = false;
+    this.user = contextSrv.user.email;
+    this.selectedMaintenanceId = '';
+    this.maintenanceIconStyle = '';
     if (givenDataSources && givenDataSources.length > 0) {
-      setAvailableDatasources(givenDataSources);
+      this.availableDatasources = givenDataSources;
     } else if (dashboard.selectedDatasource) {
-      setAvailableDatasources([dashboard.selectedDatasource]);
+      this.availableDatasources = [dashboard.selectedDatasource];
     } else {
-      setAvailableDatasources(
-        datasourceSrv
-          .getMetricSources()
-          .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
-          .map((ds: any) => ds.name)
-      );
+      this.availableDatasources = this.datasourceSrv
+        .getMetricSources()
+        .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
+        .map((ds: any) => ds.name);
     }
     if (givenHostGroup) {
-      setHostGroup(givenHostGroup);
+      this.hostGroup = givenHostGroup;
     } else {
-      setHostGroup(dashboard.maintenanceHostGroup);
+      this.hostGroup = dashboard.maintenanceHostGroup;
     }
-    setHostOptions([]);
-    setHostSelected({});
-    setAllSelected(true);
-    setHostGroup(replaceTemplateVars(hostGroup, templateSrv));
-    getHostGroups(hostGroup, availableDatasources, datasourceSrv)
+    this.hosts = {
+      selected: {},
+      options: [],
+      allSelected: true,
+    };
+    this.hostGroup = replaceTemplateVars(this.hostGroup, templateSrv);
+    getHostGroups(this.hostGroup, this.availableDatasources, this.datasourceSrv)
       .then((groupId: string) => {
-        setGroupId(groupId);
+        this.groupId = groupId;
         if (loadAllHosts) {
-          getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
+          getZabbix(this.availableDatasources, this.datasourceSrv).then((zabbix: any) => {
             zabbix.zabbixAPI.request('host.get', { output: ['host', 'hostid', 'name'] }).then((hosts: any) => {
-              setHostOptions(
-                hosts.map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid })).sort(sortHostNames)
-              );
-              setHostsState(hostOptions);
-              setHostIds(hosts.map((host: any) => host.hostid));
-              getMaintenanceList(hostIds);
-              clearHostSelection();
+              this.hosts.options = hosts
+                .map((hostItem: any) => ({ text: hostItem.host, value: hostItem.hostid }))
+                .sort(this.sortHostNames);
+              this.setState({ hosts: this.hosts.options });
+              this.hostIds = hosts.map((host: any) => host.hostid);
+              this.getMaintenanceList(this.hostIds);
+              this.clearHostSelection();
             });
           });
         } else {
-          getHostsFromGroup(groupId, availableDatasources, datasourceSrv).then((hosts: any[]) => {
+          getHostsFromGroup(this.groupId, this.availableDatasources, this.datasourceSrv).then((hosts: any[]) => {
             // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-            setHostOptions(
-              hosts
-                .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
-                .map((host: any) => ({ text: host.name, value: host.hostid }))
-                .sort(sortHostNames)
-            );
-            setHostsState(hostOptions);
-            setHostIds(hosts.map((host: any) => host.hostid));
-            getMaintenanceList(hostIds, groupId);
-            clearHostSelection();
+            this.hosts.options = hosts
+              .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name) && host.status === '0')
+              .map((host: any) => ({ text: host.name, value: host.hostid }))
+              .sort(this.sortHostNames);
+            this.setState({ hosts: this.hosts.options });
+            this.hostIds = hosts.map((host: any) => host.hostid);
+            this.getMaintenanceList(this.hostIds, groupId);
+            this.clearHostSelection();
           });
         }
       })
       .catch((err: any) => {
-        handleError(err);
+        this.handleError(err);
       });
-    openAllMaintenancesModal();
+    this.openAllMaintenancesModal();
   };
 
   /**
@@ -154,8 +162,7 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * @param {Date} newDate
    * @returns {string}
    */
-  /*
-  const parseDateToString = (newDate: Date) => {
+  parseDateToString = (newDate: Date) => {
     const leadingZero = newDate.getMinutes() < 10 ? '0' : '';
     return (
       newDate.getDate() +
@@ -170,16 +177,16 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
       newDate.getMinutes()
     );
   };
-  */
 
   /**
    * Clear selection for hosts and set all selected by default
    */
-  const clearHostSelection = () => {
-    setAllSelected(true);
-    if (hostOptions.length > 0) {
-      hostOptions.forEach((option: any, index: number) => {
-        console.log('clearHostSelection:', option, index);
+  clearHostSelection = () => {
+    this.hosts.allSelected = true;
+    if (this.hosts.options.length > 0) {
+      this.hosts.options.forEach((option: any, index: number) => {
+        this.hosts.selected[option.value] = this.hosts.allSelected;
+        this.hosts.options[index].checked = this.hosts.allSelected;
       });
     }
   };
@@ -188,7 +195,7 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Handling for errors
    * @param {any} error
    */
-  const handleError = (error: any) => {
+  handleError = (error: any) => {
     console.log(error);
     if (typeof error === 'object' && Object.keys(error).length > 0) {
       appEvents.emit(AppEvents.alertError, [JSON.stringify(error)]);
@@ -199,59 +206,82 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Get all maintenances from Zabbix
    * @param {string} groupid Get maintenances from specified group
    */
-  const getMaintenanceList = (hostIds: string[], groupId?: string) => {
+  getMaintenanceList = (hostIds: string[], groupId?: string) => {
     const showOnlyOneUpcomingPerPeriod = true;
     let groupIds: any = null;
     if (groupId) {
       groupIds = [groupId];
     }
-    getMaintenances(hostIds, groupIds, availableDatasources, datasourceSrv, showOnlyOneUpcomingPerPeriod)
+    getMaintenances(hostIds, groupIds, this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
       .then((maintenances: any) => {
         if (maintenances.length > 0) {
-          setOngoingMaintenances(getOngoingMaintenances(maintenances));
-          setAllMaintenancesClass([]);
+          this.ongoingMaintenances = getOngoingMaintenances(maintenances);
+          this.allMaintenances = [];
           maintenances.map((maintenance: any) => {
             if (maintenance.maintenanceType === 0) {
-              maintenance.maintenanceTypeString = texts.oneTimeAbbr;
-              maintenance.maintenanceTypeStringFull = `${texts.oneTime} ${texts.maintenance}`;
+              maintenance.maintenanceTypeString = this.texts.oneTimeAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.oneTime + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 2) {
-              maintenance.maintenanceTypeString = texts.dailyAbbr;
-              maintenance.maintenanceTypeStringFull = `${texts.daily} ${texts.maintenance}`;
+              maintenance.maintenanceTypeString = this.texts.dailyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.daily + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 3) {
-              maintenance.maintenanceTypeString = texts.weeklyAbbr;
-              maintenance.maintenanceTypeStringFull = `${texts.weekly} ${texts.maintenance}`;
+              maintenance.maintenanceTypeString = this.texts.weeklyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.weekly + ' ' + this.texts.maintenance;
             } else if (maintenance.maintenanceType === 4) {
-              maintenance.maintenanceTypeString = texts.monthlyAbbr;
-              maintenance.maintenanceTypeStringFull = `${texts.monthly} ${texts.maintenance}`;
+              maintenance.maintenanceTypeString = this.texts.monthlyAbbr;
+              maintenance.maintenanceTypeStringFull = this.texts.monthly + ' ' + this.texts.maintenance;
             } else {
               maintenance.maintenanceTypeString = '';
             }
-            setAllMaintenancesClass((allMaintenancesClass) => [...allMaintenancesClass, maintenance]);
+            this.allMaintenances.push(maintenance);
           });
           const curTime = new Date().getTime() / 1000;
-          setAllMaintenancesClass(
-            allMaintenancesClass.filter(
-              (maintenance: any) => maintenance.endTime > curTime && maintenance.activeTill > curTime
-            )
+          this.allMaintenances = this.allMaintenances.filter(
+            (maintenance: any) => maintenance.endTime > curTime && maintenance.activeTill > curTime
           );
+          if (this.ongoingMaintenances.length > 0) {
+            this.maintenanceIconStyle = 'on-going';
+          } else {
+            this.maintenanceIconStyle = '';
+          }
         } else {
-          setOngoingMaintenances([]);
-          setAllMaintenancesClass([]);
+          this.ongoingMaintenances = [];
+          this.maintenanceIconStyle = '';
+          this.allMaintenances = [];
         }
-        // listModalScope.allMaintenances = allMaintenances;
-        setOngoingMaintenanceIds(ongoingMaintenances.map((item: any) => item.internalId));
-        setAllMaintenancesState(allMaintenancesClass);
+        // this.listModalScope.allMaintenances = this.allMaintenances;
+        const ongoingMaintenanceIds = this.ongoingMaintenances.map((item: any) => item.internalId);
+        this.setState({ allMaintenances: this.allMaintenances, ongoingMaintenanceIds });
       })
       .catch((err: any) => {
-        handleError(err);
+        this.handleError(err);
       });
+  };
+
+  /**
+   * Callback for clicking wiki icon
+   */
+  onOpenWikiPage = () => {
+    const { dashboard } = this.props;
+    if (dashboard.serviceInfoWikiUrlIsExternal) {
+      // Navigate directly to given URL
+      window.open(dashboard.serviceInfoWikiUrl, '_blank');
+    } else {
+      // Tell parent window to navigate to given URL
+      const messageObj = {
+        relaytarget: 'wiki',
+        relayparams: dashboard.serviceInfoWikiUrl,
+      };
+      // eslint-disable-next-line
+      window.top?.postMessage(messageObj, '*');
+    }
   };
 
   /**
    * Get current time as Unix epoch
    * @returns {number}
    */
-  const getCurrentTimeEpoch = (currentTime?: Date) => {
+  getCurrentTimeEpoch = (currentTime?: Date) => {
     if (!currentTime) {
       currentTime = new Date();
     }
@@ -271,62 +301,59 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Callback for clicking stop maintenance button
    * @param {string} maintenanceID
    */
-  const onStopMaintenance = (maintenanceID: string) => {
-    let selectedMaintenance = ongoingMaintenances.find((item: any) => item.id === maintenanceID);
+  onStopMaintenance = (maintenanceID: string) => {
+    let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     let isOngoing = false;
-    const curTime = getCurrentTimeEpoch();
-    setStoppingOngoingMaintenance(false);
+    const curTime = this.getCurrentTimeEpoch();
+    this.stoppingOngoingMaintenance = false;
     if (selectedMaintenance) {
       isOngoing = true;
-      setStoppingOngoingMaintenance(true);
+      this.stoppingOngoingMaintenance = true;
     } else {
-      selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
+      selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     }
     let confirmIsVisible = true;
     let confirmText = '';
     let confirmAction: any;
     if (isOngoing && !selectedMaintenance.maintenanceType) {
       // In case of ongoing single maintenance we just set the end time
-      confirmText = texts.areYouSureWantToCancelMaintenance;
-      confirmAction = onUpdateMaintenanceEndTime;
+      confirmText = this.texts.areYouSureWantToCancelMaintenance;
+      confirmAction = this.onUpdateMaintenanceEndTime;
     } else {
       // Handle all other maintenances
       if (!selectedMaintenance.maintenanceType) {
         // Single maintenance
-        confirmText = texts.areYouSureWantToDeleteMaintenance;
+        confirmText = this.texts.areYouSureWantToDeleteMaintenance;
       } else {
         // Periodic maintenances
         if (isOngoing) {
-          confirmText = texts.cantCancelStartedPeriodicMaintenance + '\n';
-          confirmText += texts.selectedActionWillDeleteAllMaintenancesInSeries + '\n';
-          confirmText += texts.areYouSureWantToContinue;
+          confirmText = this.texts.cantCancelStartedPeriodicMaintenance + '\n';
+          confirmText += this.texts.selectedActionWillDeleteAllMaintenancesInSeries + '\n';
+          confirmText += this.texts.areYouSureWantToContinue;
         } else {
-          confirmText = texts.areYouSureWantToDeletePeriodicMaintenance + '\n';
-          confirmText += texts.allMaintenancesInSeriesWillBeDeleted;
+          confirmText = this.texts.areYouSureWantToDeletePeriodicMaintenance + '\n';
+          confirmText += this.texts.allMaintenancesInSeriesWillBeDeleted;
         }
       }
       if (selectedMaintenance.activeSince > curTime) {
         // Maintenance period hasn't started yet so it can be safely removed
         // NOTE: This is temporarily commented because 'maintenance.delete' causes error
-        // listModalScope.confirmAction = onRemoveMaintenance.bind(this);
-        confirmAction = onUpdateMaintenanceEndTime;
+        // this.listModalScope.confirmAction = this.onRemoveMaintenance.bind(this);
+        confirmAction = this.onUpdateMaintenanceEndTime;
       } else {
         // Period has already started so we can just set the end time of period
-        confirmAction = onUpdateMaintenanceEndTime;
+        confirmAction = this.onUpdateMaintenanceEndTime;
       }
     }
-    setSelectedMaintenance(selectedMaintenance);
-    setConfirmIsVisible(confirmIsVisible);
-    setConfirmText(confirmText);
-    setConfirmAction(confirmAction);
+    this.setState({ selectedMaintenance, confirmIsVisible, confirmText, confirmAction });
   };
 
-  const setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
+  setMaintenanceUpdateTimeOut = (infoText: string, showModal: boolean) => {
     if (showModal) {
-      openConfirmMaintenanceModal(infoText);
+      this.openConfirmMaintenanceModal(infoText);
     } else {
       setTimeout(() => {
-        getMaintenanceList(hostIds, groupId);
+        this.getMaintenanceList(this.hostIds, this.groupId);
         appEvents.emit(AppEvents.alertSuccess, [infoText]);
       }, 1000);
     }
@@ -339,8 +366,8 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Callback for clicking edit maintenance button
    * @param {string} maintenanceID
    */
-  const onEditMaintenance = (maintenanceID: string) => {
-    openMaintenanceModal(maintenanceID);
+  onEditMaintenance = (maintenanceID: string) => {
+    this.openMaintenanceModal(maintenanceID);
   };
 
   /**
@@ -348,17 +375,17 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * @param {string} maintenanceID
    * @param {number} endTime epoch
    */
-  const onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
-    const curTime = getCurrentTimeEpoch();
+  onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
+    const curTime = this.getCurrentTimeEpoch();
     if (!endTime) {
       endTime = curTime;
     }
-    let selectedMaintenance = ongoingMaintenances.find((item: any) => item.id === maintenanceID);
+    let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     if (!selectedMaintenance) {
-      selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
+      selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     }
     if (selectedMaintenance) {
-      getZabbix(availableDatasources, datasourceSrv)
+      getZabbix(this.availableDatasources, this.datasourceSrv)
         .then((zabbix: any) => {
           // Set the active_till of selected maintenance to given end time
           const options: any = {
@@ -384,18 +411,18 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
             .request('maintenance.update', options)
             .then((answer: any) => {
               let showModal = true;
-              let infoText = texts.maintenanceHasBeenDeleted;
-              if (stoppingOngoingMaintenance) {
-                infoText = texts.maintenancehasBeenCanceled + ' ' + texts.systemStatusWillBeUpdated;
+              let infoText = this.texts.maintenanceHasBeenDeleted;
+              if (this.stoppingOngoingMaintenance) {
+                infoText = this.texts.maintenancehasBeenCanceled + ' ' + this.texts.systemStatusWillBeUpdated;
               }
-              setMaintenanceUpdateTimeOut(infoText, showModal);
+              this.setMaintenanceUpdateTimeOut(infoText, showModal);
             })
             .catch((err: any) => {
-              handleError(err);
+              this.handleError(err);
             });
         })
         .catch((err: any) => {
-          handleError(err);
+          this.handleError(err);
         });
     }
   };
@@ -404,28 +431,26 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Callback for clicking stop maintenance button
    * @param {string} maintenanceID
    */
-  /*
-  const onRemoveMaintenance = (maintenanceID: string) => {
-    const selectedMaintenance = allMaintenancesClass.find((item: any) => item.id === maintenanceID);
+  onRemoveMaintenance = (maintenanceID: string) => {
+    const selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     if (selectedMaintenance) {
-      getZabbix(availableDatasources, datasourceSrv)
+      getZabbix(this.availableDatasources, this.datasourceSrv)
         .then((zabbix: any) => {
           // Set the time period of selected maintenance to end now
           zabbix.zabbixAPI
             .request('maintenance.delete', [maintenanceID])
             .then((answer: any) => {
-              setMaintenanceUpdateTimeOut(texts.maintenanceHasBeenDeleted, true);
+              this.setMaintenanceUpdateTimeOut(this.texts.maintenanceHasBeenDeleted, true);
             })
             .catch((err: any) => {
-              handleError(err);
+              this.handleError(err);
             });
         })
         .catch((err: any) => {
-          handleError(err);
+          this.handleError(err);
         });
     }
   };
-  */
 
   /**
    * Callback for creating a new maintenance from dialog
@@ -438,7 +463,7 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * @param {Date} stopDate
    * @param {string} maintenanceId  optional
    */
-  const onCreateMaintenance = (
+  onCreateMaintenance = (
     maintenanceType: number,
     description: string,
     duration: number,
@@ -448,9 +473,9 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
     stopDate: Date,
     maintenanceId?: string
   ) => {
-    getZabbix(availableDatasources, datasourceSrv)
+    getZabbix(this.availableDatasources, this.datasourceSrv)
       .then((zabbix: any) => {
-        const curTime = getCurrentTimeEpoch(startDate);
+        const curTime = this.getCurrentTimeEpoch(startDate);
         let stopTime = curTime + duration;
         if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
           stopTime = Math.floor(stopDate.getTime() / 1000);
@@ -480,27 +505,27 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
         zabbix.zabbixAPI
           .request(apiCommand, maintenanceObj)
           .then((answer: any) => {
-            let infoText = texts.newMaintenanceHasBeenStarted + ' ' + texts.systemStatusWillBeUpdated;
+            let infoText = this.texts.newMaintenanceHasBeenStarted + ' ' + this.texts.systemStatusWillBeUpdated;
             if (maintenanceId) {
-              infoText = texts.maintenanceHasBeenUpdated + ' ' + texts.systemStatusWillBeUpdated;
+              infoText = this.texts.maintenanceHasBeenUpdated + ' ' + this.texts.systemStatusWillBeUpdated;
             }
             let showModal = true;
             // Show only info popup if maintenance is in future
-            if (getCurrentTimeEpoch(startDate) > getCurrentTimeEpoch()) {
+            if (this.getCurrentTimeEpoch(startDate) > this.getCurrentTimeEpoch()) {
               if (maintenanceId) {
-                infoText = texts.maintenanceHasBeenUpdated;
+                infoText = this.texts.maintenanceHasBeenUpdated;
               } else {
-                infoText = texts.newMaintenanceHasBeenCreated;
+                infoText = this.texts.newMaintenanceHasBeenCreated;
               }
             }
-            setMaintenanceUpdateTimeOut(infoText, showModal);
+            this.setMaintenanceUpdateTimeOut(infoText, showModal);
           })
           .catch((err: any) => {
-            handleError(err);
+            this.handleError(err);
           });
       })
       .catch((err: any) => {
-        handleError(err);
+        this.handleError(err);
       });
   };
 
@@ -508,40 +533,59 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
    * Open create maintenance modal
    * @param {string} maintenanceID (optional)
    */
-  const openMaintenanceModal = (maintenanceID = '') => {
-    setSelectedMaintenanceId(maintenanceID);
-    const selectedMaintenance = allMaintenancesState.find((item: any) => item.id === selectedMaintenanceId);
-    setSelectedMaintenance(selectedMaintenance);
-    setShowMaintenanceModal(true);
-    setShowMaintenanceListModal(false);
-    setShowMaintenanceConfirmModal(false);
+  openMaintenanceModal = (maintenanceID = '') => {
+    this.selectedMaintenanceId = maintenanceID;
+    const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
+    this.setState({
+      showMaintenanceModal: true,
+      selectedMaintenance,
+      showMaintenanceListModal: false,
+      showMaintenanceConfirmModal: false,
+    });
   };
 
   /**
    * Open create maintenance modal
    */
-  const openAllMaintenancesModal = () => {
-    setShowMaintenanceListModal(true);
-    setShowMaintenanceModal(false);
-    setShowMaintenanceConfirmModal(false);
+  openAllMaintenancesModal = () => {
+    this.setState({ showMaintenanceListModal: true, showMaintenanceModal: false, showMaintenanceConfirmModal: false });
   };
 
   /**
    * Open maintenance confirmation modal
    */
-  const openConfirmMaintenanceModal = (confirmText: string) => {
-    setConfirmText(confirmText);
-    setShowMaintenanceConfirmModal(true);
-    setShowMaintenanceListModal(false);
-    setShowMaintenanceModal(false);
+  openConfirmMaintenanceModal = (confirmText: string) => {
+    this.setState({
+      showMaintenanceConfirmModal: true,
+      confirmText,
+      showMaintenanceListModal: false,
+      showMaintenanceModal: false,
+    });
   };
   /* tslint:enable */
 
-  /*
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      allMaintenances: [],
+      showMaintenanceModal: false,
+      showMaintenanceListModal: false,
+      showMaintenanceConfirmModal: false,
+      hosts: [],
+      selectedMaintenance: undefined,
+      confirmIsVisible: false,
+      confirmText: '',
+      confirmAction: undefined,
+      ongoingMaintenanceIds: [],
+    };
+    this.texts = contextSrv.getLocalizedTexts();
+  }
+
   componentDidMount() {
     document.addEventListener(
       'iiris-maintenance-dialog-open',
-      (e: any) => onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      (e: any) =>
+        this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
       false
     );
   }
@@ -549,65 +593,86 @@ const IirisMaintenance = forwardRef((props: OwnProps, ref: any) => {
   componentWillUnmount() {
     document.removeEventListener(
       'iiris-maintenance-dialog-open',
-      (e: any) => onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
+      (e: any) =>
+        this.onOpenMaintenanceDialog(e.detail.loadAllHosts, e.detail.hostGroup, e.detail.availableDatasources),
       false
     );
   }
-  */
 
-  const findMaintenanceButton = (element: HTMLElement): HTMLElement | null => {
+  findMaintenanceButton = (element: HTMLElement): HTMLElement | null => {
     if (element.id === 'maintenance_button') {
       return element;
     } else if (element.parentElement) {
-      return findMaintenanceButton(element.parentElement);
+      return this.findMaintenanceButton(element.parentElement);
     } else {
       return null;
     }
   };
 
-  const hideMaintenanceModal = () => {
-    setShowMaintenanceModal(false);
+  hideMaintenanceModal = () => {
+    this.setState({ showMaintenanceModal: false });
   };
 
-  const hideMaintenanceListModal = () => {
-    setShowMaintenanceListModal(false);
+  hideMaintenanceListModal = () => {
+    this.setState({ showMaintenanceListModal: false });
   };
 
-  return (
-    <>
-      <IirisMaintenanceModal
-        show={showMaintenanceModal}
-        onDismiss={hideMaintenanceModal}
-        openAllMaintenancesModal={openAllMaintenancesModal}
-        hosts={hostsState}
-        selectedMaintenance={selectedMaintenance}
-        user={contextSrv.user.email || ''}
-        onCreateMaintenance={onCreateMaintenance}
-      />
-      <IirisMaintenanceListModal
-        show={showMaintenanceListModal}
-        allMaintenances={allMaintenancesState}
-        openMaintenanceModal={openMaintenanceModal}
-        onDismiss={hideMaintenanceListModal}
-        onEditMaintenance={onEditMaintenance}
-        onStopMaintenance={onStopMaintenance}
-        confirmIsVisible={confirmIsVisible}
-        confirmText={confirmText}
-        confirmAction={confirmAction}
-        selectedMaintenanceId={selectedMaintenance?.id}
-        onCloseConfirmation={() => setConfirmIsVisible(false)}
-        ongoingMaintenanceIds={ongoingMaintenanceIds}
-      />
-      <IirisMaintenanceConfirmModal
-        show={showMaintenanceConfirmModal}
-        onDismiss={() => setShowMaintenanceConfirmModal(false)}
-        confirmText={confirmText}
-        confirmTitle={texts.maintenance}
-      />
-    </>
-  );
-});
+  render() {
+    return (
+      <>
+        <ToolbarButton
+          key="manage_maintenances"
+          tooltip="Manage Maintenances"
+          id="maintenance_button"
+          onClick={(e: any) => {
+            this.findMaintenanceButton(e.target as any)?.blur();
+            this.onOpenMaintenanceDialog();
+          }}
+        >
+          <div style={{ width: '24px', height: '24px' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
+              <path
+                d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
+                c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
+                c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
+              />
+              <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
+              <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
+            </svg>
+          </div>
+        </ToolbarButton>
+        <IirisMaintenanceModal
+          show={this.state.showMaintenanceModal}
+          onDismiss={this.hideMaintenanceModal}
+          openAllMaintenancesModal={this.openAllMaintenancesModal}
+          hosts={this.state.hosts}
+          selectedMaintenance={this.state.selectedMaintenance}
+          user={contextSrv.user.email || ''}
+          onCreateMaintenance={this.onCreateMaintenance}
+        />
+        <IirisMaintenanceListModal
+          show={this.state.showMaintenanceListModal}
+          allMaintenances={this.state.allMaintenances}
+          openMaintenanceModal={this.openMaintenanceModal}
+          onDismiss={this.hideMaintenanceListModal}
+          onEditMaintenance={this.onEditMaintenance}
+          onStopMaintenance={this.onStopMaintenance}
+          confirmIsVisible={this.state.confirmIsVisible}
+          confirmText={this.state.confirmText}
+          confirmAction={this.state.confirmAction}
+          selectedMaintenanceId={this.state.selectedMaintenance?.id}
+          onCloseConfirmation={() => this.setState({ confirmIsVisible: false })}
+          ongoingMaintenanceIds={this.state.ongoingMaintenanceIds}
+        />
+        <IirisMaintenanceConfirmModal
+          show={this.state.showMaintenanceConfirmModal}
+          onDismiss={() => this.setState({ showMaintenanceConfirmModal: false })}
+          confirmText={this.state.confirmText}
+          confirmTitle={this.texts.maintenance}
+        />
+      </>
+    );
+  }
+}
 
-IirisMaintenance.displayName = 'IirisMaintenance';
-
-export default IirisMaintenance;
+export default connector(IirisMaintenance);

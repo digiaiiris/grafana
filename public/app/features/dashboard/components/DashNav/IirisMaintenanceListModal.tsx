@@ -22,30 +22,36 @@ interface Props {
 
 export function IirisMaintenanceListModal(props: Props) {
   const texts = contextSrv.getLocalizedTexts();
-  const title = (<h2 className="modal-header modal-header-title">{texts.upcomingMaintenances}</h2>);
+  const title = <h2 className="modal-header modal-header-title">{texts.upcomingMaintenances}</h2>;
   const columns = [
     {
       Header: texts.type,
-      accessor: 'maintenanceTypeString', 
-    }, {
+      accessor: 'maintenanceTypeString',
+    },
+    {
       Header: texts.description,
       accessor: 'description',
-    }, {
+    },
+    {
       Header: texts.createdBy,
       accessor: 'caller',
-    }, {
+    },
+    {
       Header: texts.startTime,
       accessor: 'startTimeString',
-    }, {
+    },
+    {
       Header: texts.endTime,
       accessor: 'endTimeString',
-    }, {
+    },
+    {
       Header: texts.duration,
       accessor: 'durationString',
-    }, {
+    },
+    {
       Header: texts.repeatEnds,
       accessor: 'activeTillString',
-    }
+    },
   ];
   const showMaintenanceModal = () => {
     props.onDismiss();
@@ -60,7 +66,7 @@ export function IirisMaintenanceListModal(props: Props) {
     <>
       <Modal isOpen={props.show} title={title} onDismiss={props.onDismiss} className="modal modal-body">
         <div className="modal-content">
-          { !props.confirmIsVisible ? (
+          {!props.confirmIsVisible ? (
             <>
               <div className="iiris-table-container">
                 <div className="iiris-event-table">
@@ -74,18 +80,26 @@ export function IirisMaintenanceListModal(props: Props) {
                 </div>
               </div>
               <div className="gf-form-button-row">
-                <a className="btn btn-primary" onClick={() => props.onDismiss()}>{texts.cancel}</a>
-                <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>{texts.createNewMaintenance}</a>
+                <a className="btn btn-primary" onClick={() => props.onDismiss()}>
+                  {texts.cancel}
+                </a>
+                <a className="btn btn-secondary" onClick={() => showMaintenanceModal()}>
+                  {texts.createNewMaintenance}
+                </a>
               </div>
             </>
           ) : (
             <div>
-              <div className="remove-maintenance-confirmation-text">{ props.confirmText }</div>
+              <div className="remove-maintenance-confirmation-text">{props.confirmText}</div>
               <div className="gf-form-button-row">
-                { props.confirmAction ? (
-                  <a className="btn btn-secondary" onClick={() => props.onCloseConfirmation()}>{texts.cancel}</a>
-                ) : null }
-                <a className="btn btn-primary" onClick={() => onAcceptConfirmation()}>{texts.ok}</a>
+                {props.confirmAction ? (
+                  <a className="btn btn-secondary" onClick={() => props.onCloseConfirmation()}>
+                    {texts.cancel}
+                  </a>
+                ) : null}
+                <a className="btn btn-primary" onClick={() => onAcceptConfirmation()}>
+                  {texts.ok}
+                </a>
               </div>
             </div>
           )}

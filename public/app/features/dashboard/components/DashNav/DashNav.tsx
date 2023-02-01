@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useRef } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
@@ -21,6 +21,7 @@ import { DashboardModel } from '../../state';
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
 import IirisMaintenance from './IirisMaintenance';
+import IirisServiceInfoWikiButton from './IirisServiceInfoWikiButton';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -59,14 +60,6 @@ type Props = OwnProps & ConnectedProps<typeof connector>;
 
 export const DashNav = React.memo<Props>((props) => {
   const forceUpdate = useForceUpdate();
-  const ref = useRef<{ log: () => void }>(null);
-
-  // Call IirisMaintenance component's function
-  const childOpenMaintenanceDialog = (e: any) => {
-    if (ref.current) {
-      ref.current.log();
-    }
-  };
 
   const onStarDashboard = () => {
     const dashboardSrv = getDashboardSrv();
@@ -206,35 +199,6 @@ export const DashNav = React.memo<Props>((props) => {
     );
   };
 
-  const findMaintenanceButton = (element: HTMLElement): HTMLElement | null => {
-    if (element.id === 'maintenance_button') {
-      return element;
-    } else if (element.parentElement) {
-      return findMaintenanceButton(element.parentElement);
-    } else {
-      return null;
-    }
-  };
-
-  /**
-   * Callback for clicking wiki icon
-   */
-  const onOpenWikiPage = () => {
-    const { dashboard } = props;
-    if (dashboard.serviceInfoWikiUrlIsExternal) {
-      // Navigate directly to given URL
-      window.open(dashboard.serviceInfoWikiUrl, '_blank');
-    } else {
-      // Tell parent window to navigate to given URL
-      const messageObj = {
-        relaytarget: 'wiki',
-        relayparams: dashboard.serviceInfoWikiUrl,
-      };
-      // eslint-disable-next-line
-      window.top?.postMessage(messageObj, '*');
-    }
-  };
-
   const renderRightActionsButton = () => {
     const { dashboard, onAddPanel, isFullscreen, kioskMode } = props;
     const { canSave, canEdit, showSettings } = dashboard.meta;
@@ -278,40 +242,10 @@ export const DashNav = React.memo<Props>((props) => {
     }
 
     if (props.dashboard.maintenanceHostGroup) {
-      buttons.push(
-        <ToolbarButton
-          key="manage_maintenances"
-          tooltip="Manage Maintenances"
-          id="maintenance_button"
-          onClick={(e) => childOpenMaintenanceDialog(e.target as any)}
-        >
-          <div style={{ width: '24px', height: '24px' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 100 100" fill="#ffffff">
-              <path
-                d="M84.4,29.6L74.2,39.8L65,37l-2.1-8.6l10-10c-5.5-2-11.4-1-16,3.5c-4.5,4.5-5.6,9.7-3.8,14.8L21,69
-                c-3.3,3.3-3.3,8.7,0,12h0c3.3,3.3,8.7,3.3,12,0l32-32c5.7,2.7,11.3,1.7,16.1-3C85.7,41.4,86.6,35.2,84.4,29.6z M27,78
-                c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S28.7,78,27,78z"
-              />
-              <polygon points="19,17 30,23 33,31 42,40 36,46 27,37 18,34 13,23 " />
-              <path d="M78.3,70.7l-13-13L54.7,68.3l13,13c2.9,2.9,7.7,2.9,10.6,0S81.2,73.6,78.3,70.7z" />
-            </svg>
-          </div>
-        </ToolbarButton>
-      );
+      buttons.push(<IirisMaintenance dashboard={dashboard} key={'iirismaintenance'} />);
     }
     if (props.dashboard.serviceInfoWikiUrl) {
-      buttons.push(
-        <ToolbarButton key="open_wiki" tooltip="Go To Wiki" onClick={() => onOpenWikiPage()}>
-          <div style={{ width: '20px', height: '20px' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 140 140" fill="#ffffff">
-              <path d="M86.7,10h-6.3H80H24v120h92V46v-0.3v-6.3L86.7,10z M88,22.7L103.3,38H88V22.7z M108,122H32V18h48v28h28V122z" />
-              <rect x="48" y="57" width="45" height="8" />
-              <rect x="48" y="75" width="45" height="8" />
-              <rect x="48" y="93" width="45" height="8" />
-            </svg>
-          </div>
-        </ToolbarButton>
-      );
+      buttons.push(<IirisServiceInfoWikiButton dashboard={dashboard} key={'iirisserviceinfowikibutton'} />);
     }
 
     if (snapshotUrl) {
@@ -344,7 +278,7 @@ export const DashNav = React.memo<Props>((props) => {
     window.location.href = textUtil.sanitizeUrl(snapshotUrl);
   };
 
-  const { dashboard, isFullscreen, title, folderTitle } = props;
+  const { isFullscreen, title, folderTitle } = props;
   // this ensures the component rerenders when the location changes
   const location = useLocation();
   const titleHref = locationUtil.getUrlForPartial(location, { search: 'open' });
@@ -370,7 +304,6 @@ export const DashNav = React.memo<Props>((props) => {
       >
         {renderRightActionsButton()}
       </PageToolbar>
-      <IirisMaintenance dashboard={dashboard} ref={ref} />
     </div>
   );
 });
