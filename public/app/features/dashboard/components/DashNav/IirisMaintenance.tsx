@@ -77,10 +77,6 @@ class IirisMaintenance extends PureComponent<Props, State> {
   confirmModalScope: any;
   texts: any = {};
 
-  handleActionParent = () => {
-    console.log('handleActionParent');
-  };
-
   sortHostNames = (hostA: any, hostB: any) => {
     const nameA = hostA.text.toLowerCase();
     const nameB = hostB.text.toLowerCase();
