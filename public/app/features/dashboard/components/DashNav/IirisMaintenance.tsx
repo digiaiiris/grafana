@@ -1,7 +1,18 @@
-/* eslint-disable */
-/* tslint:disable */
-// Libraries
 import React, { PureComponent } from 'react';
+import { connect, ConnectedProps } from 'react-redux';
+
+import { AppEvents } from '@grafana/data';
+import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
+import { ToolbarButton } from '@grafana/ui';
+import appEvents from 'app/core/app_events';
+import { contextSrv } from 'app/core/core';
+import { updateTimeZoneForSession } from 'app/features/profile/state/reducers';
+
+import { DashboardModel } from '../../state';
+
+import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
+import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
+import { IirisMaintenanceModal } from './IirisMaintenanceModal';
 import {
   replaceTemplateVars,
   getZabbix,
@@ -10,25 +21,6 @@ import {
   getMaintenances,
   getOngoingMaintenances,
 } from './common_tools';
-import { connect, ConnectedProps } from 'react-redux';
-
-// Components
-import { AppEvents } from '@grafana/data';
-import { ToolbarButton } from '@grafana/ui';
-
-// State
-import { updateTimeZoneForSession } from 'app/features/profile/state/reducers';
-
-// Types
-import { DashboardModel } from '../../state';
-import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
-
-import appEvents from 'app/core/app_events';
-import { contextSrv } from 'app/core/core';
-
-import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
-import { IirisMaintenanceModal } from './IirisMaintenanceModal';
-import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,

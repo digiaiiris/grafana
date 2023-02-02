@@ -1,5 +1,3 @@
-/* eslint-disable */
-/* tslint:disable */
 import React from 'react';
 import { useTable } from 'react-table';
 
@@ -31,20 +29,22 @@ export function IirisMaintenanceTable(props: Props) {
   return (
     <table {...getTableProps()} className="table">
       <thead>
-        {headerGroups.map((headerGroup) => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
+        {headerGroups.map((headerGroup, i) => (
+          <tr {...headerGroup.getHeaderGroupProps()} key={`thead-tr-${i}`}>
             {headerGroup.headers.map((column) => (
-              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
+              <th {...column.getHeaderProps()} key={`thead-th-${i}`}>
+                {column.render('Header')}
+              </th>
             ))}
             <th></th>
           </tr>
         ))}
       </thead>
       <tbody {...getTableBodyProps()}>
-        {rows.map((row) => {
+        {rows.map((row, i) => {
           prepareRow(row);
           return (
-            <tr {...row.getRowProps()}>
+            <tr {...row.getRowProps()} key={`tbody-tr-${i}`}>
               {row.cells.map((cell) => {
                 return (
                   <td
@@ -55,6 +55,7 @@ export function IirisMaintenanceTable(props: Props) {
                         ? 'iiris-colored-row'
                         : '')
                     }
+                    key={`tbody-td-${i}`}
                   >
                     {cell.render('Cell')}
                   </td>

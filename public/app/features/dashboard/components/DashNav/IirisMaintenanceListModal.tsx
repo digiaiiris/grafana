@@ -1,9 +1,9 @@
-/* eslint-disable */
-/* tslint:disable */
 import React from 'react';
+
 import { Modal } from '@grafana/ui';
-import { IirisMaintenanceTable } from './IirisMaintenanceTable';
 import { contextSrv } from 'app/core/core';
+
+import { IirisMaintenanceTable } from './IirisMaintenanceTable';
 
 interface Props {
   show: boolean;
