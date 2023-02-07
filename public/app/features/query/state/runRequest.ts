@@ -6,6 +6,7 @@ import { catchError, map, mapTo, share, takeUntil, tap } from 'rxjs/operators';
 // Utils & Services
 // Types
 import {
+  AppEvents,
   DataFrame,
   DataQueryError,
   DataQueryRequest,
@@ -28,6 +29,7 @@ import { ExpressionQuery } from 'app/features/expressions/types';
 
 import { cancelNetworkRequestsOnUnsubscribe } from './processing/canceler';
 import { emitDataRequestEvent } from './queryAnalytics';
+import appEvents from 'app/core/app_events';
 
 type MapOfResponsePackets = { [str: string]: DataQueryResponse };
 
@@ -148,6 +150,13 @@ export function runRequest(
     // handle errors
     catchError((err) => {
       const errLog = typeof err === 'string' ? err : JSON.stringify(err);
+      if (err && err.data && err.data.message) {
+        appEvents.emit(AppEvents.alertError, [err.data.message]);
+      } else if (err && err.status) {
+        appEvents.emit(AppEvents.alertError, [err.status]);
+      } else {
+        appEvents.emit(AppEvents.alertError, [JSON.stringify(err)]);
+      }
       console.error('runRequest.catchError', errLog);
       return of({
         ...state.panelData,

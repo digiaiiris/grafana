@@ -6,6 +6,7 @@ import { locationUtil, textUtil } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import { ButtonGroup, ModalsController, ToolbarButton, PageToolbar, useForceUpdate } from '@grafana/ui';
 import config from 'app/core/config';
+import { contextSrv } from 'app/core/core';
 import { toggleKioskMode } from 'app/core/navigation/kiosk';
 import { DashboardCommentsModal } from 'app/features/dashboard/components/DashboardComments/DashboardCommentsModal';
 import { SaveDashboardProxy } from 'app/features/dashboard/components/SaveDashboard/SaveDashboardProxy';
@@ -19,6 +20,8 @@ import { DashboardModel } from '../../state';
 
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
+import IirisMaintenance from './IirisMaintenance';
+import IirisServiceInfoWikiButton from './IirisServiceInfoWikiButton';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -109,12 +112,13 @@ export const DashNav = React.memo<Props>((props) => {
     const { dashboard, kioskMode } = props;
     const { canStar, canShare, isStarred } = dashboard.meta;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
 
     if (kioskMode !== KioskMode.Off || isPlaylistRunning()) {
       return [];
     }
 
-    if (canStar) {
+    if (canStar && !isLightTheme) {
       let desc = isStarred ? 'Unmark as favorite' : 'Mark as favorite';
       buttons.push(
         <DashNavButton
@@ -128,7 +132,7 @@ export const DashNav = React.memo<Props>((props) => {
       );
     }
 
-    if (canShare) {
+    if (canShare && !isLightTheme) {
       let desc = 'Share dashboard or panel';
       buttons.push(
         <ModalsController key="button-share">
@@ -201,6 +205,7 @@ export const DashNav = React.memo<Props>((props) => {
     const { snapshot } = dashboard;
     const snapshotUrl = snapshot && snapshot.originalUrl;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
     const tvButton = (
       <ToolbarButton tooltip="Cycle view mode" icon="monitor" onClick={onToggleTVMode} key="tv-button" />
     );
@@ -213,11 +218,11 @@ export const DashNav = React.memo<Props>((props) => {
       return [renderTimeControls(), tvButton];
     }
 
-    if (canEdit && !isFullscreen) {
+    if (canEdit && !isFullscreen && !isLightTheme) {
       buttons.push(<ToolbarButton tooltip="Add panel" icon="panel-add" onClick={onAddPanel} key="button-panel-add" />);
     }
 
-    if (canSave && !isFullscreen) {
+    if (canSave && !isFullscreen && !isLightTheme) {
       buttons.push(
         <ModalsController key="button-save">
           {({ showModal, hideModal }) => (
@@ -236,6 +241,13 @@ export const DashNav = React.memo<Props>((props) => {
       );
     }
 
+    if (props.dashboard.maintenanceHostGroup) {
+      buttons.push(<IirisMaintenance dashboard={dashboard} key={'iirismaintenance'} />);
+    }
+    if (props.dashboard.serviceInfoWikiUrl) {
+      buttons.push(<IirisServiceInfoWikiButton dashboard={dashboard} key={'iirisserviceinfowikibutton'} />);
+    }
+
     if (snapshotUrl) {
       buttons.push(
         <ToolbarButton
@@ -247,7 +259,7 @@ export const DashNav = React.memo<Props>((props) => {
       );
     }
 
-    if (showSettings) {
+    if (showSettings && !isLightTheme) {
       buttons.push(
         <ToolbarButton tooltip="Dashboard settings" icon="cog" onClick={onOpenSettings} key="button-settings" />
       );
@@ -256,7 +268,9 @@ export const DashNav = React.memo<Props>((props) => {
     addCustomContent(customRightActions, buttons);
 
     buttons.push(renderTimeControls());
-    buttons.push(tvButton);
+    if (!isLightTheme) {
+      buttons.push(tvButton);
+    }
     return buttons;
   };
 
@@ -270,19 +284,27 @@ export const DashNav = React.memo<Props>((props) => {
   const titleHref = locationUtil.getUrlForPartial(location, { search: 'open' });
   const parentHref = locationUtil.getUrlForPartial(location, { search: 'open', folder: 'current' });
   const onGoBack = isFullscreen ? onClose : undefined;
+  const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
 
   return (
-    <PageToolbar
-      pageIcon={isFullscreen ? undefined : 'apps'}
-      title={title}
-      parent={folderTitle}
-      titleHref={titleHref}
-      parentHref={parentHref}
-      onGoBack={onGoBack}
-      leftItems={renderLeftActionsButton()}
-    >
-      {renderRightActionsButton()}
-    </PageToolbar>
+    <div className="iiris-custom-toolbar">
+      {props.dashboard.dashboardLogo ? (
+        <div className="iiris-customer-logo">
+          <img src={props.dashboard.dashboardLogo} />
+        </div>
+      ) : null}
+      <PageToolbar
+        pageIcon={isFullscreen ? undefined : 'apps'}
+        title={title}
+        parent={folderTitleByTheme}
+        titleHref={titleHref}
+        parentHref={parentHref}
+        onGoBack={onGoBack}
+        leftItems={renderLeftActionsButton()}
+      >
+        {renderRightActionsButton()}
+      </PageToolbar>
+    </div>
   );
 });
 

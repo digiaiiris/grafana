@@ -29,6 +29,7 @@ import {
 } from 'app/types/events';
 
 import { PanelModelLibraryPanel } from '../../library-panels/types';
+import { getExpandedTemplateVariables } from '../components/DashNav/common_tools';
 import { PanelQueryRunner } from '../../query/state/PanelQueryRunner';
 import { getVariablesUrlParams } from '../../variables/getAllVariableValuesForUrl';
 import { getTimeSrv } from '../services/TimeSrv';
@@ -100,6 +101,8 @@ const mustKeepProps: { [str: string]: boolean } = {
   pluginVersion: true,
   queryRunner: true,
   transformations: true,
+  isTabPanel: true,
+  allTabsCollapsed: true,
   fieldConfig: true,
   maxDataPoints: true,
   interval: true,
@@ -162,6 +165,9 @@ export class PanelModel implements DataConfigSource, IPanelModel {
   declare transparent: boolean;
 
   libraryPanel?: { uid: undefined; name: string } | PanelModelLibraryPanel;
+
+  isTabPanel?: boolean;
+  allTabsCollapsed?: boolean;
 
   // non persisted
   isViewing = false;
@@ -587,7 +593,9 @@ export class PanelModel implements DataConfigSource, IPanelModel {
    * If you need the raw title without interpolation use title property instead.
    * */
   getDisplayTitle(): string {
-    return this.replaceVariables(this.title, undefined, 'text');
+    const tempScopedVars = Object.assign({}, this.scopedVars);
+    const title = getExpandedTemplateVariables(this.title || '', getTemplateSrv(), tempScopedVars);
+    return title;
   }
 }
 
