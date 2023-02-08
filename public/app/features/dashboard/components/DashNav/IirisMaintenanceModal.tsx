@@ -883,7 +883,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   };
 
   onHourValueChanged = (value?: number) => {
-    if (value) {
+    if (value || value === 0) {
       this.setState({ hourInput: value });
       this.hourInput.value = value;
     }
