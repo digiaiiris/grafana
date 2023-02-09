@@ -16,6 +16,7 @@ div[role='dialog'].modal,
 
 div[role='dialog'].modal-body > div:nth-child(2) {
   padding: 0;
+  max-height: 90vh;
 }
 
 .modal-body {
