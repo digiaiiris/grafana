@@ -17,9 +17,11 @@ export const STATUS_AVERAGE = 3;
 export const STATUS_MINOR = 2;
 export const STATUS_INFO = 1;
 export const STATUS_OK = 0;
-export const STATUS_MAINTENANCE = -1;
-export const STATUS_UNKNOWN = -2;
-export const STATUS_NOT_SET = -3;
+export const STATUS_UNKNOWN = -1;
+export const STATUS_INVALID_CONFIGURATION = -2;
+export const STATUS_LOADING = -3;
+export const STATUS_MAINTENANCE = -4;
+
 export const MAIN_INDEX = 1000;
 export const ITEM_INFO_TEXT = 'press ["] to see all';
 
@@ -30,9 +32,10 @@ export const statusValueMap: any[] = [
   { value: STATUS_MINOR, text: 'Matala häiriö', englishText: 'Minor Incident', id: 'minor' },
   { value: STATUS_INFO, text: 'Info', englishText: 'Information', id: 'info' },
   { value: STATUS_OK, text: 'OK', englishText: 'OK', id: 'ok' },
-  { value: STATUS_MAINTENANCE, text: 'Huoltotila', englishText: 'Maintenance', id: 'maintenance' },
   { value: STATUS_UNKNOWN, text: 'Tuntematon', englishText: 'Unknown', id: 'unknown' },
-  { value: -3, text: '', id: '' },
+  { value: STATUS_INVALID_CONFIGURATION, text: 'Ei valvonnassa', englishText: 'Not monitored', id: 'configerror' },
+  { value: STATUS_LOADING, text: '', id: '' },
+  { value: STATUS_MAINTENANCE, text: 'Huoltotila', englishText: 'Maintenance', id: 'maintenance' },
 ];
 
 export const LANGUAGE = {
@@ -626,21 +629,11 @@ export function getMaintenances(
   datasourceSrv: any,
   oneUpcomingMaintenance?: boolean
 ) {
-  const obj: any = {
-    hostids: hostIds,
-    output: ['active_since', 'active_till', 'name', 'maintenanceid'],
-    selectGroups: ['groupid', 'name'],
-    selectHosts: ['hostid', 'name'],
-    selectTimeperiods: ['start_time', 'period', 'timeperiod_type', 'start_date', 'every', 'dayofweek', 'month', 'day'],
-  };
-  if (groupIds) {
-    obj['groupids'] = groupIds;
-  }
   return new Promise<any>((resolve: any, reject: any) => {
     getZabbix(availableDatasources, datasourceSrv)
       .then((zabbix: any) => {
         zabbix.zabbixAPI
-          .request('maintenance.get', obj)
+          .getMaintenances(hostIds, groupIds)
           .then((maintenances: any) => {
             const allMaintenances = handleMaintenances(maintenances, oneUpcomingMaintenance);
             resolve(allMaintenances);
@@ -1278,7 +1271,7 @@ export function fetchStatusData(
               //
               // Result contains different fields based on status:
               // status  root_cause_duration  root_cause_description  root_cause_comments  root_cause_severity
-              // -1 	   7460                 testi                   null                 4
+              // -1      7460                 testi                   null                 4
               // status  duration
               // 5       1001
               // status  severity  time_since_last
@@ -1336,7 +1329,7 @@ export function fetchSLAData(
   availableZabbixDatasource: any,
   datasourceSrv: any,
   timeRange: any,
-  SLAItemIds: any[],
+  SLAItems: any[],
   allHostGroupItems: any[],
   dashboard: any,
   panel: any
@@ -1346,7 +1339,7 @@ export function fetchSLAData(
       datasourceSrv
         .get(availableZabbixDatasource)
         .then((datasource: any) => {
-          if (SLAItemIds.length > 0) {
+          if (SLAItems.length > 0) {
             // Make query for fetching SLA value from dashboard's timerange
             // Using only 1 datapoint so that mean/average is counted from the whole timerange
             const maxDataPoints = 1;
@@ -1360,19 +1353,26 @@ export function fetchSLAData(
               __interval: { text: SLAInterval.interval, value: SLAInterval.interval },
               __interval_ms: { text: SLAInterval.intervalMs, value: SLAInterval.intervalMs },
             });
+            // Generate a list of targets (item data) for query
+            let targetList = [];
+            for (let i = 0; i < SLAItems.length; i++) {
+              targetList.push({
+                queryType: 0,
+                group: { filter: SLAItems[i].hostgroup },
+                host: { filter: SLAItems[i].host ? SLAItems[i].host : '/.*/' },
+                application: { filter: SLAItems[i].application },
+                itemTag: { filter: '' },
+                item: { filter: SLAItems[i].item },
+              });
+            }
             // Add SLA specific changes to items query
             const SLAMetricsQuery = {
               timezone: dashboard.getTimezone(),
-              panelId: panel.id,
-              dashboardId: dashboard.id,
               range: timeRange,
-              rangeRaw: timeRange.raw,
-              interval: SLAInterval.interval,
               intervalMs: SLAInterval.intervalMs,
-              targets: [{ mode: 3, itemids: SLAItemIds + '' }],
+              targets: targetList,
               maxDataPoints: maxDataPoints,
               scopedVars: SLAScopedVars,
-              cacheTimeout: panel.cacheTimeout,
             };
             // Create query for SLA value and add it to promises array
             datasource
@@ -1439,15 +1439,21 @@ export function fetchSLAData(
   });
 }
 
+// Retrieve status value event or trigger
 export function getStatusValue(statusItem: any, hostGroupName: string, isLoading: boolean) {
-  let statusValue = -3;
-  // Status -1 means that current status is unknown because of some other root cause
-  if (statusItem && statusItem.status !== -1) {
-    statusValue = statusItem.status;
-  } else if (hostGroupName && !isLoading) {
-    statusValue = STATUS_UNKNOWN;
+  if (!hostGroupName) {
+    // Host group not configured, cannot show anything
+    return STATUS_INVALID_CONFIGURATION;
+  } else if (statusItem && typeof statusItem.status === 'number') {
+    // We have received status from the get_incident_info procedure
+    return statusItem.status;
+  } else if (isLoading) {
+    return STATUS_LOADING;
+  } else {
+    // We're not loading but have not received any status
+    // This should not happen; just in case return invalid configuration status
+    return STATUS_INVALID_CONFIGURATION;
   }
-  return statusValue;
 }
 
 // Calculate average for SLA data (from SQL query)
@@ -1500,7 +1506,7 @@ export function getMaintenanceStatus(
       .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name))
       // If maintenanceHostName is defined, then filter host list with that name
       .filter((host: any) => {
-        if (maintenanceHostName && !applicationItem) {
+        if (maintenanceHostName) {
           if (host.name === maintenanceHostName) {
             return true;
           } else {
