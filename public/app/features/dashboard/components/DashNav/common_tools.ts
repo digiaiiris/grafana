@@ -36,8 +36,8 @@ export const statusValueMap: any[] = [
 ];
 
 export const LANGUAGE = {
-  FI: "fi",
-  EN: "en"
+  FI: 'fi',
+  EN: 'en',
 };
 
 export const localizedTexts: any = {
@@ -105,7 +105,8 @@ export const localizedTexts: any = {
     inspectTimeInterval: 'Tarkastele ajanjaksoa',
     maintenance: 'Huolto',
     serviceBreak: 'Palvelukatko',
-    moveToTarget: 'Siirry kohteeseen'
+    moveToTarget: 'Siirry kohteeseen',
+    page: 'Sivu',
   },
   en: {
     category: 'Category',
@@ -171,13 +172,63 @@ export const localizedTexts: any = {
     inspectTimeInterval: 'Inspect Time Interval',
     maintenance: 'Maintenance',
     serviceBreak: 'Service Break',
-    moveToTarget: 'Move to Target'
-  }
+    moveToTarget: 'Move to Target',
+    page: 'Page',
+  },
 };
+
+/**
+ * Parse query params string to JavaScript object (returns key/value pairs)
+ * @param {string} params
+ * @returns {Object}
+ */
+export function parseParamsObject(params: string) {
+  const paramsObj: any = {};
+  if (params.charAt(0) === '?' || params.charAt(0) === '&') {
+    params = params.substr(1, params.length);
+  }
+  const paramsArray = params.split('&');
+  paramsArray.map((paramItem) => {
+    const paramItemArr = paramItem.split('=');
+    paramsObj[paramItemArr[0]] = paramItemArr[1];
+  });
+  return paramsObj;
+}
+
+/**
+ * Parse params object (key/value pairs) to query params string
+ * @param {Object} params
+ * @returns {string}
+ */
+export function parseParamsString(params: any) {
+  let paramsString = '?';
+  Object.keys(params).map((paramKey, index) => {
+    paramsString += paramKey + '=' + params[paramKey];
+    if (index < Object.keys(params).length - 1) {
+      paramsString += '&';
+    }
+  });
+  return paramsString;
+}
 
 // Code copied from Zabbix-triggers panel
 export function escapeRegex(value: string) {
   return value.replace(/[\\^$*+?()|[\]{}\/]/g, '\\$&');
+}
+
+export const regexPattern = /^\/(.*)\/([gmi]*)$/m;
+
+// Test string for RegEx
+export function isRegex(str: any) {
+  return regexPattern.test(str);
+}
+
+// Build RegExp object from string
+export function buildRegex(str: any) {
+  const matches = str.match(regexPattern);
+  const pattern = matches[1];
+  const flags = matches[2] !== '' ? matches[2] : undefined;
+  return new RegExp(pattern, flags);
 }
 
 export function zabbixTemplateFormat(value: any) {
@@ -217,7 +268,7 @@ export function replaceTemplateVars(target: string, templateSrv: any) {
 export function checkForTemplateVariables(fieldText: string, scopedVars: any) {
   let variablesFound = false;
   Object.keys(scopedVars).map((variableName: string) => {
-    if (fieldText.indexOf('$' + variableName) > -1 || fieldText.indexOf('${' + variableName + '}') > -1) {
+    if (fieldText.indexOf('$' + variableName) > -1 || fieldText.indexOf('${' + variableName + '}') > -1) {
       variablesFound = true;
     }
   });
@@ -225,7 +276,7 @@ export function checkForTemplateVariables(fieldText: string, scopedVars: any) {
 }
 
 /**
- * Exapand all template variables in given string and check for nested variables
+ * Expand all template variables in given string and check for nested variables
  * @param {string} fieldText
  * @param {any} templateSrv Grafana's template service
  * @returns {string} replacedText
@@ -259,7 +310,14 @@ export function getExpandedTemplateVariables(fieldText: string, templateSrv: any
   return replacedText;
 }
 
-export function getExpandedUrlLink(fieldText: string, templateSrv: any, urlUtil: any, DataLinkBuiltInVars: any, scopedVars: any = {}) {
+// Expand all template variables in given URL link
+export function getExpandedUrlLink(
+  fieldText: string,
+  templateSrv: any,
+  urlUtil: any,
+  DataLinkBuiltInVars: any,
+  scopedVars: any = {}
+) {
   const vars = Object.assign({}, scopedVars);
   const allVariablesParams = getAllVariableValuesForUrl(vars, templateSrv.getVariables());
   const variablesQuery = urlUtil.toUrlParams(allVariablesParams);
@@ -267,7 +325,7 @@ export function getExpandedUrlLink(fieldText: string, templateSrv: any, urlUtil:
     [DataLinkBuiltInVars.includeVars]: {
       text: variablesQuery,
       value: variablesQuery,
-    }
+    },
   });
   let replacedText = getExpandedTemplateVariables(fieldText, templateSrv, allVariables);
   // Remove '\' escape in front of slash '\/'
@@ -279,6 +337,7 @@ export function getExpandedUrlLink(fieldText: string, templateSrv: any, urlUtil:
   return replacedText;
 }
 
+// Generate params object (key/value pairs) with "var-" prefixes
 export function getAllVariableValuesForUrl(scopedVars: any, variables: any) {
   const params: Record<string, string | string[]> = {};
   for (let i = 0; i < variables.length; i++) {
@@ -333,7 +392,8 @@ export function getHostGroupData(availableDatasources: string[], datasourceSrv: 
   // When maintenance has been started or stopped, FORCE_CACHE_UPDATE be used to get past cache
   return new Promise<any>((resolve: any, reject: any) => {
     getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
-      zabbix.getGroupsWithHosts(forceCacheUpdate ? FORCE_CACHE_UPDATE : '')
+      zabbix
+        .getGroupsWithHosts(forceCacheUpdate ? FORCE_CACHE_UPDATE : '')
         .then((groups: any) => {
           resolve(groups);
         })
@@ -350,57 +410,58 @@ export function getHostGroupData(availableDatasources: string[], datasourceSrv: 
  */
 export function getAllHostGroups(availableDatasources: string[], datasourceSrv: any, onlySlaItems?: boolean) {
   return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
-      zabbix.getAllGroups().then((groups: any) => {
-        const allHostGroups = groups;
-        const allHostGroupIds = groups.map((group: any) => group.groupid);
-        // Get All Hosts
-        zabbix.zabbixAPI.request('host.get', {
-          output: ['hostid', 'name'],
-          selectGroups: ['groupid', 'name'],
-        }).then((hosts: any) => {
-          const allHosts: string[] = [];
-          hosts.map((host: any) => {
-            if (allHosts.findIndex((sHost: any) => sHost.hostid === host.hostid) === -1) {
-              allHosts.push(host);
-            }
-          });
-          // Get All Applications
-          zabbix.getAllApps('/./', '/./').then((apps: any) => {
-            const allApplications: string[] = [];
-            apps.map((app: any) => {
-              if (allApplications.findIndex((sApp: any) => sApp.name === app.name) === -1) {
-                allApplications.push(app);
-              }
-            });
-            // Get All Items
-            const obj: any = {
-              groupids: allHostGroupIds,
-              output: ['itemid', 'name'],
-              selectHosts: ['name', 'hostid'],
-            };
-            if (onlySlaItems) {
-              obj.search = { name: ['*.sla'] };
-              obj.searchWildcardsEnabled = 1;
-            }
-            zabbix.zabbixAPI
-              .request('item.get', obj)
-              .then((items: any) => {
-                const allItems: string[] = [];
-                items.map((item: any) => {
-                  if (allItems.findIndex((sItem: any) => sItem.itemid === item.itemid) === -1) {
-                    allItems.push(item);
+    getZabbix(availableDatasources, datasourceSrv)
+      .then((zabbix: any) => {
+        zabbix.getAllGroups().then((groups: any) => {
+          const allHostGroups = groups;
+          const allHostGroupIds = groups.map((group: any) => group.groupid);
+          // Get All Hosts
+          zabbix.zabbixAPI
+            .request('host.get', {
+              output: ['hostid', 'name'],
+              selectGroups: ['groupid', 'name'],
+            })
+            .then((hosts: any) => {
+              const allHosts: string[] = [];
+              hosts.map((host: any) => {
+                if (allHosts.findIndex((sHost: any) => sHost.hostid === host.hostid) === -1) {
+                  allHosts.push(host);
+                }
+              });
+              // Get All Applications
+              zabbix.getAllApps('/./', '/./').then((apps: any) => {
+                const allApplications: string[] = [];
+                apps.map((app: any) => {
+                  if (allApplications.findIndex((sApp: any) => sApp.name === app.name) === -1) {
+                    allApplications.push(app);
                   }
                 });
-                resolve({ allHostGroups, allHosts, allApplications, allItems });
+                // Get All Items
+                const obj: any = {
+                  groupids: allHostGroupIds,
+                  output: ['itemid', 'name'],
+                  selectHosts: ['name', 'hostid'],
+                };
+                if (onlySlaItems) {
+                  obj.search = { name: ['*.sla'] };
+                  obj.searchWildcardsEnabled = 1;
+                }
+                zabbix.zabbixAPI.request('item.get', obj).then((items: any) => {
+                  const allItems: string[] = [];
+                  items.map((item: any) => {
+                    if (allItems.findIndex((sItem: any) => sItem.itemid === item.itemid) === -1) {
+                      allItems.push(item);
+                    }
+                  });
+                  resolve({ allHostGroups, allHosts, allApplications, allItems });
+                });
               });
-          });
+            });
         });
+      })
+      .catch((err: any) => {
+        reject(err);
       });
-    })
-    .catch((err: any) => {
-      reject(err);
-    });
   });
 }
 
@@ -470,23 +531,22 @@ export function getHosts(hostGroup: string, availableDatasources: string[], data
  * Get all host names and ids in a group from Zabbix
  * @returns {Promise}
  */
- export function getHostsFromGroup(groupId: string, availableDatasources: string[], datasourceSrv: any) {
+export function getHostsFromGroup(groupId: string, availableDatasources: string[], datasourceSrv: any) {
   return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv)
-      .then((zabbix: any) => {
-        // Get all host ids
-        zabbix.zabbixAPI
-          .request('host.get', {
-            groupids: [groupId],
-            output: ['hostid', 'name', 'status'],
-          })
-          .then((hosts: any) => {
-           resolve(hosts);
-          })
-          .catch((err: any) => {
-            reject(err);
-          });
-      });
+    getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
+      // Get all host ids
+      zabbix.zabbixAPI
+        .request('host.get', {
+          groupids: [groupId],
+          output: ['hostid', 'name', 'status'],
+        })
+        .then((hosts: any) => {
+          resolve(hosts);
+        })
+        .catch((err: any) => {
+          reject(err);
+        });
+    });
   });
 }
 
@@ -572,7 +632,7 @@ export function getMaintenances(
     selectGroups: ['groupid', 'name'],
     selectHosts: ['hostid', 'name'],
     selectTimeperiods: ['start_time', 'period', 'timeperiod_type', 'start_date', 'every', 'dayofweek', 'month', 'day'],
-  }
+  };
   if (groupIds) {
     obj['groupids'] = groupIds;
   }
@@ -596,7 +656,7 @@ export function getMaintenances(
 }
 
 /**
- * Handle maintenances based on maintenance type
+ * Handle/parse maintenances based on maintenance type
  * 0 - One time period
  * 2 - Daily period
  * 3 - Weekly period
@@ -631,11 +691,7 @@ export function handleMaintenances(maintenances: any, oneUpcomingMaintenance?: b
         );
       } else if (timeperiod.timeperiod_type === '2') {
         // DAILY PERIOD
-        beginningOfPeriod = moment
-          .utc(activeSinceDate)
-          .startOf('day')
-          .add(startTimeOfDay, 'millisecond')
-          .valueOf();
+        beginningOfPeriod = moment.utc(activeSinceDate).startOf('day').add(startTimeOfDay, 'millisecond').valueOf();
         if (beginningOfPeriod < activeSince) {
           beginningOfPeriod = moment(beginningOfPeriod).add(1, 'day').valueOf();
         }
@@ -657,11 +713,7 @@ export function handleMaintenances(maintenances: any, oneUpcomingMaintenance?: b
         }
       } else if (timeperiod.timeperiod_type === '3') {
         // WEEKLY PERIOD
-        beginningOfPeriod = moment
-          .utc(activeSinceDate)
-          .locale('fi')
-          .startOf('week')
-          .valueOf();
+        beginningOfPeriod = moment.utc(activeSinceDate).locale('fi').startOf('week').valueOf();
         // Weekdays are stored in binary format from right to left
         // eg. 4 equals 100 in binary, which means third weekday is selected
         const weekdays = parseInt(timeperiod.dayofweek, 10).toString(2);
@@ -713,7 +765,10 @@ export function handleMaintenances(maintenances: any, oneUpcomingMaintenance?: b
               const monthCounter = moment(yearCounter).add(monthNumber, 'month');
               if (day > 0) {
                 // Monthly maintenance based on day number
-                const startTimeMS = monthCounter.add(day - 1, 'day').add(startTimeOfDay, 'millisecond').valueOf();
+                const startTimeMS = monthCounter
+                  .add(day - 1, 'day')
+                  .add(startTimeOfDay, 'millisecond')
+                  .valueOf();
                 if (startTimeMS >= activeSince && startTimeMS <= activeTill) {
                   const startTimeSec = Math.floor(startTimeMS / 1000);
                   addMaintenanceToList(
@@ -735,9 +790,7 @@ export function handleMaintenances(maintenances: any, oneUpcomingMaintenance?: b
                 const week = parseInt(timeperiod.every, 10);
                 let subtractWeek = 0;
                 const startTimeValue = monthCounter.valueOf();
-                const startTime = moment(monthCounter)
-                  .locale('fi')
-                  .startOf('week');
+                const startTime = moment(monthCounter).locale('fi').startOf('week');
                 if (startTimeValue === startTime.valueOf()) {
                   subtractWeek = 1;
                 }
@@ -894,9 +947,13 @@ export function isOngoingMaintenance(maintenance: any) {
   let isOngoing = false;
   if (maintenance) {
     if (maintenance.startTime) {
-      const curTime = (new Date()).getTime() / 1000;
-      if (curTime >= maintenance.startTime && curTime <= maintenance.endTime &&
-        curTime >= maintenance.activeSince && curTime <= maintenance.activeTill) {
+      const curTime = new Date().getTime() / 1000;
+      if (
+        curTime >= maintenance.startTime &&
+        curTime <= maintenance.endTime &&
+        curTime >= maintenance.activeSince &&
+        curTime <= maintenance.activeTill
+      ) {
         isOngoing = true;
       }
     }
@@ -911,8 +968,18 @@ export function isOngoingMaintenance(maintenance: any) {
  */
 export function parseDateToString(newDate: Date) {
   const leadingZero = newDate.getMinutes() < 10 ? '0' : '';
-  return (newDate.getDate() + '.' + (newDate.getMonth() + 1) + '.' + newDate.getFullYear() +
-    ' ' + newDate.getHours() + ':' + leadingZero + newDate.getMinutes());
+  return (
+    newDate.getDate() +
+    '.' +
+    (newDate.getMonth() + 1) +
+    '.' +
+    newDate.getFullYear() +
+    ' ' +
+    newDate.getHours() +
+    ':' +
+    leadingZero +
+    newDate.getMinutes()
+  );
 }
 
 /**
@@ -1015,11 +1082,13 @@ export function elapsedHandler(elapsedValue: number, abbreviated?: boolean, isEn
       } else {
         if (isEnglish) {
           elapsedText = abbreviated ? minutes + 'min' : minutes + (minutes === 1 ? ' minute' : ' minutes');
-          elapsedPopupText = alertHasBeenActiveTextEnglish.replace('${time}', minutes.toString()) +
+          elapsedPopupText =
+            alertHasBeenActiveTextEnglish.replace('${time}', minutes.toString()) +
             (minutes === 1 ? ' minute' : ' minutes');
         } else {
           elapsedText = abbreviated ? minutes + 'min' : minutes + (minutes === 1 ? ' minuutti' : ' minuuttia');
-          elapsedPopupText = alertHasBeenActiveText.replace('${time}', minutes.toString()) +
+          elapsedPopupText =
+            alertHasBeenActiveText.replace('${time}', minutes.toString()) +
             (minutes === 1 ? ' minuutin' : ' minuuttia');
         }
       }
@@ -1217,7 +1286,7 @@ export function fetchStatusData(
               // status  severity  time_since_last
               // 0       5         3570
               // status  error
-              // -2      description of the error
+              // -2      description of the configuration error
               const statusData: any = {};
               result.data.map((item: any) => {
                 const statusItem: any = {};
@@ -1274,94 +1343,96 @@ export function fetchSLAData(
 ) {
   return new Promise<any>((resolve: any, reject: any) => {
     if (availableZabbixDatasource && datasourceSrv) {
-      datasourceSrv.get(availableZabbixDatasource).then((datasource: any) => {
-        if (SLAItemIds.length > 0) {
-          // Make query for fetching SLA value from dashboard's timerange
-          // Using only 1 datapoint so that mean/average is counted from the whole timerange
-          const maxDataPoints = 1;
-          const intervalMs = round_interval((timeRange.to.valueOf() - timeRange.from.valueOf()) / maxDataPoints);
-          const interval = secondsToHms(intervalMs / 1000);
-          const SLAInterval = {
-            interval,
-            intervalMs,
-          };
-          const SLAScopedVars = Object.assign({}, panel.scopedVars, {
-            __interval: { text: SLAInterval.interval, value: SLAInterval.interval },
-            __interval_ms: { text: SLAInterval.intervalMs, value: SLAInterval.intervalMs },
-          });
-          // Add SLA specific changes to items query
-          const SLAMetricsQuery = {
-            timezone: dashboard.getTimezone(),
-            panelId: panel.id,
-            dashboardId: dashboard.id,
-            range: timeRange,
-            rangeRaw: timeRange.raw,
-            interval: SLAInterval.interval,
-            intervalMs: SLAInterval.intervalMs,
-            targets: [{ mode: 3, itemids: SLAItemIds + '' }],
-            maxDataPoints: maxDataPoints,
-            scopedVars: SLAScopedVars,
-            cacheTimeout: panel.cacheTimeout,
-          };
-          // Create query for SLA value and add it to promises array
-          datasource
-            .query(SLAMetricsQuery)
-            .then((result: any) => {
-              const SLAData: any = {};
-              // Create SLAData object based on results
-              if (result && result.data && result.data.length > 0) {
-                // Zabbix datasource sends data in 'wide' format in some cases
-                // We need to arrage the data so that our handler understands it
-                let data = result.data;
-                if (result.data[0].name === 'wide') {
-                  data = [];
-                  if (result.data[0].fields.length > 1) {
-                    result.data[0].fields.map((dataField: any) => {
-                      if (dataField.type !== 'time') {
-                        const dataSet = _.cloneDeep(dataField);
-                        dataSet.fields = [_.cloneDeep(result.data[0].fields[0])];
-                        dataSet.fields.push({ name: 'Value', type: 'number', values: _.cloneDeep(dataField.values)});
-                        data.push(dataSet);
-                      }
-                    });
-                  }
-                }
-                // Loop through results
-                data.forEach((dataItem: any) => {
-                  const items = allHostGroupItems.filter((item: any) => dataItem.name.indexOf(item.name) > -1);
-                  let zabbixItem;
-                  // If there are multiple items with same name, need to find the correct one
-                  if (items.length > 1) {
-                    // Data target should contain host name if there are multiple items with same name
-                    zabbixItem = items.find(
-                      (item: any) => item.hosts.findIndex((host: any) => dataItem.name.indexOf(host.name) > -1) > -1
-                    );
-                  } else if (items.length === 1) {
-                    zabbixItem = items[0];
-                  }
-                  // Add values to SLAData
-                  if (zabbixItem && dataItem.datapoints && dataItem.datapoints.length > 0) {
-                    SLAData[zabbixItem.itemid] = dataItem.datapoints.map((item: any) => {
-                      return { value: item[0], clock: item[1] };
-                    });
-                  } else if (zabbixItem && dataItem.fields.length > 0) {
-                    // If received item doesn't contain datapoints-attribute, take data from fields-attribute
-                    SLAData[zabbixItem.itemid] = dataItem.fields[1].values.buffer.map((item: any, index: number) => {
-                      return { value: item, clock: dataItem.fields[0].values.buffer[index] };
-                    });
-                  }
-                });
-              }
-              resolve(SLAData);
-            })
-            .catch((err: any) => {
-              reject(err);
+      datasourceSrv
+        .get(availableZabbixDatasource)
+        .then((datasource: any) => {
+          if (SLAItemIds.length > 0) {
+            // Make query for fetching SLA value from dashboard's timerange
+            // Using only 1 datapoint so that mean/average is counted from the whole timerange
+            const maxDataPoints = 1;
+            const intervalMs = round_interval((timeRange.to.valueOf() - timeRange.from.valueOf()) / maxDataPoints);
+            const interval = secondsToHms(intervalMs / 1000);
+            const SLAInterval = {
+              interval,
+              intervalMs,
+            };
+            const SLAScopedVars = Object.assign({}, panel.scopedVars, {
+              __interval: { text: SLAInterval.interval, value: SLAInterval.interval },
+              __interval_ms: { text: SLAInterval.intervalMs, value: SLAInterval.intervalMs },
             });
-        }
-      })
-      .catch((err: any) => {
-        reject(err);
-      });
+            // Add SLA specific changes to items query
+            const SLAMetricsQuery = {
+              timezone: dashboard.getTimezone(),
+              panelId: panel.id,
+              dashboardId: dashboard.id,
+              range: timeRange,
+              rangeRaw: timeRange.raw,
+              interval: SLAInterval.interval,
+              intervalMs: SLAInterval.intervalMs,
+              targets: [{ mode: 3, itemids: SLAItemIds + '' }],
+              maxDataPoints: maxDataPoints,
+              scopedVars: SLAScopedVars,
+              cacheTimeout: panel.cacheTimeout,
+            };
+            // Create query for SLA value and add it to promises array
+            datasource
+              .query(SLAMetricsQuery)
+              .then((result: any) => {
+                const SLAData: any = {};
+                // Create SLAData object based on results
+                if (result && result.data && result.data.length > 0) {
+                  // Zabbix datasource sends data in 'wide' format in some cases
+                  // We need to arrage the data so that our handler understands it
+                  let data = result.data;
+                  if (result.data[0].name === 'wide') {
+                    data = [];
+                    if (result.data[0].fields.length > 1) {
+                      result.data[0].fields.map((dataField: any) => {
+                        if (dataField.type !== 'time') {
+                          const dataSet = _.cloneDeep(dataField);
+                          dataSet.fields = [_.cloneDeep(result.data[0].fields[0])];
+                          dataSet.fields.push({ name: 'Value', type: 'number', values: _.cloneDeep(dataField.values) });
+                          data.push(dataSet);
+                        }
+                      });
+                    }
+                  }
+                  // Loop through results
+                  data.forEach((dataItem: any) => {
+                    const items = allHostGroupItems.filter((item: any) => dataItem.name.indexOf(item.name) > -1);
+                    let zabbixItem;
+                    // If there are multiple items with same name, need to find the correct one
+                    if (items.length > 1) {
+                      // Data target should contain host name if there are multiple items with same name
+                      zabbixItem = items.find(
+                        (item: any) => item.hosts.findIndex((host: any) => dataItem.name.indexOf(host.name) > -1) > -1
+                      );
+                    } else if (items.length === 1) {
+                      zabbixItem = items[0];
+                    }
+                    // Add values to SLAData
+                    if (zabbixItem && dataItem.datapoints && dataItem.datapoints.length > 0) {
+                      SLAData[zabbixItem.itemid] = dataItem.datapoints.map((item: any) => {
+                        return { value: item[0], clock: item[1] };
+                      });
+                    } else if (zabbixItem && dataItem.fields.length > 0) {
+                      // If received item doesn't contain datapoints-attribute, take data from fields-attribute
+                      SLAData[zabbixItem.itemid] = dataItem.fields[1].values.buffer.map((item: any, index: number) => {
+                        return { value: item, clock: dataItem.fields[0].values.buffer[index] };
+                      });
+                    }
+                  });
+                }
+                resolve(SLAData);
+              })
+              .catch((err: any) => {
+                reject(err);
+              });
+          }
+        })
+        .catch((err: any) => {
+          reject(err);
+        });
     } else {
       reject();
     }
@@ -1379,6 +1450,7 @@ export function getStatusValue(statusItem: any, hostGroupName: string, isLoading
   return statusValue;
 }
 
+// Calculate average for SLA data (from SQL query)
 export function getSLAValue(SLAData: any[], SLAItem: any) {
   let SLAValue = 100;
   // Count average for received timespan
@@ -1389,6 +1461,7 @@ export function getSLAValue(SLAData: any[], SLAItem: any) {
   return SLAValue;
 }
 
+// Time since last event
 export function getIncidentValue(statusValue: number, statusItem: any) {
   let incidentValue = 0;
   if (statusValue === STATUS_OK) {
@@ -1401,6 +1474,7 @@ export function getIncidentValue(statusValue: number, statusItem: any) {
   return incidentValue;
 }
 
+// Figure maintenance status from hosts, applications, etc.
 export function getMaintenanceStatus(
   allHosts: any[],
   maintenanceHostGroup: any,
@@ -1424,7 +1498,7 @@ export function getMaintenanceStatus(
     const filteredHosts = maintenanceHostGroup.hosts
       // Filter out hosts ending with (-sla _sla .sla -SLA _SLA .SLA)
       .filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name))
-      // If maintenanceHostName is defined but applicationItem is not, then filter host list with that name
+      // If maintenanceHostName is defined, then filter host list with that name
       .filter((host: any) => {
         if (maintenanceHostName && !applicationItem) {
           if (host.name === maintenanceHostName) {
@@ -1471,13 +1545,21 @@ export function getMaintenanceStatus(
   return { oneHostInMaintenance, allHostsInMaintenance };
 }
 
+// Figure tooltip position for status panels
 export function getTooltipXPos(tooltipWidth: any, pageX: number) {
   const totalWidth = pageX + tooltipWidth;
   const xpos = totalWidth > window.innerWidth ? window.innerWidth - tooltipWidth : pageX;
   return xpos;
 }
 
-export function filterSLAItems(selectedIndex: number, options: any, templateSrv: any, allItems: any[], allHosts: any[]) {
+// Filter items based on hostgroup setting, host setting, etc.
+export function filterSLAItems(
+  selectedIndex: number,
+  options: any,
+  templateSrv: any,
+  allItems: any[],
+  allHosts: any[]
+) {
   let filteredItems = [];
   let groupName = '';
   let hostName = '';
@@ -1512,6 +1594,7 @@ export function filterSLAItems(selectedIndex: number, options: any, templateSrv:
   return filteredItems;
 }
 
+// Retrieves recursively element ID containing string "sla"
 export function getParentSLAElement(element: HTMLElement): HTMLElement {
   if (element.id.indexOf('sla') > -1 || !element.parentElement) {
     return element;
@@ -1531,20 +1614,26 @@ export function validateStringForCSV(fieldData: string) {
   let result = fieldData === null || typeof fieldData === 'undefined' ? '' : fieldData.toString();
   result = result.replace(/"/g, '""');
   if (result.search(/("|;|\n|\r)/g) >= 0) {
-      result = '"' + result + '"';
+    result = '"' + result + '"';
   }
   return result;
 }
 
 /**
-* Export table data to CSV file
-* @param {any[]} selectedEvents
-* @param {string[]} titles used for CSV columns
-* @param {string[]} attributes used for event-objects
-* @param {string} sortBy used as sorting attribute name
-* @param {string} filename localized
-*/
-export function exportCSV(selectedEvents: any[], titles: string[], attributes: string[], sortBy: string, filename: string) {
+ * Export table data to CSV file
+ * @param {any[]} selectedEvents
+ * @param {string[]} titles used for CSV columns
+ * @param {string[]} attributes used for event-objects
+ * @param {string} sortBy used as sorting attribute name
+ * @param {string} filename localized
+ */
+export function exportCSV(
+  selectedEvents: any[],
+  titles: string[],
+  attributes: string[],
+  sortBy: string,
+  filename: string
+) {
   const delimiter = ';';
   const rowChange = '\r\n';
   const universalBOM = '\uFEFF';
@@ -1559,9 +1648,11 @@ export function exportCSV(selectedEvents: any[], titles: string[], attributes: s
   const sortedEvents = _.sortBy(selectedEvents, sortBy);
   sortedEvents.reverse();
   sortedEvents.forEach((row: any) => {
-    csvContent += attributes
-      .map((attribute: string) => row[attribute])
-      .map((field: any) => validateStringForCSV(field)).join(delimiter) + rowChange;
+    csvContent +=
+      attributes
+        .map((attribute: string) => row[attribute])
+        .map((field: any) => validateStringForCSV(field))
+        .join(delimiter) + rowChange;
   });
   const blob = new Blob([universalBOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -1606,14 +1697,14 @@ export function parseDescriptionURLs(eventObj: any) {
 }
 
 /**
- * Get value object for test status values
+ * Get value object for test status values (checks for test-tags)
  */
 export function getTestStatusValues(mainStatusValue: number, storedLanguage: string, showEnglishStatus: boolean) {
   const testStatusValue = mainStatusValue;
   const testStatusValueItem = _.find(statusValueMap, { value: testStatusValue }) || {};
   storedLanguage = storedLanguage || LANGUAGE.FI;
-  const testStatusText = localizedTexts[storedLanguage][testStatusValueItem.id] + ' ' +
-    localizedTexts[storedLanguage].testIncident;
+  const testStatusText =
+    localizedTexts[storedLanguage][testStatusValueItem.id] + ' ' + localizedTexts[storedLanguage].testIncident;
   const testStatusStyle = 'iiris-status-' + testStatusValueItem.id;
   const statusValue = STATUS_OK;
   const statusValueItem = _.find(statusValueMap, { value: statusValue }) || {};
