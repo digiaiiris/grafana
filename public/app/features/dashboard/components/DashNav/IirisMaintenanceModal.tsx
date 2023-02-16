@@ -1158,6 +1158,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         } else if (stopPeriodDate < currentDate) {
           valid = false;
           this.scope.errorText += this.texts.repeatEndTimeCantBeInPast + ' ';
+        } else if (this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
+          valid = false;
+          this.scope.errorText += this.texts.maintenanceEndMustBeAfterStart + ' ';
         }
         // Check if period continues over next DST change
         const curYear = new Date().getFullYear();
