@@ -31,7 +31,7 @@ export function IirisMaintenanceTable(props: Props) {
       <thead>
         {headerGroups.map((headerGroup, i) => (
           <tr {...headerGroup.getHeaderGroupProps()} key={`thead-tr-${i}`}>
-            {headerGroup.headers.map((column) => (
+            {headerGroup.headers.map((column, i) => (
               <th {...column.getHeaderProps()} key={`thead-th-${i}`}>
                 {column.render('Header')}
               </th>
