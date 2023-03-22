@@ -48,6 +48,7 @@ interface State {
   searchText: string;
   allHostsSelected: boolean;
   selectedHosts: any;
+  preview: any;
 }
 
 export class IirisMaintenanceModal extends PureComponent<Props, State> {
@@ -189,6 +190,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   selectedHosts: any;
   allHostsSelected = true;
   texts: any;
+  preview: any;
 
   constructor(props: Props) {
     super(props);
@@ -255,7 +257,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       searchText: '',
       allHostsSelected: this.allHostsSelected,
       selectedHosts: this.selectedHosts,
+      preview: [],
     };
+
+    this.handleFormChange = this.handleFormChange.bind(this);
   }
 
   componentDidUpdate(prevProps: any) {
@@ -293,9 +298,140 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         dayOfMonthOrWeekSelected: this.scope.dayOfMonthOrWeekSelected.value,
         months: this.scope.months,
         weekdays: this.scope.weekdays,
+        preview: null,
       });
     }
   }
+
+  handleFormChange = () => {
+    this.setState({ preview: null }, () => {
+      this.updatePreview();
+    });
+  };
+
+  updatePreview = () => {
+    const { maintenanceType } = this.state;
+
+    const startDate = new Date(
+      this.state.yearInput,
+      this.state.monthInput - 1,
+      this.state.dayInput,
+      parseInt(this.state.hourInput, 10),
+      parseInt(this.state.minuteInput, 10)
+    );
+
+    const stopDate = moment(
+      new Date(this.state.yearStopInput, this.state.monthStopInput - 1, this.state.dayStopInput, 0, 0)
+    )
+      .endOf('day')
+      .toDate();
+
+    const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.durationInput.value;
+    const stopDateTime = moment(startDate).add(duration, 'second').toDate();
+    const diffDays = moment(stopDate).diff(startDate, 'days');
+    const diffWeeks = moment(stopDate).diff(startDate, 'weeks');
+    const diffMonths = moment(stopDate).diff(startDate, 'months');
+    const startMonth = moment(startDate).month();
+
+    let dates: any = [];
+
+    if (maintenanceType === '2') {
+      for (let i = 0; i < diffDays; i++) {
+        if (i % this.state.everyNDays === 0) {
+          let date = moment(startDate).add(i, 'day').toDate();
+          dates.push(
+            moment(date).format('DD.MM.YYYY HH:mm') +
+              ' - ' +
+              moment(date).add(duration, 'second').format('DD.MM.YYYY HH:mm')
+          );
+        }
+      }
+    } else if (maintenanceType === '3') {
+      for (let i = 0; i < diffWeeks; i++) {
+        if (i % this.state.everyNWeeks === 0) {
+          for (const [key, value] of Object.entries(this.state.weekdays)) {
+            if (value === true) {
+              let date = moment(startDate)
+                .add(i, 'week')
+                .add(Object.keys(this.state.weekdays).indexOf(key), 'day')
+                .toDate();
+              dates.push(
+                moment(date).format('DD.MM.YYYY HH:mm') +
+                  ' - ' +
+                  moment(date).add(duration, 'second').format('DD.MM.YYYY HH:mm')
+              );
+            }
+          }
+        }
+      }
+    } else if (maintenanceType === '4') {
+      if (this.state.dayOfMonthOrWeekSelected === MONTH) {
+        let diffMonthsCut = diffMonths - startMonth > 10 ? 11 : diffMonths;
+
+        for (let i = startMonth; i < diffMonthsCut + startMonth + 1; i++) {
+          for (const [key, value] of Object.entries(this.state.months)) {
+            if (Object.keys(this.state.months).indexOf(key) === i && value === true) {
+              const date = new Date(
+                this.state.yearStopInput,
+                i,
+                this.state.dayOfMonth,
+                parseInt(this.state.hourInput, 10),
+                parseInt(this.state.minuteInput, 10)
+              );
+              dates.push(
+                moment(date).format('DD.MM.YYYY HH:mm') +
+                  ' - ' +
+                  moment(date).add(duration, 'second').format('DD.MM.YYYY HH:mm')
+              );
+              for (const [weekday, include] of Object.entries(this.state.monthlyWeekdays)) {
+                if (include) {
+                  console.log(moment(date).isoWeekday(weekday).format());
+                }
+              }
+            }
+          }
+        }
+      } else if (this.state.dayOfMonthOrWeekSelected === WEEK) {
+        // Start with looping though months with difference between months as stop
+        // condition adding the amount of months to it
+        for (let i = moment(startDate).month(); i < diffMonths + 1; i++) {
+          // Make a new object and remove "all" entry
+          const months: any = {};
+          const returnedTarget = Object.assign(months, this.state.months);
+          delete months['all'];
+
+          // Loop through month entries...
+          for (const [month, includeMonth] of Object.entries(months)) {
+            // ...and see if month is included
+            if (Object.keys(months).indexOf(month) === i && includeMonth === true) {
+              // Loop through days in current month
+              for (let j = 0; j < moment(startDate).add(i, 'months').daysInMonth(); j++) {
+                // Check if week is included and if weekday is included in the form
+                // and that date is between start and stop date
+                if (
+                  this.state.everyDayOfWeekInput === Math.ceil(j / 7) &&
+                  this.state.monthlyWeekdays[
+                    moment(startDate).month(i).date(j).format('dddd').toString().toLowerCase()
+                  ] === true &&
+                  moment(startDate).month(i).date(j).isAfter(moment(startDate)) &&
+                  moment(startDate).month(i).date(j).isBefore(moment(stopDate))
+                ) {
+                  const newDate = moment(startDate).month(i).date(j).format('dddd DD.MM.YYYY HH:mm');
+                  console.log(newDate);
+                }
+              }
+            }
+          }
+        }
+      }
+    } else {
+      dates.push(
+        moment(startDate).format('DD.MM.YYYY HH:mm') + ' - ' + moment(stopDateTime).format('DD.MM.YYYY HH:mm')
+      );
+    }
+
+    this.setState({ preview: dates });
+  };
 
   /**
    * Maintenance Modal class constructor
