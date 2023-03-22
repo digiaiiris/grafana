@@ -157,6 +157,18 @@ div[role='dialog'].modal-body > div:nth-child(2) {
     flex-direction: row;
     align-items: center;
   }
+
+  .maintenance-column-wrapper {
+    display: flex;
+
+    .maintenance-column-left {
+      width: 70%;
+    }
+
+    .maintenance-column-right {
+      width: 30%;
+    }
+  }
 }
 
 .iiris-modal-box {
