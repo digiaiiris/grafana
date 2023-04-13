@@ -1975,11 +1975,33 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         </a>
                       </div>
                     </div>
-                    <div className="maintenance-column-right">
+                    <div className="maintenance-column-right maintenance-column-right-preview">
                       <h4>{this.texts.upcomingMaintenances}</h4>
-                      <div>
-                        {this.state.preview && this.state.preview.map((value, index) => <div key={index}>{value}</div>)}
-                      </div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <td>
+                              <strong>{this.texts.startTime}</strong>
+                            </td>
+                            <td>
+                              <strong>{this.texts.endTime}</strong>
+                            </td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {this.state.preview &&
+                            this.state.preview.map((dates: any, index: number) => (
+                              <tr key={index}>
+                                <td>
+                                  {moment(dates.start).locale(contextSrv.storedLanguage).format('dd DD.MM.YYYY HH:mm')}
+                                </td>
+                                <td>
+                                  {moment(dates.end).locale(contextSrv.storedLanguage).format('dd DD.MM.YYYY HH:mm')}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </form>
