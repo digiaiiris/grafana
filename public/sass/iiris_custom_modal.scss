@@ -167,6 +167,43 @@ div[role='dialog'].modal-body > div:nth-child(2) {
 
     .maintenance-column-right {
       width: 30%;
+
+      &.maintenance-column-right-preview {
+        overflow-y: scroll;
+        max-height: calc(65vh - 64px);
+
+        tbody {
+          td {
+            opacity: 0.5;
+          }
+
+          .tr-new {
+            td {
+              opacity: 1;
+            }
+          }
+
+          .td-end {
+            opacity: 1;
+            border-bottom: none;
+            text-align: center;
+          }
+        }
+      }
+    }
+  }
+}
+
+@include media-breakpoint-down(md) {
+  .modal-body .modal-content {
+    .maintenance-column-wrapper {
+      .maintenance-column-left {
+        width: 100%;
+      }
+
+      .maintenance-column-right {
+        display: none;
+      }
     }
   }
 }

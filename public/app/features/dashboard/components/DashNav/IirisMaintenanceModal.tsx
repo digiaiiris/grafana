@@ -16,6 +16,7 @@ interface Props {
   openAllMaintenancesModal(): void;
   hosts: any;
   user: string;
+  allMaintenances: any[];
 }
 
 interface State {
@@ -344,8 +345,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             moment(date).isBefore(moment(stopDate).add(1, 'days'))
           ) {
             dates.push({
-              start: date,
-              end: moment(date).add(duration, 'second').toDate(),
+              startTime: moment(date).unix(),
+              endTime: moment(date).add(duration, 'second').unix(),
+              new: true,
             });
           }
         }
@@ -365,8 +367,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                 moment(date).add(duration, 'second').isBefore(moment(stopDate))
               ) {
                 dates.push({
-                  start: date,
-                  end: moment(date).add(duration, 'second').toDate(),
+                  startTime: moment(date).unix(),
+                  endTime: moment(date).add(duration, 'second').unix(),
+                  new: true,
                 });
               }
             }
@@ -390,8 +393,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                 moment(date).add(duration, 'second').isBefore(moment(stopDate))
               ) {
                 dates.push({
-                  start: date,
-                  end: moment(date).add(duration, 'second').toDate(),
+                  startTime: moment(date).unix(),
+                  endTime: moment(date).add(duration, 'second').unix(),
+                  new: true,
                 });
               }
             }
@@ -424,8 +428,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   moment(startDate).month(i).date(j).isBefore(moment(stopDateTime))
                 ) {
                   dates.push({
-                    start: moment(startDate).month(i).date(j).toDate(),
-                    end: moment(startDate).month(i).date(j).add(duration, 'second').toDate(),
+                    startTime: moment(startDate).month(i).date(j).unix(),
+                    endTime: moment(startDate).month(i).date(j).add(duration, 'second').unix(),
+                    new: true,
                   });
                 }
               }
@@ -435,12 +440,30 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
     } else {
       dates.push({
-        start: startDate,
-        end: stopDateTime,
+        startTime: moment(startDate).unix(),
+        endTime: moment(stopDateTime).unix(),
+        new: true,
       });
     }
 
-    this.setState({ preview: dates });
+    let fullDatesList = this.props.allMaintenances.concat(dates);
+
+    fullDatesList.sort(function (a, b) {
+      let keyA = a.startTime,
+        keyB = b.startTime;
+
+      if (keyA < keyB) {
+        return -1;
+      }
+
+      if (keyA > keyB) {
+        return 1;
+      }
+
+      return 0;
+    });
+
+    this.setState({ preview: fullDatesList });
   };
 
   /**
@@ -2000,16 +2023,32 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         </thead>
                         <tbody>
                           {this.state.preview &&
-                            this.state.preview.map((dates: any, index: number) => (
-                              <tr key={index}>
-                                <td>
-                                  {moment(dates.start).locale(contextSrv.storedLanguage).format('dd DD.MM.YYYY HH:mm')}
-                                </td>
-                                <td>
-                                  {moment(dates.end).locale(contextSrv.storedLanguage).format('dd DD.MM.YYYY HH:mm')}
-                                </td>
-                              </tr>
-                            ))}
+                            this.state.preview.map(
+                              (dates: any, index: number) =>
+                                index < 11 && (
+                                  <>
+                                    <tr key={index} className={dates.new && 'tr-new'}>
+                                      <td>
+                                        {moment(dates.startTime * 1000)
+                                          .locale(contextSrv.storedLanguage)
+                                          .format('dd DD.MM.YYYY HH:mm')}
+                                      </td>
+                                      <td>
+                                        {moment(dates.endTime * 1000)
+                                          .locale(contextSrv.storedLanguage)
+                                          .format('dd DD.MM.YYYY HH:mm')}
+                                      </td>
+                                    </tr>
+                                    {index === 10 && (
+                                      <tr key={index + 1}>
+                                        <td colSpan="2" className="td-end">
+                                          ...
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </>
+                                )
+                            )}
                         </tbody>
                       </table>
                     </div>
