@@ -2041,7 +2041,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                                     </tr>
                                     {index === 10 && (
                                       <tr key={index + 1}>
-                                        <td colSpan="2" className="td-end">
+                                        <td colSpan={2} className="td-end">
                                           ...
                                         </td>
                                       </tr>
