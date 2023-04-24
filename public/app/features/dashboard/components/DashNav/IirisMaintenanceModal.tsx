@@ -425,7 +425,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                   ] === true &&
                   moment(startDate).month(i).date(j).isAfter() &&
                   moment(startDate).month(i).date(j).isAfter(moment(startDate)) &&
-                  moment(startDate).month(i).date(j).isBefore(moment(stopDateTime))
+                  moment(startDate).month(i).date(j).add(duration, 'second').isBefore(moment(stopDate))
                 ) {
                   dates.push({
                     startTime: moment(startDate).month(i).date(j).unix(),
