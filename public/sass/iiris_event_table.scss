@@ -4,11 +4,22 @@ $iiris-table-vertical-padding: 6px;
 $iiris-table-horizontal-padding: 10px;
 
 .iiris-table-container {
-  max-height: calc(90vh - 180px);
-  overflow-y: auto;
+  height: 100%;
+}
+
+.modal-content {
+  .iiris-table-container {
+    max-height: calc(90vh - 180px);
+    overflow-y: auto;
+    .iiris-event-table {
+      overflow-y: hidden;
+    }
+  }
 }
 
 .iiris-event-table {
+  height: 100%;
+  overflow-y: scroll;
   .table {
     width: 100%;
     tr {
