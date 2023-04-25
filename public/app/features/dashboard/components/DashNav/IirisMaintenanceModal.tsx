@@ -302,6 +302,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         weekdays: this.scope.weekdays,
         preview: null,
       });
+      this.updatePreview();
     }
   }
 
