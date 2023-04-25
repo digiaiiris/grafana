@@ -2027,8 +2027,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                             this.state.preview.map(
                               (dates: any, index: number) =>
                                 index < 11 && (
-                                  <>
-                                    <tr key={index} className={dates.new && 'tr-new'}>
+                                  <React.Fragment key={index}>
+                                    <tr className={dates.new && 'tr-new'}>
                                       <td>
                                         {moment(dates.startTime * 1000)
                                           .locale(contextSrv.storedLanguage)
@@ -2041,13 +2041,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                                       </td>
                                     </tr>
                                     {index === 10 && (
-                                      <tr key={index + 1}>
+                                      <tr>
                                         <td colSpan={2} className="td-end">
                                           ...
                                         </td>
                                       </tr>
                                     )}
-                                  </>
+                                  </React.Fragment>
                                 )
                             )}
                         </tbody>
