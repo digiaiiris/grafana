@@ -457,6 +457,10 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       });
     }
 
+    this.setState({ preview: dates });
+
+    // TODO: Enable list of current maintenances
+    /*
     let fullDatesList = this.props.allMaintenances.concat(dates);
 
     fullDatesList.sort(function (a, b) {
@@ -475,6 +479,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     });
 
     this.setState({ preview: fullDatesList });
+    */
   };
 
   /**
