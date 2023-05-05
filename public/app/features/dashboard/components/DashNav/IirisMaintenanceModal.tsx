@@ -342,10 +342,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     let dates: any = [];
 
     if (maintenanceType === DAILY_MAINTENANCE) {
+      // Get all days between entered start and end date
       for (let i = 0; i < diffDays + 1; i++) {
+        // Only allow days that are every [N] days
         if (i % this.state.everyNDays === 0) {
           let date = moment(startDate).add(i, 'day').toDate();
 
+          // Check that dates are after start date and before stop date
           if (
             moment(date).isAfter(moment(startDate).subtract(1, 'days')) &&
             moment(date).isBefore(moment(stopDate).add(1, 'days'))
@@ -359,10 +362,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
       }
     } else if (maintenanceType === WEEKLY_MAINTENANCE) {
+      // Get all weeks between entered start and end date
       for (let i = 0; i < diffWeeks + 1; i++) {
+        // Only allow days that are every [N] weeks
         if (i % this.state.everyNWeeks === 0) {
+          // Get weekdays as weekday name as key and included as value
           for (const [key, value] of Object.entries(this.state.weekdays)) {
             if (value === true) {
+              // Add a week each iteration
               let date = moment(startDate)
                 .add(i, 'week')
                 .isoWeekday(Object.keys(this.state.weekdays).indexOf(key) + 1)
@@ -384,12 +391,17 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       }
     } else if (maintenanceType === MONTHLY_MAINTENANCE) {
       if (this.state.dayOfMonthOrWeekSelected === MONTH) {
+        // Start with looping though months with difference between months as stop
+        // condition adding the amount of months to it
         for (let i = moment(startDate).month(); i < moment(startDate).month() + moment(stopDate).month(); i++) {
+          // Make a new object and remove "all" entry
           let months: any = {};
           Object.assign(months, this.state.months);
           delete months['all'];
 
+          // Loop through month entries...
           for (const [month, includeMonth] of Object.entries(months)) {
+            // ...and see if month is included
             if (Object.keys(months).indexOf(month) === i && includeMonth === true) {
               let date = moment(startDate).date(this.state.dayOfMonth).month(i).toDate();
 
