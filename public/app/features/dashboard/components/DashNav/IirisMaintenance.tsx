@@ -637,6 +637,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
           selectedMaintenance={this.state.selectedMaintenance}
           user={contextSrv.user.email || ''}
           onCreateMaintenance={this.onCreateMaintenance}
+          allMaintenances={this.state.allMaintenances}
         />
         <IirisMaintenanceListModal
           show={this.state.showMaintenanceListModal}
