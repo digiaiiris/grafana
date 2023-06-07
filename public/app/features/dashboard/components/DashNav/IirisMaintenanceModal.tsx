@@ -269,40 +269,44 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     if (this.props.show && this.props.show !== prevProps.show) {
       this.selectedMaintenance = this.props.selectedMaintenance;
       this.init();
-      this.setState({
-        wizardPhase: 1,
-        searchText: '',
-        errorText: '',
-        dayInput: this.dayInput.value,
-        monthInput: this.monthInput.value,
-        yearInput: this.yearInput.value,
-        hourInput: this.hourInput.value,
-        minuteInput: this.minuteInput.value,
-        dayStopInput: this.dayStopInput.value,
-        monthStopInput: this.monthStopInput.value,
-        yearStopInput: this.yearStopInput.value,
-        strictEndDayInput: this.strictEndDayInput.value,
-        strictEndMonthInput: this.strictEndMonthInput.value,
-        strictEndYearInput: this.strictEndYearInput.value,
-        strictEndHourInput: this.strictEndHourInput.value,
-        strictEndMinuteInput: this.strictEndMinuteInput.value,
-        strictEndTimeSelected: this.scope.strictEndTimeSelected,
-        durationInput: this.durationInput.value,
-        description: this.description,
-        maintenanceType: this.mTypeInput.value,
-        everyNDays: this.scope.everyNDays,
-        everyNWeeks: this.scope.everyNWeeks,
-        everyDayOfWeekInput: this.everyDayOfWeekInput.value,
-        selectedHosts: this.selectedHosts,
-        allHostsSelected: this.allHostsSelected,
-        monthlyWeekdays: this.scope.monthlyWeekdays,
-        dayOfMonth: this.scope.dayOfMonth,
-        dayOfMonthOrWeekSelected: this.scope.dayOfMonthOrWeekSelected.value,
-        months: this.scope.months,
-        weekdays: this.scope.weekdays,
-        preview: null,
-      });
-      this.updatePreview();
+      this.setState(
+        {
+          wizardPhase: 1,
+          searchText: '',
+          errorText: '',
+          dayInput: this.dayInput.value,
+          monthInput: this.monthInput.value,
+          yearInput: this.yearInput.value,
+          hourInput: this.hourInput.value,
+          minuteInput: this.minuteInput.value,
+          dayStopInput: this.dayStopInput.value,
+          monthStopInput: this.monthStopInput.value,
+          yearStopInput: this.yearStopInput.value,
+          strictEndDayInput: this.strictEndDayInput.value,
+          strictEndMonthInput: this.strictEndMonthInput.value,
+          strictEndYearInput: this.strictEndYearInput.value,
+          strictEndHourInput: this.strictEndHourInput.value,
+          strictEndMinuteInput: this.strictEndMinuteInput.value,
+          strictEndTimeSelected: this.scope.strictEndTimeSelected,
+          durationInput: this.durationInput.value,
+          description: this.description,
+          maintenanceType: this.mTypeInput.value,
+          everyNDays: this.scope.everyNDays,
+          everyNWeeks: this.scope.everyNWeeks,
+          everyDayOfWeekInput: this.everyDayOfWeekInput.value,
+          selectedHosts: this.selectedHosts,
+          allHostsSelected: this.allHostsSelected,
+          monthlyWeekdays: this.scope.monthlyWeekdays,
+          dayOfMonth: this.scope.dayOfMonth,
+          dayOfMonthOrWeekSelected: this.scope.dayOfMonthOrWeekSelected.value,
+          months: this.scope.months,
+          weekdays: this.scope.weekdays,
+          preview: null,
+        },
+        () => {
+          this.updatePreview();
+        }
+      );
     }
   }
 
@@ -369,7 +373,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                 .toDate();
 
               if (
-                moment(date).isAfter(moment(startDate)) &&
+                moment(date).isSameOrAfter(moment(startDate)) &&
                 moment(date).add(duration, 'second').isBefore(moment(stopDate))
               ) {
                 dates.push({
@@ -892,8 +896,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         stopDate,
         this.props.selectedMaintenance ? this.props.selectedMaintenance.id : null
       );
-      this.props.onDismiss();
+      this.onDismiss();
     }
+  };
+
+  onDismiss = () => {
+    this.init();
+    this.props.onDismiss();
   };
 
   /**
@@ -1161,6 +1170,17 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
       this.populateDaySelector(true);
     }
+  };
+
+  onStrictEndDayToggle = (value: any) => {
+    this.onStrictEndMinuteValueChanged(this.state.strictEndMinuteInput);
+    this.onStrictEndHourValueChanged(this.state.strictEndHourInput);
+    this.onStrictEndDayValueChanged(this.state.strictEndDayInput);
+    this.onStrictEndMonthValueChanged(this.state.strictEndMonthInput);
+    this.onStrictEndYearValueChanged(this.state.strictEndYearInput);
+    this.setState({ strictEndTimeSelected: value }, () => {
+      this.updatePreview();
+    });
   };
 
   onStrictEndMinuteValueChanged = (value: number) => {
@@ -1491,7 +1511,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   };
 
   render() {
-    const { show, onDismiss, selectedMaintenance, openAllMaintenancesModal } = this.props;
+    const { show, selectedMaintenance, openAllMaintenancesModal } = this.props;
     const {
       wizardPhase,
       maintenanceType,
@@ -1532,7 +1552,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
 
     return (
       <>
-        <Modal isOpen={show} title={title} onDismiss={onDismiss} className="modal modal-body">
+        <Modal isOpen={show} title={title} onDismiss={this.onDismiss} className="modal modal-body">
           <div>
             <div className="modal-content">
               {wizardPhase === 1 ? (
@@ -1917,7 +1937,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                             id="strict_end_time"
                             type="checkbox"
                             checked={strictEndTimeSelected}
-                            onChange={(e: any) => this.setState({ strictEndTimeSelected: e.target.checked })}
+                            onChange={(e) => this.onStrictEndDayToggle(e.target.checked)}
                           />
                           <label className="checkbox-label" htmlFor="strict_end_time">
                             {this.texts.setPreciseEndTime}
@@ -2016,7 +2036,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                         <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>
                           {this.texts.back}
                         </a>
-                        <a className="btn btn-secondary" onClick={() => onDismiss()}>
+                        <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
                           {this.texts.cancel}
                         </a>
                         <a className="btn btn-primary" onClick={() => this.goToNext()}>
@@ -2131,7 +2151,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                     <a className="btn btn-secondary" onClick={(e) => this.goToPrevious()}>
                       {this.texts.back}
                     </a>
-                    <a className="btn btn-secondary" onClick={(e) => onDismiss()}>
+                    <a className="btn btn-secondary" onClick={(e) => this.onDismiss()}>
                       {this.texts.cancel}
                     </a>
                     <a className="btn btn-primary" onClick={(e) => this.goToNext()}>
@@ -2240,7 +2260,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                     <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>
                       {this.texts.back}
                     </a>
-                    <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>
+                    <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
                       {this.texts.cancel}
                     </a>
                     <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>
