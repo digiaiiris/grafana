@@ -1173,11 +1173,22 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   };
 
   onStrictEndDayToggle = (value: any) => {
-    this.onStrictEndMinuteValueChanged(this.state.strictEndMinuteInput);
-    this.onStrictEndHourValueChanged(this.state.strictEndHourInput);
-    this.onStrictEndDayValueChanged(this.state.strictEndDayInput);
-    this.onStrictEndMonthValueChanged(this.state.strictEndMonthInput);
-    this.onStrictEndYearValueChanged(this.state.strictEndYearInput);
+    const currentDate = new Date(
+      this.state.yearInput,
+      this.state.monthInput,
+      this.state.dayInput,
+      parseInt(this.state.hourInput, 10),
+      parseInt(this.state.minuteInput, 10)
+    );
+
+    const strictEndTimeDate = moment(currentDate).add(1, 'hours').toDate();
+
+    this.onStrictEndMinuteValueChanged(strictEndTimeDate.getMinutes());
+    this.onStrictEndHourValueChanged(strictEndTimeDate.getHours());
+    this.onStrictEndDayValueChanged(strictEndTimeDate.getDate());
+    this.onStrictEndMonthValueChanged(strictEndTimeDate.getMonth());
+    this.onStrictEndYearValueChanged(strictEndTimeDate.getFullYear());
+
     this.setState({ strictEndTimeSelected: value }, () => {
       this.updatePreview();
     });
