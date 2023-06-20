@@ -1177,8 +1177,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       this.state.yearInput,
       this.state.monthInput,
       this.state.dayInput,
-      parseInt(this.state.hourInput, 10),
-      parseInt(this.state.minuteInput, 10)
+      this.state.hourInput,
+      this.state.minuteInput
     );
 
     const strictEndTimeDate = moment(currentDate).add(1, 'hours').toDate();
