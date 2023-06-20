@@ -87,6 +87,7 @@ export class DashboardModel implements TimeModel {
   serviceInfoWikiUrlIsExternal: boolean;
   hideIirisBreadcrumb: boolean;
   hideGrafanaTopBar: boolean;
+  transparentBackground: boolean;
   dashboardLogo: string;
   id: any;
   uid: string;
@@ -163,6 +164,7 @@ export class DashboardModel implements TimeModel {
     this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
     this.hideIirisBreadcrumb = data.hideIirisBreadcrumb;
     this.hideGrafanaTopBar = data.hideGrafanaTopBar;
+    this.transparentBackground = data.transparentBackground;
     this.dashboardLogo = data.dashboardLogo;
     this.autoUpdate = data.autoUpdate;
     this.description = data.description;
@@ -602,7 +604,12 @@ export class DashboardModel implements TimeModel {
       const panel = this.panels[i];
       /* eslint-disable */
       /* tslint:disable */
-      if ((!panel.repeat || panel.repeatedByRow) && panel.repeatPanelId && panel.repeatIteration !== this.iteration && !panel.isTabPanel) {
+      if (
+        (!panel.repeat || panel.repeatedByRow) &&
+        panel.repeatPanelId &&
+        panel.repeatIteration !== this.iteration &&
+        !panel.isTabPanel
+      ) {
         panelsToRemove.push(panel);
       }
     }
