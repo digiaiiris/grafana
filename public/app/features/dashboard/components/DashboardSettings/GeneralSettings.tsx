@@ -7,13 +7,13 @@ import { config } from '@grafana/runtime';
 import { CollapsableSection, Field, Input, RadioButtonGroup, TagsInput, Select, Switch } from '@grafana/ui';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
 import { updateTimeZoneDashboard, updateWeekStartDashboard } from 'app/features/dashboard/state/actions';
+import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
 import { DashboardModel } from '../../state/DashboardModel';
 import { DeleteDashboardButton } from '../DeleteDashboard/DeleteDashboardButton';
 
 import { PreviewSettings } from './PreviewSettings';
 import { TimePickerSettings } from './TimePickerSettings';
-import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
 interface OwnProps {
   dashboard: DashboardModel;
@@ -44,33 +44,28 @@ const getZabbix = (availableDatasources: string[], datasourceSrv: any) => {
         .catch((err: any) => {
           reject(err);
         });
-      } else {
-        reject('');
-      }
+    } else {
+      reject('');
+    }
   }) as any;
-}
+};
 
 const getHostGroups = (availableDatasources: string[], datasourceSrv: any) => {
   return new Promise<any>((resolve: any, reject: any) => {
     getZabbix(availableDatasources, datasourceSrv)
       .then((zabbix: any) => {
         // Get all host group ids
-        zabbix.getAllGroups()
-          .then((groups: any) => {
-            resolve(groups.map((group: any) => group.name));
-          });
+        zabbix.getAllGroups().then((groups: any) => {
+          resolve(groups.map((group: any) => group.name));
+        });
       })
       .catch((err: any) => {
         reject(err);
       });
   }) as any;
-}
+};
 
-export function GeneralSettingsUnconnected({
-  dashboard,
-  updateTimeZone,
-  updateWeekStart,
-}: Props): JSX.Element {
+export function GeneralSettingsUnconnected({ dashboard, updateTimeZone, updateWeekStart }: Props): JSX.Element {
   const [renderCounter, setRenderCounter] = useState(0);
   const [datasourceOptions, setDatasourceOptions] = useState<string[]>([]);
   const [hostGroupOptions, setHostGroupOptions] = useState<string[]>([]);
@@ -156,13 +151,12 @@ export function GeneralSettingsUnconnected({
             setHostGroupOptions([]);
           });
       }
-    }
-    else {
+    } else {
       dashboard.selectedDatasource = '';
       dashboard.maintenanceHostGroup = '';
       setRenderCounter(renderCounter + 1);
       setHostGroupOptions([]);
-    };
+    }
   };
 
   const onMaintenanceHostGroupChange = (hostgroup: any) => {
@@ -185,6 +179,11 @@ export function GeneralSettingsUnconnected({
     setRenderCounter(renderCounter + 1);
   };
 
+  const onTransparentBackgroundChange = (event: any) => {
+    dashboard.transparentBackground = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const editableOptions = [
     { label: 'Editable', value: true },
     { label: 'Read-only', value: false },
@@ -204,7 +203,7 @@ export function GeneralSettingsUnconnected({
             value={dashboard.selectedDatasource}
             onChange={onMaintenanceDatasourceChange}
             isClearable={true}
-        />
+          />
         </Field>
         <Field label="Maintenance Host Group">
           <Select
@@ -219,7 +218,12 @@ export function GeneralSettingsUnconnected({
           <Input id="dashboardLogo-input" name="dashboardLogo" onBlur={onBlur} defaultValue={dashboard.dashboardLogo} />
         </Field>
         <Field label="Service Info Wiki URL">
-          <Input id="serviceInfoWikiUrl-input" name="serviceInfoWikiUrl" onBlur={onBlur} defaultValue={dashboard.serviceInfoWikiUrl} />
+          <Input
+            id="serviceInfoWikiUrl-input"
+            name="serviceInfoWikiUrl"
+            onBlur={onBlur}
+            defaultValue={dashboard.serviceInfoWikiUrl}
+          />
         </Field>
         <Field label="Service Info Wiki URL is External">
           <Switch
@@ -240,6 +244,13 @@ export function GeneralSettingsUnconnected({
             id="hideGrafanaTopBar-toggle"
             value={!!dashboard.hideGrafanaTopBar}
             onChange={onHideGrafanaTopBarChange}
+          />
+        </Field>
+        <Field label="Set Dashboard Background To Transparent">
+          <Switch
+            id="transparentBackground-toggle"
+            value={!!dashboard.transparentBackground}
+            onChange={onTransparentBackgroundChange}
           />
         </Field>
         <Field label="Name">
