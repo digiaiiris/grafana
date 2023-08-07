@@ -56,6 +56,10 @@ header .page-toolbar {
   background: $page-background-color;
 }
 
+.iiris-transparent-background.page-dashboard.theme-light .grafana-app .main-view {
+  background: transparent;
+}
+
 // Hide unnecessary parts of Grafana top bar
 .navbar .navbar-brand-btn,
 .navbar .navbar-page-btn .icon-gf,
@@ -171,6 +175,10 @@ header .page-toolbar .toolbar-button {
 body.page-dashboard {
   font-family: $text-font-family;
   background-color: $page-background-color;
+}
+
+body.iiris-transparent-background.page-dashboard.theme-light {
+  background: transparent;
 }
 
 .theme-light {
