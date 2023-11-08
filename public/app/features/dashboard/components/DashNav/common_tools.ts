@@ -172,66 +172,12 @@ export function getZabbix(availableDatasources: string[], datasourceSrv: any) {
 }
 
 /**
- * Get all host group names and ids from Zabbix
- * @returns {Promise}
- */
-export function getHostGroups(hostGroup: string, availableDatasources: string[], datasourceSrv: any) {
-  return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv)
-      .then((zabbix: any) => {
-        // Get all host group ids
-        zabbix
-          .getAllGroups()
-          .then((groups: any) => {
-            // Find id with host name
-            const groupInfo = _.find(groups, { name: hostGroup }) as any;
-            if (groupInfo) {
-              const groupId = groupInfo.groupid;
-              resolve(groupId);
-            } else {
-              reject('');
-            }
-          })
-          .catch((err: any) => {
-            reject(err);
-          });
-      })
-      .catch((err: any) => {
-        reject(err);
-      });
-  });
-}
-
-/**
- * Get all host names and ids in a group from Zabbix
- * @returns {Promise}
- */
-export function getHostsFromGroup(groupId: string, availableDatasources: string[], datasourceSrv: any) {
-  return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv).then((zabbix: any) => {
-      // Get all host ids
-      zabbix.zabbixAPI
-        .request('host.get', {
-          groupids: [groupId],
-          output: ['hostid', 'name', 'status'],
-        })
-        .then((hosts: any) => {
-          resolve(hosts);
-        })
-        .catch((err: any) => {
-          reject(err);
-        });
-    });
-  });
-}
-
-/**
  * Get all maintenances from Zabbix
  * @returns {Promise}
  */
 export function getMaintenances(
   hostIds: string[],
-  groupIds: string[],
+  groupIds: number[] | undefined,
   availableDatasources: string[],
   datasourceSrv: any,
   oneUpcomingMaintenance?: boolean
