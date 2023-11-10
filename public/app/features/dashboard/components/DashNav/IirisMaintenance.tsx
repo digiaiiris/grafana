@@ -50,11 +50,11 @@ class IirisMaintenance extends PureComponent<Props, State> {
   /* eslint-disable */
   /* tslint:disable */
   hosts: any;
-  hostGroup: any;
   availableDatasources: any;
   datasourceSrv: any;
   modalScope: any;
   listModalScope: any;
+  groupIds: number[] | undefined;
   hostIds: any;
   ongoingMaintenances: any;
   error: any;
@@ -125,17 +125,16 @@ class IirisMaintenance extends PureComponent<Props, State> {
         .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
         .map((ds: any) => ds.name);
     }
-    if (loadAllHosts) {
-      this.hostGroup = null;
-    } else {
+    var hostGroupName:string;
+    if (!loadAllHosts) {
       if (givenHostGroup) {
         // Host group name comes from action panel configuration (user clicked the maintenance icon of the action panel)
-        this.hostGroup = givenHostGroup;
+        hostGroupName = givenHostGroup;
       } else {
         // Host group name comes from dashboard configuration (user clicked the maintenance icon on the dashboard nav bar)
-        this.hostGroup = dashboard.maintenanceHostGroup;
+        hostGroupName = dashboard.maintenanceHostGroup;
       }
-      this.hostGroup = replaceTemplateVars(this.hostGroup, templateSrv);
+      hostGroupName = replaceTemplateVars(hostGroupName, templateSrv);
     }
     this.hosts = {
       selected: {},
@@ -153,9 +152,9 @@ class IirisMaintenance extends PureComponent<Props, State> {
         groupIds = undefined;
         p = Promise.resolve();
       } else {
-        p = this.getNestedHostGroups(this.hostGroup, zabbix.zabbixAPI).then((groupIds) => {
+        p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((groupIds) => {
           if (groupIds.length == 0) {
-            throw new Error("Configuration error: No host groups found with name: " + this.hostGroup);
+            throw new Error("Configuration error: No host groups found with name: " + hostGroupName);
           }
           groupIds = groupIds;  
         });
@@ -163,14 +162,15 @@ class IirisMaintenance extends PureComponent<Props, State> {
       return p.then(() => {
         // Find the hosts
         var hostQuery:any = {
-          output: ['hostid', 'name', 'status']
+          output: ['hostid', 'name', 'status'],
+          filter: {
+            status: 0   // Only enabled hosts
+          }
         };
         if (!loadAllHosts) {
           hostQuery.groupIds = groupIds;
         }
-        return zabbix.zabbixAPI.request('host.get', hostQuery).then((hostData:any) => {
-          // Filter out enabled hosts
-          var hosts:any[] = hostData.filter((host:any) => host.status === '0');
+        return zabbix.zabbixAPI.request('host.get', hostQuery).then((hosts: any[]) => {
 
           if (!loadAllHosts) {
             // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
@@ -184,9 +184,11 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
           this.setState({ hosts: this.hosts.options });
           this.hostIds = hosts.map((host: any) => host.hostid);
+          this.groupIds = groupIds;
           this.getMaintenanceList(this.hostIds, groupIds);
           this.clearHostSelection();
 
+          // Everything has been loaded, show the modal screen
           this.openAllMaintenancesModal();
         });
       });
@@ -388,7 +390,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
       this.openConfirmMaintenanceModal(infoText);
     } else {
       setTimeout(() => {
-        this.getMaintenanceList(this.hostIds, this.groupId);    // TBD MULTIPLE GROUPS
+        this.getMaintenanceList(this.hostIds, this.groupIds);
         appEvents.emit(AppEvents.alertSuccess, [infoText]);
       }, 1000);
     }
