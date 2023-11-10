@@ -162,7 +162,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
       return p.then(() => {
         // Find the hosts
         var hostQuery:any = {
-          output: ['hostid', 'name', 'status'],
+          output: ['hostid', 'name'],
           filter: {
             status: 0   // Only enabled hosts
           }
@@ -179,7 +179,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
           // Sort
           this.hosts.options = hosts
-          .map((host: any) => ({ text: host.host, value: host.hostid }))
+          .map((host: any) => ({ text: host.name, value: host.hostid }))
           .sort(this.sortHostNames);
 
           this.setState({ hosts: this.hosts.options });
