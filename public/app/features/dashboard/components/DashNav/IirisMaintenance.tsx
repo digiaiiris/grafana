@@ -94,7 +94,9 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
       return zabbixAPI.request('hostgroup.get', {
         'filter': {
-          'search': hostGroupName + '/*',
+          'search': {
+            name: hostGroupName + '/*'
+          },
           'searchWildcardsEnabled': true
         }
       }).then((nestedGroups:any) => {
