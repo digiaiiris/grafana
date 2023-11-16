@@ -152,11 +152,11 @@ class IirisMaintenance extends PureComponent<Props, State> {
         groupIds = undefined;
         p = Promise.resolve();
       } else {
-        p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((groupIds) => {
-          if (groupIds.length == 0) {
+        p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((fetchedGroupIds) => {
+          if (fetchedGroupIds.length == 0) {
             throw new Error("Configuration error: No host groups found with name: " + hostGroupName);
           }
-          groupIds = groupIds;  
+          groupIds = fetchedGroupIds;  
         });
       }
       return p.then(() => {
