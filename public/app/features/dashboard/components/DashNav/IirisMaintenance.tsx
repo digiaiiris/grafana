@@ -168,7 +168,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
           }
         };
         if (!loadAllHosts) {
-          hostQuery.groupIds = groupIds;
+          hostQuery.groupids = groupIds;
         }
         return zabbix.zabbixAPI.request('host.get', hostQuery).then((hosts: any[]) => {
 
