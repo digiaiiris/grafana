@@ -313,6 +313,36 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   handleFormChange = () => {
     this.setState({ preview: null }, () => {
       this.updatePreview();
+
+      const currentDate = new Date(
+        this.state.yearInput,
+        this.state.monthInput - 1,
+        this.state.dayInput,
+        this.state.hourInput,
+        this.state.minuteInput
+      );
+
+      const currentStrictDate = new Date(
+        this.state.strictEndYearInput,
+        this.state.strictEndMonthInput - 1,
+        this.state.strictEndDayInput,
+        this.state.strictEndHourInput,
+        this.state.strictEndMinuteInput
+      );
+
+      // Adjust end time if strict end time is not selected or strict time is less than
+      // current date
+      if (this.state.strictEndTimeSelected === false || currentStrictDate < currentDate) {
+        const strictEndTimeDate = moment(currentDate).add(1, 'hours').toDate();
+
+        this.onStrictEndMinuteValueChanged(strictEndTimeDate.getMinutes());
+        this.onStrictEndHourValueChanged(strictEndTimeDate.getHours());
+        this.onStrictEndDayValueChanged(strictEndTimeDate.getDate());
+        this.onStrictEndMonthValueChanged(strictEndTimeDate.getMonth() + 1);
+        this.onStrictEndYearValueChanged(strictEndTimeDate.getFullYear());
+
+        this.setStrictEndTimeDate(strictEndTimeDate);
+      }
     });
   };
 

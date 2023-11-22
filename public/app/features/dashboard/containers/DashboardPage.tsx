@@ -201,6 +201,11 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
       document.body.classList.add('iiris-hide-grafana-top-bar');
     }
 
+    // Add CSS class for transparent background
+    if (this.props.dashboard && this.props.dashboard.transparentBackground) {
+      document.body.classList.add('iiris-transparent-background');
+    }
+
     // Update breadcrumb when dashboard is loaded
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
       const db = this.props.dashboard;
