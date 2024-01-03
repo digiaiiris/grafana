@@ -30,21 +30,41 @@ interface State {
   dayOfMonth: number;
   monthlyWeekdays: any;
   everyDayOfWeekInput: number;
+
+  // For single maintenance: maintenance start date
+  // For repeating maintenance: repeat start date
   dayInput: number;
   monthInput: number;
   yearInput: number;
+
+  // Maintenance start time (either for the single maintenance or the repeating maintenance)
   hourInput: number;
   minuteInput: number;
+
+  // For single maintenance: maintenance end date
+  // For repeating maintenance: repeate end date
   dayStopInput: number;
   monthStopInput: number;
   yearStopInput: number;
+
+  // For single maintenance: Maintenance end date
+  // For repeating maintenance: N/A
   strictEndDayInput: number;
   strictEndMonthInput: number;
   strictEndYearInput: number;
+
+  // Maintenance end time (either for the single maintenance or the repeating maintenance)
+  // If strictEndTimeSelected is false and the duration is given with durationInput
+  // these fields are set automatically according to the configured duration.
   strictEndHourInput: number;
   strictEndMinuteInput: number;
+
+  // True if end time is selected manually, false if duration is selected
   strictEndTimeSelected: boolean;
+
+  // Duration of the maintenance; valid if strictEndTimeSelected is false
   durationInput: number;
+
   errorText: string;
   description: string;
   searchText: string;
@@ -180,6 +200,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   maintenanceType: any;
   displayStartDate: any;
   displayStopDate: any;
+  displayRepeatStartDate: any;
   displayRepeatStopDate: any;
   displayHosts: any;
   displayWeeklyDays: any;
@@ -1485,21 +1506,45 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       if (valid) {
         this.scope.wizardPhase = 3;
         this.setState({ wizardPhase: 3 });
-        this.displayStartDate = moment(
-          new Date(
-            this.yearInput.value,
-            this.monthInput.value - 1,
-            this.dayInput.value,
-            parseInt(this.hourInput.value, 10),
-            parseInt(this.minuteInput.value, 10)
-          )
-        ).format('DD.MM.YYYY HH:mm');
-        this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
-        this.displayRepeatStopDate = moment(
-          new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
-        )
-          .endOf('day')
-          .format('DD.MM.YYYY HH:mm');
+
+        // Format maintenance dates for the summary phase
+        if (maintenanceType === '0') {
+          this.displayStartDate = moment(
+            new Date(
+              this.yearInput.value,
+              this.monthInput.value - 1,
+              this.dayInput.value,
+              parseInt(this.hourInput.value, 10),
+              parseInt(this.minuteInput.value, 10)
+            )
+          ).format('DD.MM.YYYY HH:mm');
+          this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
+        } else {
+          // Repeat start and end dates don't have hours or minutes
+          this.displayRepeatStopDate = moment(
+            new Date(this.yearInput.value, this.monthInput.value - 1, this.dayInput.value)
+          ).format('DD.MM.YYYY');
+          this.displayRepeatStopDate = moment(
+            new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
+          ).format('DD.MM.YYYY');
+
+          // Show time (without date) when the repeating maintenance starts
+          var hourWithLeadingZeros = '00' + this.hourInput.value;
+          var minutesWithLeadingZeros = '00' + this.minuteInput.value;
+          this.displayStartDate =
+            hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+            ':' +
+            minutesWithLeadingZeros.substring(hourWithLeadingZeros.length - 2);
+
+          // Show time (without date) when the repeating maintenance ends
+          hourWithLeadingZeros = '00' + this.strictEndHourInput.value;
+          minutesWithLeadingZeros = '00' + this.strictEndMinuteInput.value;
+          this.displayStopDate =
+            hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+            ':' +
+            minutesWithLeadingZeros.substring(hourWithLeadingZeros.length - 2);
+        }
+
         this.displayHosts = '';
         this.state.selectedHosts.forEach((option: any) => {
           if (option.selected) {
@@ -2110,7 +2155,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
           <div className="date-selection-row">
             {/* Hour input */}
-            <div className="date-selection-container hour-input">
+            <div className="date-selection-container">
               <div>{this.texts.hour}</div>
               <div className="gf-form-select-wrapper">
                 <select
@@ -2151,18 +2196,24 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         {!this.state.strictEndTimeSelected && (
           <div className="iiris-modal-column">
             <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
-            <div className="gf-form-select-wrapper iiris-fixed-width-select">
-              <select
-                className="gf-form-input"
-                value={this.state.durationInput}
-                onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
-              >
-                {this.durationInput.options.map((option: any) => (
-                  <option value={option.value} key={option.value}>
-                    {option.text}
-                  </option>
-                ))}
-              </select>
+            {/* date-selection-row and date-selection-container are used to vertically align duration with maintenance start time */}
+            <div className="date-selection-row">
+              <div className="date-selection-container">
+                <div>&nbsp;</div>
+                <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.durationInput}
+                    onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.durationInput.options.map((option: any) => (
+                      <option value={option.value} key={option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -2172,7 +2223,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           <div className="iiris-modal-column">
             <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
             <div className="date-selection-row">
-              <div className="date-selection-container hour-input">
+              <div className="date-selection-container">
                 <div>{this.texts.hour}</div>
                 <div className="gf-form-select-wrapper">
                   <select
@@ -2527,7 +2578,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             </div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.repeatStarts}</div>
-              <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStartDate}</div>
             </div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEnds}</div>
