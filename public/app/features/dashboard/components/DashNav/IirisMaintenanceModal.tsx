@@ -1521,7 +1521,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
         } else {
           // Repeat start and end dates don't have hours or minutes
-          this.displayRepeatStopDate = moment(
+          this.displayRepeatStartDate = moment(
             new Date(this.yearInput.value, this.monthInput.value - 1, this.dayInput.value)
           ).format('DD.MM.YYYY');
           this.displayRepeatStopDate = moment(
@@ -1534,15 +1534,30 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           this.displayStartDate =
             hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
             ':' +
-            minutesWithLeadingZeros.substring(hourWithLeadingZeros.length - 2);
+            minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
 
           // Show time (without date) when the repeating maintenance ends
-          hourWithLeadingZeros = '00' + this.strictEndHourInput.value;
-          minutesWithLeadingZeros = '00' + this.strictEndMinuteInput.value;
-          this.displayStopDate =
-            hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
-            ':' +
-            minutesWithLeadingZeros.substring(hourWithLeadingZeros.length - 2);
+          if (this.state.strictEndTimeSelected) {
+            // User has selected strict hour and minute
+            hourWithLeadingZeros = '00' + this.strictEndHourInput.value;
+            minutesWithLeadingZeros = '00' + this.strictEndMinuteInput.value;
+            this.displayStopDate =
+              hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+              ':' +
+              minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
+          } else {
+            // User has selected duration; use moment to calculate hour and minute
+            // The date used in this calculation is quite absurd (start date of the repeat period)
+            const currentDate = new Date(
+              this.yearInput.value,
+              this.monthInput.value - 1,
+              this.dayInput.value,
+              parseInt(this.hourInput.value, 10),
+              parseInt(this.minuteInput.value, 10)
+            );
+            let endTimeDate = moment(currentDate).add(this.durationInput.value, 'second');
+            this.displayStopDate = endTimeDate.format('HH:mm');
+          }
         }
 
         this.displayHosts = '';
