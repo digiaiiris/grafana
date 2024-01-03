@@ -13,12 +13,7 @@ import { DashboardModel } from '../../state';
 import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
 import { IirisMaintenanceModal } from './IirisMaintenanceModal';
-import {
-  replaceTemplateVars,
-  getZabbix,
-  getMaintenances,
-  getOngoingMaintenances,
-} from './common_tools';
+import { replaceTemplateVars, getZabbix, getMaintenances, getOngoingMaintenances } from './common_tools';
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -81,29 +76,33 @@ class IirisMaintenance extends PureComponent<Props, State> {
   getNestedHostGroups = async (hostGroupName: string, zabbixAPI: any) => {
     // Find find all the host groups that either match the name directly or are nested groups of it
     // This must be done with two subsequent queries since Zabbix API does not support searching for them with one query
-    var ids:number[] = [];
-    return zabbixAPI.request('hostgroup.get', {
-      'filter': {
-        'name': hostGroupName
-      }
-    }).then((groupData:any) => {
-      // It is possible that there is not group with the actual configure name; only nested groups => length may be zero
-      if (groupData.length > 0) {
-        ids.push(groupData[0].groupid);
-      }
-
-      return zabbixAPI.request('hostgroup.get', {
-        'search': {
-          'name': hostGroupName + '/*'
+    var ids: number[] = [];
+    return zabbixAPI
+      .request('hostgroup.get', {
+        filter: {
+          name: hostGroupName,
         },
-        'searchWildcardsEnabled': true
-      }).then((nestedGroups:any) => {
-        for (var idx = 0; idx < nestedGroups.length; idx++) {
-          ids.push(nestedGroups[idx].groupid);
+      })
+      .then((groupData: any) => {
+        // It is possible that there is not group with the actual configure name; only nested groups => length may be zero
+        if (groupData.length > 0) {
+          ids.push(groupData[0].groupid);
         }
-        return ids;
+
+        return zabbixAPI
+          .request('hostgroup.get', {
+            search: {
+              name: hostGroupName + '/*',
+            },
+            searchWildcardsEnabled: true,
+          })
+          .then((nestedGroups: any) => {
+            for (var idx = 0; idx < nestedGroups.length; idx++) {
+              ids.push(nestedGroups[idx].groupid);
+            }
+            return ids;
+          });
       });
-    });
   };
 
   onOpenMaintenanceDialog = (loadAllHosts?: boolean, givenHostGroup?: string, givenDataSources?: string[]) => {
@@ -125,7 +124,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
         .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
         .map((ds: any) => ds.name);
     }
-    var hostGroupName:string;
+    var hostGroupName: string;
     if (!loadAllHosts) {
       if (givenHostGroup) {
         // Host group name comes from action panel configuration (user clicked the maintenance icon of the action panel)
@@ -143,59 +142,58 @@ class IirisMaintenance extends PureComponent<Props, State> {
     };
 
     // Get Zabbix data source for Zabbix API queries
-    getZabbix(this.availableDatasources, this.datasourceSrv).then((zabbix: any) => {
-
-      // Find out host group ids if not showing all hosts
-      var p:Promise<any>;
-      var groupIds: number[] | undefined;
-      if (loadAllHosts) {
-        groupIds = undefined;
-        p = Promise.resolve();
-      } else {
-        p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((fetchedGroupIds) => {
-          if (fetchedGroupIds.length == 0) {
-            throw new Error("Configuration error: No host groups found with name: " + hostGroupName);
-          }
-          groupIds = fetchedGroupIds;  
-        });
-      }
-      return p.then(() => {
-        // Find the hosts
-        var hostQuery:any = {
-          output: ['hostid', 'name'],
-          filter: {
-            status: 0   // Only enabled hosts
-          }
-        };
-        if (!loadAllHosts) {
-          hostQuery.groupids = groupIds;
+    getZabbix(this.availableDatasources, this.datasourceSrv)
+      .then((zabbix: any) => {
+        // Find out host group ids if not showing all hosts
+        var p: Promise<any>;
+        var groupIds: number[] | undefined;
+        if (loadAllHosts) {
+          groupIds = undefined;
+          p = Promise.resolve();
+        } else {
+          p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((fetchedGroupIds) => {
+            if (fetchedGroupIds.length == 0) {
+              throw new Error('Configuration error: No host groups found with name: ' + hostGroupName);
+            }
+            groupIds = fetchedGroupIds;
+          });
         }
-        return zabbix.zabbixAPI.request('host.get', hostQuery).then((hosts: any[]) => {
-
+        return p.then(() => {
+          // Find the hosts
+          var hostQuery: any = {
+            output: ['hostid', 'name'],
+            filter: {
+              status: 0, // Only enabled hosts
+            },
+          };
           if (!loadAllHosts) {
-            // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-            hosts = hosts.filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name));
+            hostQuery.groupids = groupIds;
           }
+          return zabbix.zabbixAPI.request('host.get', hostQuery).then((hosts: any[]) => {
+            if (!loadAllHosts) {
+              // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
+              hosts = hosts.filter((host: any) => !/[-_.](sla|SLA)$/.test(host.name));
+            }
 
-          // Sort
-          this.hosts.options = hosts
-          .map((host: any) => ({ text: host.name, value: host.hostid }))
-          .sort(this.sortHostNames);
+            // Sort
+            this.hosts.options = hosts
+              .map((host: any) => ({ text: host.name, value: host.hostid }))
+              .sort(this.sortHostNames);
 
-          this.setState({ hosts: this.hosts.options });
-          this.hostIds = hosts.map((host: any) => host.hostid);
-          this.groupIds = groupIds;
-          this.getMaintenanceList(this.hostIds, groupIds);
-          this.clearHostSelection();
+            this.setState({ hosts: this.hosts.options });
+            this.hostIds = hosts.map((host: any) => host.hostid);
+            this.groupIds = groupIds;
+            this.getMaintenanceList(this.hostIds, groupIds);
+            this.clearHostSelection();
 
-          // Everything has been loaded, show the modal screen
-          this.openAllMaintenancesModal();
+            // Everything has been loaded, show the modal screen
+            this.openAllMaintenancesModal();
+          });
         });
+      })
+      .catch((err: any) => {
+        this.handleError(err);
       });
-    })
-    .catch((err: any) => {
-      this.handleError(err);
-    });
   };
 
   /**
@@ -293,25 +291,6 @@ class IirisMaintenance extends PureComponent<Props, State> {
       .catch((err: any) => {
         this.handleError(err);
       });
-  };
-
-  /**
-   * Callback for clicking wiki icon
-   */
-  onOpenWikiPage = () => {
-    const { dashboard } = this.props;
-    if (dashboard.serviceInfoWikiUrlIsExternal) {
-      // Navigate directly to given URL
-      window.open(dashboard.serviceInfoWikiUrl, '_blank');
-    } else {
-      // Tell parent window to navigate to given URL
-      const messageObj = {
-        relaytarget: 'wiki',
-        relayparams: dashboard.serviceInfoWikiUrl,
-      };
-      // eslint-disable-next-line
-      window.top?.postMessage(messageObj, '*');
-    }
   };
 
   /**

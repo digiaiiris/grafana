@@ -1551,6 +1551,228 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.setState({ wizardPhase: this.state.wizardPhase - 1 });
   };
 
+  /**
+   * For repeating maintenances, render the selection of how often the maintenance repeats.
+   * Daily maintenance: Every N days
+   * Weekly maintenance: Every N weeks plus weekday(s) selection
+   * Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
+   */
+  renderRepeateSelection() {
+    if (this.state.maintenanceType === '2') {
+      // Daily maintenance: Every N days selection
+      return (
+        <div className="gf-form-group maintenance-row-container">
+          <label className="gf-form-label">{this.texts.repeatEveryNDays}</label>
+          <div>
+            <input
+              className="input-small gf-form-input iiris-fixed-width-select"
+              type="number"
+              value={this.state.everyNDays}
+              onChange={(e: any) => this.setState({ everyNDays: e.target.value })}
+              min="1"
+              step="1"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (this.state.maintenanceType === '3') {
+      // Weekly maintenance: Every N weeks selection and weekday selection
+      return (
+        <>
+          {/* Every N weeks selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatEveryNWeeks}</label>
+            <div>
+              <input
+                className="input-small gf-form-input iiris-fixed-width-select"
+                type="number"
+                value={this.state.everyNWeeks}
+                onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })}
+                min="1"
+                step="1"
+              />
+            </div>
+          </div>
+
+          {/* Weekday selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
+            <div className="checkbox-block">
+              {Object.keys(this.state.weekdays).map((day: string) => (
+                <div className="checkbox-container" key={day}>
+                  <input
+                    className="action-panel-cb"
+                    type="checkbox"
+                    checked={this.state.weekdays[day]}
+                    onChange={(e: any) =>
+                      this.setState({ weekdays: { ...this.state.weekdays, [day]: e.target.checked } })
+                    }
+                    id={day}
+                  />
+                  <label className="gf-form-label checkbox-label" htmlFor={day}>
+                    {this.weekdayNames[day]}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    if (this.state.maintenanceType === '4') {
+      // Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
+      return (
+        <>
+          {/* Month selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatOnMonth}</label>
+            <div className="checkbox-block">
+              {[0, 3, 6, 9].map((index) => (
+                <div className="checkbox-column" key={'col' + index}>
+                  {Object.keys(this.state.months)
+                    .slice(index, index + 3)
+                    .map((month) => (
+                      <div className="checkbox-container" key={month}>
+                        <input
+                          className="action-panel-cb"
+                          type="checkbox"
+                          checked={this.state.months[month]}
+                          onChange={(e: any) => this.toggleMonthSelection(month, e.target.checked)}
+                          id={month}
+                        />
+                        <label className="gf-form-label checkbox-label" htmlFor={month}>
+                          {this.monthNames[month]}
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              ))}
+              <div className="checkbox-column">
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="checkbox"
+                    checked={this.state.months.all}
+                    id="all"
+                    onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)}
+                  />
+                  <label className="gf-form-label checkbox-label width-8" htmlFor="all">
+                    {this.texts.selectAll}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Is it repeated Nth day of month or Nth weekday of month? */}
+          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+            <div className="iiris-modal-column">
+              <label className="gf-form-label iiris-radio-button-block">
+                {this.texts.repeatOn}
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="radio"
+                    name="monthtype"
+                    checked={this.state.dayOfMonthOrWeekSelected === MONTH}
+                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
+                    value={MONTH}
+                    id="dayOfMonthSelected"
+                  />
+                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">
+                    {this.texts.nthDayOfMonth}
+                  </label>
+                </div>
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="radio"
+                    name="monthtype"
+                    checked={this.state.dayOfMonthOrWeekSelected === WEEK}
+                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
+                    value={WEEK}
+                    id="dayOfWeekSelected"
+                  />
+                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">
+                    {this.texts.nthDayOfWeek}
+                  </label>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+            <div className="iiris-modal-column">
+              {/* Nth day of month selection */}
+              {this.state.dayOfMonthOrWeekSelected === MONTH ? (
+                <div className="gf-form-group">
+                  <label className="gf-form-label">{this.texts.repeatOnDayOfMonth}</label>
+                  <div>
+                    <input
+                      className="input-small gf-form-input iiris-fixed-width-select"
+                      type="number"
+                      value={this.state.dayOfMonth}
+                      onChange={(e) => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })}
+                      min="1"
+                      step="1"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Nth weekday(s) of month selection */}
+              {this.state.dayOfMonthOrWeekSelected === WEEK ? (
+                <div className="gf-form-group">
+                  <label className="gf-form-label">
+                    {this.texts.repeatOnDayOfWeek + ' ' + this.texts.secondTuesdayOfApril}
+                  </label>
+                  <div className="gf-form-select-wrapper">
+                    <select
+                      className="gf-form-input"
+                      value={this.state.everyDayOfWeekInput}
+                      onChange={(e) => this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })}
+                    >
+                      {this.everyDayOfWeekInput.options.map((option: any) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="checkbox-block checkbox-top-spacer">
+                    {Object.keys(this.state.monthlyWeekdays).map((day: string) => (
+                      <div className="checkbox-container" key={'w' + day}>
+                        <input
+                          className="action-panel-cb"
+                          type="checkbox"
+                          checked={this.state.monthlyWeekdays[day]}
+                          onChange={(e: any) =>
+                            this.setState({
+                              monthlyWeekdays: { ...this.state.monthlyWeekdays, [day]: e.target.checked },
+                            })
+                          }
+                          id={'w' + day}
+                        />
+                        <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>
+                          {this.weekdayNames[day]}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  }
+
   render() {
     const { show, selectedMaintenance, openAllMaintenancesModal } = this.props;
     const {
@@ -1558,12 +1780,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       maintenanceType,
       everyNDays,
       everyNWeeks,
-      weekdays,
-      months,
       dayOfMonthOrWeekSelected,
       dayOfMonth,
-      monthlyWeekdays,
-      everyDayOfWeekInput,
       dayInput,
       monthInput,
       yearInput,
@@ -1600,6 +1818,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                 <form onChange={this.handleFormChange}>
                   <div className="maintenance-column-wrapper">
                     <div className="maintenance-column-left">
+                      {/* Maintenance type */}
                       <div className="gf-form-group maintenance-row-container">
                         <label className="gf-form-label">{this.texts.maintenanceType}</label>
                         <div className="gf-form-select-wrapper iiris-fixed-width-select">
@@ -1616,200 +1835,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                           </select>
                         </div>
                       </div>
-                      {maintenanceType === '2' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatEveryNDays}</label>
-                          <div>
-                            <input
-                              className="input-small gf-form-input iiris-fixed-width-select"
-                              type="number"
-                              value={everyNDays}
-                              onChange={(e: any) => this.setState({ everyNDays: e.target.value })}
-                              min="1"
-                              step="1"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '3' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatEveryNWeeks}</label>
-                          <div>
-                            <input
-                              className="input-small gf-form-input iiris-fixed-width-select"
-                              type="number"
-                              value={everyNWeeks}
-                              onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })}
-                              min="1"
-                              step="1"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '3' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
-                          <div className="checkbox-block">
-                            {Object.keys(weekdays).map((day: string) => (
-                              <div className="checkbox-container" key={day}>
-                                <input
-                                  className="action-panel-cb"
-                                  type="checkbox"
-                                  checked={weekdays[day]}
-                                  onChange={(e: any) =>
-                                    this.setState({ weekdays: { ...weekdays, [day]: e.target.checked } })
-                                  }
-                                  id={day}
-                                />
-                                <label className="gf-form-label checkbox-label" htmlFor={day}>
-                                  {this.weekdayNames[day]}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '4' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatOnMonth}</label>
-                          <div className="checkbox-block">
-                            {[0, 3, 6, 9].map((index) => (
-                              <div className="checkbox-column" key={'col' + index}>
-                                {Object.keys(months)
-                                  .slice(index, index + 3)
-                                  .map((month) => (
-                                    <div className="checkbox-container" key={month}>
-                                      <input
-                                        className="action-panel-cb"
-                                        type="checkbox"
-                                        checked={months[month]}
-                                        onChange={(e: any) => this.toggleMonthSelection(month, e.target.checked)}
-                                        id={month}
-                                      />
-                                      <label className="gf-form-label checkbox-label" htmlFor={month}>
-                                        {this.monthNames[month]}
-                                      </label>
-                                    </div>
-                                  ))}
-                              </div>
-                            ))}
-                            <div className="checkbox-column">
-                              <div className="checkbox-container">
-                                <input
-                                  className="action-panel-cb"
-                                  type="checkbox"
-                                  checked={months.all}
-                                  id="all"
-                                  onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)}
-                                />
-                                <label className="gf-form-label checkbox-label width-8" htmlFor="all">
-                                  {this.texts.selectAll}
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '4' ? (
-                        <>
-                          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                            <div className="iiris-modal-column">
-                              <label className="gf-form-label iiris-radio-button-block">
-                                {this.texts.repeatOn}
-                                <div className="checkbox-container">
-                                  <input
-                                    className="action-panel-cb"
-                                    type="radio"
-                                    name="monthtype"
-                                    checked={dayOfMonthOrWeekSelected === MONTH}
-                                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
-                                    value={MONTH}
-                                    id="dayOfMonthSelected"
-                                  />
-                                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">
-                                    {this.texts.nthDayOfMonth}
-                                  </label>
-                                </div>
-                                <div className="checkbox-container">
-                                  <input
-                                    className="action-panel-cb"
-                                    type="radio"
-                                    name="monthtype"
-                                    checked={dayOfMonthOrWeekSelected === WEEK}
-                                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
-                                    value={WEEK}
-                                    id="dayOfWeekSelected"
-                                  />
-                                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">
-                                    {this.texts.nthDayOfWeek}
-                                  </label>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                            <div className="iiris-modal-column">
-                              {dayOfMonthOrWeekSelected === MONTH ? (
-                                <div className="gf-form-group">
-                                  <label className="gf-form-label">{this.texts.repeatOnDayOfMonth}</label>
-                                  <div>
-                                    <input
-                                      className="input-small gf-form-input iiris-fixed-width-select"
-                                      type="number"
-                                      value={dayOfMonth}
-                                      onChange={(e) => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })}
-                                      min="1"
-                                      step="1"
-                                    />
-                                  </div>
-                                </div>
-                              ) : null}
-                              {dayOfMonthOrWeekSelected === WEEK ? (
-                                <div className="gf-form-group">
-                                  <label className="gf-form-label">
-                                    {this.texts.repeatOnDayOfWeek + ' ' + this.texts.secondTuesdayOfApril}
-                                  </label>
-                                  <div className="gf-form-select-wrapper">
-                                    <select
-                                      className="gf-form-input"
-                                      value={everyDayOfWeekInput}
-                                      onChange={(e) =>
-                                        this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })
-                                      }
-                                    >
-                                      {this.everyDayOfWeekInput.options.map((option: any) => (
-                                        <option value={option.value} key={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div className="checkbox-block checkbox-top-spacer">
-                                    {Object.keys(monthlyWeekdays).map((day: string) => (
-                                      <div className="checkbox-container" key={'w' + day}>
-                                        <input
-                                          className="action-panel-cb"
-                                          type="checkbox"
-                                          checked={monthlyWeekdays[day]}
-                                          onChange={(e: any) =>
-                                            this.setState({
-                                              monthlyWeekdays: { ...monthlyWeekdays, [day]: e.target.checked },
-                                            })
-                                          }
-                                          id={'w' + day}
-                                        />
-                                        <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>
-                                          {this.weekdayNames[day]}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        </>
-                      ) : null}
+
+                      {/* Repeating maintenance: how often the maintenance repeats */}
+                      {maintenanceType !== '1' ? this.renderRepeateSelection() : null}
+
+                      {/* Maintenance start date & time */}
                       <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
                         <div className="iiris-modal-column">
                           <label className="gf-form-label">
