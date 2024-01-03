@@ -1778,93 +1778,91 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    */
   renderSingleMaintenanceStartDateTime() {
     return (
-      <>
-        <div className="iiris-modal-column">
-          <label className="gf-form-label">this.texts.maintenanceStartTime</label>
-          <div className="date-selection-row">
-            <div className="date-selection-container">
-              <div>{this.texts.day}</div>
-              <div className="gf-form-select-wrapper">
-                <select
-                  className="gf-form-input"
-                  value={this.state.dayInput}
-                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
-                >
-                  {this.dayInput.options.map((option: any) => (
-                    <option value={option.value} key={'d' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <div className="iiris-modal-column">
+        <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+        <div className="date-selection-row">
+          <div className="date-selection-container">
+            <div>{this.texts.day}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.dayInput}
+                onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.dayInput.options.map((option: any) => (
+                  <option value={option.value} key={'d' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="date-selection-container">
-              <div>{this.texts.month}</div>
-              <div className="gf-form-select-wrapper">
-                <select
-                  className="gf-form-input"
-                  value={this.state.monthInput}
-                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
-                >
-                  {this.monthInput.options.map((option: any) => (
-                    <option value={option.value} key={'m' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.month}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.monthInput}
+                onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.monthInput.options.map((option: any) => (
+                  <option value={option.value} key={'m' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="date-selection-container">
-              <div>{this.texts.year}</div>
-              <div className="gf-form-select-wrapper">
-                <select
-                  className="gf-form-input"
-                  value={this.state.yearInput}
-                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
-                >
-                  {this.yearInput.options.map((option: any) => (
-                    <option value={option.value} key={'y' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.year}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.yearInput}
+                onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.yearInput.options.map((option: any) => (
+                  <option value={option.value} key={'y' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="date-selection-container hour-input">
-              <div>{this.texts.hour}</div>
-              <div className="gf-form-select-wrapper">
-                <select
-                  className="gf-form-input"
-                  value={this.state.hourInput}
-                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
-                >
-                  {this.hourInput.options.map((option: any) => (
-                    <option value={option.value} key={'h' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          </div>
+          <div className="date-selection-container hour-input">
+            <div>{this.texts.hour}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.hourInput}
+                onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.hourInput.options.map((option: any) => (
+                  <option value={option.value} key={'h' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="date-selection-container">
-              <div>{this.texts.minute}</div>
-              <div className="gf-form-select-wrapper">
-                <select
-                  className="gf-form-input"
-                  value={this.state.minuteInput}
-                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
-                >
-                  {this.minuteInput.options.map((option: any) => (
-                    <option value={option.value} key={'mi' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.minute}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.minuteInput}
+                onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.minuteInput.options.map((option: any) => (
+                  <option value={option.value} key={'mi' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -1876,7 +1874,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     return (
       <>
         <div className="iiris-modal-column">
-          <label className="gf-form-label">this.texts.startRepeat</label>
+          <label className="gf-form-label">{this.texts.startRepeat}</label>
           <div className="date-selection-row">
             <div className="date-selection-container">
               <div>{this.texts.day}</div>
@@ -2102,6 +2100,117 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     );
   }
 
+  /**
+   * Render maintenance start time and duration for repeating maintenances
+   */
+  renderRepeatingMaintenanceStartTimeAndDuration() {
+    return (
+      <>
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+          <div className="date-selection-row">
+            {/* Hour input */}
+            <div className="date-selection-container hour-input">
+              <div>{this.texts.hour}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.hourInput}
+                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.hourInput.options.map((option: any) => (
+                    <option value={option.value} key={'h' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Minute input */}
+            <div className="date-selection-container">
+              <div>{this.texts.minute}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.minuteInput}
+                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.minuteInput.options.map((option: any) => (
+                    <option value={option.value} key={'mi' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Maintenance duration in hours */}
+        {!this.state.strictEndTimeSelected && (
+          <div className="iiris-modal-column">
+            <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
+            <div className="gf-form-select-wrapper iiris-fixed-width-select">
+              <select
+                className="gf-form-input"
+                value={this.state.durationInput}
+                onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.durationInput.options.map((option: any) => (
+                  <option value={option.value} key={option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Maintenance strict end time */}
+        {this.state.strictEndTimeSelected && (
+          <div className="iiris-modal-column">
+            <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
+            <div className="date-selection-row">
+              <div className="date-selection-container hour-input">
+                <div>{this.texts.hour}</div>
+                <div className="gf-form-select-wrapper">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.strictEndHourInput}
+                    onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.strictEndHourInput.options.map((option: any) => (
+                      <option value={option.value} key={'sh' + option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="date-selection-container">
+                <div>{this.texts.minute}</div>
+                <div className="gf-form-select-wrapper">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.strictEndMinuteInput}
+                    onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.strictEndMinuteInput.options.map((option: any) => (
+                      <option value={option.value} key={'smi' + option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   // Render maintenance create/edit wizard phase 1: Maintenance dates
   renderWizardPhase1() {
     return (
@@ -2137,9 +2246,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             </div>
 
             {/* Maintenance duration (or strict end time) */}
-            <div className="gf-form-group maintenance-row-container">
-              {this.state.maintenanceType === '0' ? this.renderSingleMaintenanceDuration() : null}
-            </div>
+            {this.state.maintenanceType === '0' ? (
+              <div className="gf-form-group maintenance-row-container">{this.renderSingleMaintenanceDuration()}</div>
+            ) : (
+              <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+                {this.renderRepeatingMaintenanceStartTimeAndDuration()}
+              </div>
+            )}
 
             {/* Selection of whether the end time is strictly defined instead of a duration */}
             <div className="gf-form-group maintenance-row-container">
