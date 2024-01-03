@@ -1773,6 +1773,219 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     return null;
   }
 
+  /**
+   * Render maintenance start date & time for single (non-repeating) maintenances
+   */
+  renderSingleMaintenanceStartDateTime() {
+    return (
+      <>
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">this.texts.maintenanceStartTime</label>
+          <div className="date-selection-row">
+            <div className="date-selection-container">
+              <div>{this.texts.day}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.dayInput}
+                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.dayInput.options.map((option: any) => (
+                    <option value={option.value} key={'d' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.month}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.monthInput}
+                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.monthInput.options.map((option: any) => (
+                    <option value={option.value} key={'m' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.year}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.yearInput}
+                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.yearInput.options.map((option: any) => (
+                    <option value={option.value} key={'y' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container hour-input">
+              <div>{this.texts.hour}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.hourInput}
+                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.hourInput.options.map((option: any) => (
+                    <option value={option.value} key={'h' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.minute}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.minuteInput}
+                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.minuteInput.options.map((option: any) => (
+                    <option value={option.value} key={'mi' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  /**
+   * Render maintenance start and stop dates repeating maintenances.
+   * This is the dates between which the maintenance will be repeated.
+   */
+  renderRepeatingMaintenanceStartAndStopDates() {
+    return (
+      <>
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">this.texts.startRepeat</label>
+          <div className="date-selection-row">
+            <div className="date-selection-container">
+              <div>{this.texts.day}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.dayInput}
+                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.dayInput.options.map((option: any) => (
+                    <option value={option.value} key={'d' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.month}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.monthInput}
+                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.monthInput.options.map((option: any) => (
+                    <option value={option.value} key={'m' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.year}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.yearInput}
+                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.yearInput.options.map((option: any) => (
+                    <option value={option.value} key={'y' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">{this.texts.endRepeat}</label>
+          <div className="date-selection-row">
+            <div className="date-selection-container">
+              <div>{this.texts.day}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.dayStopInput}
+                  onChange={(e) => this.onDayStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.dayStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ds' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.month}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.monthStopInput}
+                  onChange={(e) => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.monthStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ms' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.year}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.yearStopInput}
+                  onChange={(e) => this.onYearStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.yearStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ys' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   render() {
     const { show, selectedMaintenance, openAllMaintenancesModal } = this.props;
     const {
@@ -1782,14 +1995,6 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       everyNWeeks,
       dayOfMonthOrWeekSelected,
       dayOfMonth,
-      dayInput,
-      monthInput,
-      yearInput,
-      hourInput,
-      minuteInput,
-      dayStopInput,
-      monthStopInput,
-      yearStopInput,
       strictEndTimeSelected,
       durationInput,
       strictEndMinuteInput,
@@ -1839,151 +2044,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
                       {/* Repeating maintenance: how often the maintenance repeats */}
                       {maintenanceType !== '1' ? this.renderRepeateSelection() : null}
 
-                      {/* Maintenance start date & time */}
+                      {/* Maintenance start date & time or repeating maintenance start & stop dates */}
                       <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                        <div className="iiris-modal-column">
-                          <label className="gf-form-label">
-                            {maintenanceType === '0' ? this.texts.maintenanceStartTime : this.texts.startRepeat}
-                          </label>
-                          <div className="date-selection-row">
-                            <div className="date-selection-container">
-                              <div>{this.texts.day}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={dayInput}
-                                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.dayInput.options.map((option: any) => (
-                                    <option value={option.value} key={'d' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.month}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={monthInput}
-                                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.monthInput.options.map((option: any) => (
-                                    <option value={option.value} key={'m' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.year}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={yearInput}
-                                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.yearInput.options.map((option: any) => (
-                                    <option value={option.value} key={'y' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container hour-input">
-                              <div>{this.texts.hour}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={hourInput}
-                                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.hourInput.options.map((option: any) => (
-                                    <option value={option.value} key={'h' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.minute}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={minuteInput}
-                                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.minuteInput.options.map((option: any) => (
-                                    <option value={option.value} key={'mi' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {parseInt(maintenanceType, 10) > 0 ? (
-                          <div className="iiris-modal-column">
-                            <label className="gf-form-label">{this.texts.endRepeat}</label>
-                            <div className="date-selection-row">
-                              <div className="date-selection-container">
-                                <div>{this.texts.day}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={dayStopInput}
-                                    onChange={(e) => this.onDayStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.dayStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ds' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="date-selection-container">
-                                <div>{this.texts.month}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={monthStopInput}
-                                    onChange={(e) => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.monthStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ms' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="date-selection-container">
-                                <div>{this.texts.year}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={yearStopInput}
-                                    onChange={(e) => this.onYearStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.yearStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ys' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
+                        {maintenanceType === '0'
+                          ? this.renderSingleMaintenanceStartDateTime()
+                          : this.renderRepeatingMaintenanceStartAndStopDates()}
                       </div>
+
                       {!strictEndTimeSelected ? (
                         <div className="gf-form-group maintenance-row-container">
                           <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
