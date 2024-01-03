@@ -469,7 +469,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
   };
 
   /**
-   * Callback for creating a new maintenance from dialog
+   * Callback for creating/updating a new maintenance from dialog
    * @param {number} maintenanceType
    * @param {string} description
    * @param {number} duration  in seconds
@@ -505,10 +505,13 @@ class IirisMaintenance extends PureComponent<Props, State> {
             {
               timeperiod_type: maintenanceType,
               period: duration,
-              start_date: curTime,
             },
           ],
         };
+        if (maintenanceType === 0) {
+          // start_date can be given only for one-time maintenances
+          maintenanceObj.timeperiods[0].start_date = curTime;
+        }
         Object.keys(options).map((optionKey) => {
           maintenanceObj['timeperiods'][0][optionKey] = options[optionKey];
         });
