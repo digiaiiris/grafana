@@ -10,10 +10,10 @@ interface Props {
   onDismiss(): void;
   allMaintenances: any[];
   openMaintenanceModal(): void;
-  onStopMaintenance(maintenanceId: string): void;
-  onEditMaintenance(maintenanceId: string): void;
-  ongoingMaintenanceIds: string[];
-  selectedMaintenanceId?: string;
+  onStopMaintenance(maintenanceId: number): void;
+  onEditMaintenance(maintenanceId: number): void;
+  ongoingMaintenanceIds: number[];
+  selectedMaintenanceId?: number;
   confirmIsVisible: boolean;
   confirmText: string;
   confirmAction: any;

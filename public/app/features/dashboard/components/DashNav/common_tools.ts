@@ -5,6 +5,41 @@ import moment from 'moment'; // eslint-disable-line no-restricted-imports
 
 export const MACRO_RESOLVE_LEVELS = 3;
 
+// This corresponds to zabbix maintenance time period timeperiod_type property values
+export enum MaintenanceType {
+  OneTime = 0,
+  Daily = 2,
+  Weekly = 3,
+  Monthly = 4,
+}
+
+// The basic type of fetched maintenances
+export type Maintenance = {
+  name: string; // Maintenance name; zabbix maintenance name property
+  startTime: number; // Epoch in seconds; zabbix time period start_date property; valid only for one-time maintenances
+  startTimeString: string; // startTime formatted as string
+  endTime: number; // Epoch in seconds; zabbix time period start_date + period; valid only for one-time maintenances
+  endTimeString: string; // endTime formatted as string
+  duration: number; // Duration in seconds; zabbix time period period property
+  durationString: string; // Duration formatted as string
+  activeSince: number; // Epoch in seconds; zabbix maintenance active_since property
+  activeTill: number; // Epoch in seconds; zabbix maintenance active_till property
+  activeTillString: string; // activeTill formatted as string
+  id: number; // zabbix maintenance maintenanceid property
+  internalId: number; // 1-based index number of handled maintenances
+  every: number; // zabbix time period every property
+  month: number; // zabbix time period month property
+  day: number; // zabbix time period day property
+  dayOfWeek: number; // zabbix time period dayofweek property
+  timeOfDay: number; // zabbix time period start_time property
+  hosts: { hostid: number; name: string }[]; // hosts assigned to the property; fetched with selectHosts parameter from zabbix api
+  groups: { groupid: number; name: string }[]; // host groups assigned to the property; fetched with selectHostGroups parameter from zabbix api
+  periodicMaintenance: boolean; // true if maintenance is one-time; false if it's periodic (daily, weekly or monthly)
+  maintenanceType: MaintenanceType; // zabbix time period timeperiod_type property
+  maintenanceTypeString: string;
+  maintenanceTypeStringFull: string;
+};
+
 // Code copied from Zabbix-triggers panel
 export function escapeRegex(value: string) {
   return value.replace(/[\\^$*+?()|[\]{}\/]/g, '\\$&');
@@ -179,8 +214,8 @@ export function getMaintenances(
   availableDatasources: string[],
   datasourceSrv: any,
   oneUpcomingMaintenance?: boolean
-) {
-  return new Promise<any>((resolve: any, reject: any) => {
+): Promise<Maintenance[]> {
+  return new Promise<Maintenance[]>((resolve: any, reject: any) => {
     getZabbix(availableDatasources, datasourceSrv)
       .then((zabbix: any) => {
         zabbix.zabbixAPI
@@ -205,12 +240,12 @@ export function getMaintenances(
  * 2 - Daily period
  * 3 - Weekly period
  * 4 - Monthly period
- * @param {any} maintenances
+ * @param {any} maintenances fetched from Zabbix API
  * @param {boolean} oneUpcomingMaintenance  Show only one upcoming maintenance for daily/weekly/monthly periods
- * @returns {any[]} maintenances
+ * @returns {Maintenance[]} maintenances
  */
-export function handleMaintenances(maintenances: any, oneUpcomingMaintenance?: boolean) {
-  const handledMaintenances: any[] = [];
+export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?: boolean): Maintenance[] {
+  const handledMaintenances: Maintenance[] = [];
   maintenances.map((maintenance: any) => {
     maintenance.timeperiods.map((timeperiod: any) => {
       const activeSince = parseInt(maintenance.active_since, 10) * 1000;
@@ -414,21 +449,17 @@ export function setMaintenanceDescriptionAndCaller(maintenanceObj: any, nameFiel
 
 /**
  * Add new maintenance to maintenances list
- * @param {number} startTime
- * @param {number} duration
- * @param {string} name
- * @param {number} typeObjIndex
  */
 export function addMaintenanceToList(
   startTime: number,
   duration: number,
   maintenance: any,
-  handledMaintenances: any[],
+  handledMaintenances: Maintenance[],
   timeperiod: any,
   activeTill: number,
   activeSince: number
 ) {
-  const newItem: any = {};
+  const newItem: Maintenance = {} as Maintenance;
   newItem.name = maintenance.name;
   setMaintenanceDescriptionAndCaller(newItem, maintenance.name);
   newItem.startTime = startTime;
@@ -484,10 +515,8 @@ export function getDurationString(duration: number) {
 
 /**
  * Is maintenance ongoing
- * @param {any} maintenance
- * @returns {boolean}
  */
-export function isOngoingMaintenance(maintenance: any) {
+export function isOngoingMaintenance(maintenance: Maintenance): boolean {
   let isOngoing = false;
   if (maintenance) {
     if (maintenance.startTime) {
@@ -528,12 +557,10 @@ export function parseDateToString(newDate: Date) {
 
 /**
  * Get ongoing maintenances
- * @param {any[]} maintenances
- * @returns {any[]}
  */
-export function getOngoingMaintenances(maintenances: any[]) {
+export function getOngoingMaintenances(maintenances: Maintenance[]): any[] {
   const ongoingMaintenances: any[] = [];
-  maintenances.map((maintenance: any) => {
+  maintenances.map((maintenance: Maintenance) => {
     if (isOngoingMaintenance(maintenance)) {
       const endTime = new Date(maintenance.endTime * 1000);
       const maintenanceEnds = parseDateToString(endTime);

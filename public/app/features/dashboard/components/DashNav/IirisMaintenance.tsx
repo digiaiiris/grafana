@@ -11,9 +11,28 @@ import { updateTimeZoneForSession } from 'app/features/profile/state/reducers';
 import { DashboardModel } from '../../state';
 
 import { IirisMaintenanceConfirmModal } from './IirisMaintenanceConfirmModal';
+import { IirisMaintenanceEditWizard } from './IirisMaintenanceEditWizard';
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
-import { IirisMaintenanceModal } from './IirisMaintenanceModal';
-import { replaceTemplateVars, getZabbix, getMaintenances, getOngoingMaintenances } from './common_tools';
+import {
+  replaceTemplateVars,
+  getZabbix,
+  getMaintenances,
+  getOngoingMaintenances,
+  Maintenance,
+  MaintenanceType,
+} from './common_tools';
+
+// Callback used by IirisMaintenanceEditWizard to create or update maintenance
+export type OnCreateOrUpdateMaintenanceCallback = (
+  maintenanceType: MaintenanceType,
+  description: string,
+  duration: number,
+  hostIds: string[],
+  options: any,
+  startDate: Date,
+  stopDate: Date,
+  maintenanceId?: number
+) => void;
 
 const mapDispatchToProps = {
   updateTimeZoneForSession,
@@ -27,16 +46,16 @@ export interface OwnProps {
 }
 
 interface State {
-  allMaintenances: any;
+  allMaintenances: Maintenance[];
   showMaintenanceModal: boolean;
   showMaintenanceListModal: boolean;
   showMaintenanceConfirmModal: boolean;
   hosts: any[];
-  selectedMaintenance: any;
+  selectedMaintenance: Maintenance | undefined;
   confirmIsVisible: boolean;
   confirmText: string;
   confirmAction: any;
-  ongoingMaintenanceIds: string[];
+  ongoingMaintenanceIds: number[];
 }
 
 type Props = OwnProps & ConnectedProps<typeof connector>;
@@ -51,14 +70,13 @@ class IirisMaintenance extends PureComponent<Props, State> {
   listModalScope: any;
   groupIds: number[] | undefined;
   hostIds: any;
-  ongoingMaintenances: any;
+  ongoingMaintenances: any[] = [];
   error: any;
   user: any;
-  allMaintenances: any;
-  selectedMaintenanceId: any;
+  allMaintenances: Maintenance[] = [];
+  selectedMaintenanceId: number | undefined;
   maintenanceIconStyle: any;
-  stoppingOngoingMaintenance: any;
-  confirmModalScope: any;
+  stoppingOngoingMaintenance: boolean | undefined;
   texts: any = {};
 
   sortHostNames = (hostA: any, hostB: any) => {
@@ -112,7 +130,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
     this.ongoingMaintenances = [];
     this.error = false;
     this.user = contextSrv.user.email;
-    this.selectedMaintenanceId = '';
+    this.selectedMaintenanceId = undefined;
     this.maintenanceIconStyle = '';
     if (givenDataSources && givenDataSources.length > 0) {
       this.availableDatasources = givenDataSources;
@@ -248,11 +266,11 @@ class IirisMaintenance extends PureComponent<Props, State> {
   getMaintenanceList = (hostIds: string[], groupIds?: number[]) => {
     const showOnlyOneUpcomingPerPeriod = true;
     getMaintenances(hostIds, groupIds, this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
-      .then((maintenances: any) => {
+      .then((maintenances: Maintenance[]) => {
         if (maintenances.length > 0) {
           this.ongoingMaintenances = getOngoingMaintenances(maintenances);
           this.allMaintenances = [];
-          maintenances.map((maintenance: any) => {
+          maintenances.map((maintenance) => {
             if (maintenance.maintenanceType === 0) {
               maintenance.maintenanceTypeString = this.texts.oneTimeAbbr;
               maintenance.maintenanceTypeStringFull = this.texts.oneTime + ' ' + this.texts.maintenance;
@@ -272,7 +290,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
           });
           const curTime = new Date().getTime() / 1000;
           this.allMaintenances = this.allMaintenances.filter(
-            (maintenance: any) => maintenance.endTime > curTime && maintenance.activeTill > curTime
+            (maintenance) => maintenance.endTime > curTime && maintenance.activeTill > curTime
           );
           if (this.ongoingMaintenances.length > 0) {
             this.maintenanceIconStyle = 'on-going';
@@ -315,9 +333,8 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
   /**
    * Callback for clicking stop maintenance button
-   * @param {string} maintenanceID
    */
-  onStopMaintenance = (maintenanceID: string) => {
+  onStopMaintenance = (maintenanceID: number) => {
     let selectedMaintenance = this.ongoingMaintenances.find((item: any) => item.id === maintenanceID);
     let isOngoing = false;
     const curTime = this.getCurrentTimeEpoch();
@@ -380,18 +397,17 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
   /**
    * Callback for clicking edit maintenance button
-   * @param {string} maintenanceID
    */
-  onEditMaintenance = (maintenanceID: string) => {
+  onEditMaintenance = (maintenanceID: number) => {
     this.openMaintenanceModal(maintenanceID);
   };
 
   /**
    * Callback for clicking stop maintenance button
-   * @param {string} maintenanceID
+   * @param {number} maintenanceID
    * @param {number} endTime epoch
    */
-  onUpdateMaintenanceEndTime = (maintenanceID: string, endTime?: number) => {
+  onUpdateMaintenanceEndTime = (maintenanceID: number, endTime?: number) => {
     const curTime = this.getCurrentTimeEpoch();
     if (!endTime) {
       endTime = curTime;
@@ -445,9 +461,8 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
   /**
    * Callback for clicking stop maintenance button
-   * @param {string} maintenanceID
    */
-  onRemoveMaintenance = (maintenanceID: string) => {
+  onRemoveMaintenance = (maintenanceID: number) => {
     const selectedMaintenance = this.allMaintenances.find((item: any) => item.id === maintenanceID);
     if (selectedMaintenance) {
       getZabbix(this.availableDatasources, this.datasourceSrv)
@@ -470,24 +485,16 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
   /**
    * Callback for creating/updating a new maintenance from dialog
-   * @param {number} maintenanceType
-   * @param {string} description
-   * @param {number} duration  in seconds
-   * @param {string[]} hostIds
-   * @param {any} options
-   * @param {Date} startDate
-   * @param {Date} stopDate
-   * @param {string} maintenanceId  optional
    */
-  onCreateMaintenance = (
-    maintenanceType: number,
+  onCreateOrUpdateMaintenance = (
+    maintenanceType: MaintenanceType,
     description: string,
     duration: number,
     hostIds: string[],
     options: any,
     startDate: Date,
     stopDate: Date,
-    maintenanceId?: string
+    maintenanceId?: number
   ) => {
     getZabbix(this.availableDatasources, this.datasourceSrv)
       .then((zabbix: any) => {
@@ -550,9 +557,8 @@ class IirisMaintenance extends PureComponent<Props, State> {
 
   /**
    * Open create maintenance modal
-   * @param {string} maintenanceID (optional)
    */
-  openMaintenanceModal = (maintenanceID = '') => {
+  openMaintenanceModal = (maintenanceID: number | undefined = undefined) => {
     this.selectedMaintenanceId = maintenanceID;
     const selectedMaintenance = this.state.allMaintenances.find((item: any) => item.id === this.selectedMaintenanceId);
     this.setState({
@@ -662,14 +668,14 @@ class IirisMaintenance extends PureComponent<Props, State> {
             </svg>
           </div>
         </ToolbarButton>
-        <IirisMaintenanceModal
+        <IirisMaintenanceEditWizard
           show={this.state.showMaintenanceModal}
           onDismiss={this.hideMaintenanceModal}
           openAllMaintenancesModal={this.openAllMaintenancesModal}
           hosts={this.state.hosts}
           selectedMaintenance={this.state.selectedMaintenance}
           user={contextSrv.user.email || ''}
-          onCreateMaintenance={this.onCreateMaintenance}
+          onCreateOrUpdateMaintenance={this.onCreateOrUpdateMaintenance}
           allMaintenances={this.state.allMaintenances}
         />
         <IirisMaintenanceListModal

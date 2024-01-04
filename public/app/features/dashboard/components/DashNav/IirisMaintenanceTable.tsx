@@ -9,9 +9,9 @@ interface ColumnType {
 interface Props {
   data: any[];
   columns: ColumnType[];
-  onEditMaintenance: (maintenanceId: string) => void;
-  onStopMaintenance: (maintenanceId: string) => void;
-  ongoingMaintenanceIds: string[];
+  onEditMaintenance: (maintenanceId: number) => void;
+  onStopMaintenance: (maintenanceId: number) => void;
+  ongoingMaintenanceIds: number[];
 }
 
 export function IirisMaintenanceTable(props: Props) {

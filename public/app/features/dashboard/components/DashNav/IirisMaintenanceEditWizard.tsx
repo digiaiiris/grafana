@@ -1,3 +1,9 @@
+/**
+ * This component is a modal wizard dialog that prompts the user to enter maintenance information
+ * for creating a new maintenance or editing an existing one.
+ */
+
+//import { DateTime } from 'luxon';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
 import React, { PureComponent } from 'react';
 
@@ -5,23 +11,32 @@ import 'moment/locale/fi';
 import { Modal } from '@grafana/ui';
 import { contextSrv } from 'app/core/core';
 
+import { OnCreateOrUpdateMaintenanceCallback } from './IirisMaintenance';
+import { Maintenance, MaintenanceType } from './common_tools';
+
+enum WizardPhase {
+  FirstDates = 1,
+  SecondDescriptionAndHosts = 2,
+  ThirdSummary = 3,
+}
+
 const WEEK = 'WEEK';
 const MONTH = 'MONTH';
 
 interface Props {
-  show: boolean;
+  show: boolean; // Show modal dialog
   onDismiss(): void;
-  onCreateMaintenance: any;
-  selectedMaintenance?: any;
+  onCreateOrUpdateMaintenance: OnCreateOrUpdateMaintenanceCallback;
+  selectedMaintenance?: Maintenance;
   openAllMaintenancesModal(): void;
   hosts: any;
   user: string;
-  allMaintenances: any[];
+  allMaintenances: Maintenance[];
 }
 
 interface State {
-  wizardPhase: number;
-  maintenanceType: string;
+  wizardPhase: WizardPhase;
+  maintenanceType: MaintenanceType;
   everyNDays: number;
   everyNWeeks: number;
   weekdays: any;
@@ -73,11 +88,11 @@ interface State {
   preview: any;
 }
 
-export class IirisMaintenanceModal extends PureComponent<Props, State> {
+export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   scope: any;
   hosts: any;
   user: any;
-  selectedMaintenance: any;
+  selectedMaintenance?: Maintenance;
   description: any;
   durationInput:
     | {
@@ -90,8 +105,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   mTypeInput:
     | {
         options: any;
-        value: string;
-        text: string;
+        value: MaintenanceType;
       }
     | any;
   yearInput:
@@ -197,7 +211,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         text: string;
       }
     | any;
-  maintenanceType: any;
+  maintenanceTypeString = '';
   displayStartDate: any;
   displayStopDate: any;
   displayRepeatStartDate: any;
@@ -220,8 +234,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.texts = contextSrv.getLocalizedTexts();
     this.init();
     this.state = {
-      wizardPhase: 1,
-      maintenanceType: '0',
+      wizardPhase: WizardPhase.FirstDates,
+      maintenanceType: MaintenanceType.OneTime,
       everyNDays: 1,
       everyNWeeks: 1,
       weekdays: {
@@ -391,7 +405,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
 
     let dates: any = [];
 
-    if (maintenanceType === '2') {
+    if (maintenanceType === MaintenanceType.Daily) {
       for (let i = 0; i < diffDays + 1; i++) {
         // Only allow days that are every [N] days
         if (i % this.state.everyNDays === 0) {
@@ -410,7 +424,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           }
         }
       }
-    } else if (maintenanceType === '3') {
+    } else if (maintenanceType === MaintenanceType.Weekly) {
       for (let i = 0; i < diffWeeks + 1; i++) {
         // Only allow days that are every [N] weeks
         if (i % this.state.everyNWeeks === 0) {
@@ -437,7 +451,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           }
         }
       }
-    } else if (maintenanceType === '4') {
+    } else if (maintenanceType === MaintenanceType.Monthly) {
       if (this.state.dayOfMonthOrWeekSelected === MONTH) {
         // Start with looping though months with difference between months as stop
         // condition adding the amount of months to it
@@ -545,8 +559,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.scope.hosts = this.hosts;
     this.scope.user = this.user;
     this.scope.selectedMaintenance = this.selectedMaintenance;
-    this.scope.wizardPhase = 1;
-    this.scope.maintenanceType = 0;
+    this.scope.wizardPhase = WizardPhase.FirstDates;
+    this.scope.maintenanceType = MaintenanceType.OneTime;
     this.scope.everyNDays = 1;
     this.scope.everyNWeeks = 1;
     this.scope.dayOfMonthOrWeekSelected = {
@@ -605,16 +619,14 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       ],
     };
     this.mTypeInput = {
-      value: '0',
-      text: this.texts.oneTime,
+      value: MaintenanceType.OneTime,
       options: [
-        { label: this.texts.oneTime, value: '0' },
-        { label: this.texts.daily, value: '2' },
-        { label: this.texts.weekly, value: '3' },
-        { label: this.texts.monthly, value: '4' },
+        { label: this.texts.oneTime, value: MaintenanceType.OneTime },
+        { label: this.texts.daily, value: MaintenanceType.Daily },
+        { label: this.texts.weekly, value: MaintenanceType.Weekly },
+        { label: this.texts.monthly, value: MaintenanceType.Monthly },
       ],
     };
-    this.maintenanceType = this.mTypeInput.text;
     this.yearInput = {
       value: 0,
       text: '',
@@ -778,7 +790,6 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         this.mTypeInput.options.find((item: any) => item.value === m.maintenanceType + '') ||
         this.mTypeInput.options[0];
       this.mTypeInput.value = typeObj.value;
-      this.mTypeInput.text = typeObj.text;
       // Check if selected maintenances duration is one of the presets
       let durObj = this.durationInput.options.find((item: any) => item.value === m.duration);
       if (durObj) {
@@ -787,9 +798,9 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       } else {
         this.scope.strictEndTimeSelected = true;
       }
-      if (m.maintenanceType === 2) {
+      if (m.maintenanceType === MaintenanceType.Daily) {
         this.scope.everyNDays = m.every;
-      } else if (m.maintenanceType === 3) {
+      } else if (m.maintenanceType === MaintenanceType.Weekly) {
         this.scope.everyNWeeks = m.every;
         // Turn dayOfWeek number to binary and then to array to get active days
         const days = parseInt(m.dayOfWeek, 10).toString(2).split('').reverse();
@@ -799,7 +810,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             this.scope.weekdays[dayTitles[i]] = true;
           }
         }
-      } else if (m.maintenanceType === 4) {
+      } else if (m.maintenanceType === MaintenanceType.Monthly) {
         // Turn month number to binary and then to array to get active days
         const months = parseInt(m.month, 10).toString(2).split('').reverse();
         let monthAmount = 0;
@@ -864,13 +875,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Callback for starting maintenance
    */
   onStartMaintenance = () => {
-    const maintenanceType = parseInt(this.state.maintenanceType, 10);
+    const maintenanceType = this.state.maintenanceType;
     const options: any = {};
-    if (maintenanceType === 2) {
-      // Daily maintenance
+    if (maintenanceType === MaintenanceType.Daily) {
       options.every = this.state.everyNDays;
-    } else if (maintenanceType === 3) {
-      // Weekly maintenance
+    } else if (maintenanceType === MaintenanceType.Weekly) {
       options.every = this.state.everyNWeeks;
       let dayOfWeekBinary = '';
       Object.keys(this.state.weekdays).map((weekday) => {
@@ -881,7 +890,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         }
       });
       options.dayofweek = parseInt(dayOfWeekBinary, 2);
-    } else if (maintenanceType === 4) {
+    } else if (maintenanceType === MaintenanceType.Monthly) {
       // Monthly maintenance
       let monthBinary = '';
       Object.keys(this.state.months).map((month) => {
@@ -916,7 +925,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     );
     let stopDate = new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value);
     stopDate = moment(stopDate).endOf('day').toDate();
-    if (maintenanceType === 2 || maintenanceType === 3 || maintenanceType === 4) {
+    if (
+      maintenanceType === MaintenanceType.Daily ||
+      maintenanceType === MaintenanceType.Weekly ||
+      maintenanceType === MaintenanceType.Monthly
+    ) {
       options.start_time = moment.utc(startDate).hour() * 60 * 60 + moment.utc(startDate).minute() * 60;
     }
     let anyHostSelected = false;
@@ -937,7 +950,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         errorText: this.texts.maintenanceDescriptionIs + ' ' + excessLength + ' ' + this.texts.charsTooLong,
       });
     } else {
-      this.props.onCreateMaintenance(
+      this.props.onCreateOrUpdateMaintenance(
         maintenanceType,
         maintenanceName,
         duration,
@@ -945,7 +958,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         options,
         startDate,
         stopDate,
-        this.props.selectedMaintenance ? this.props.selectedMaintenance.id : null
+        this.props.selectedMaintenance ? this.props.selectedMaintenance.id : undefined
       );
       this.onDismiss();
     }
@@ -1340,9 +1353,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   /**
    * Callback for changing maintenance
    */
-  onMaintenanceTypeChanged = (value: string) => {
+  onMaintenanceTypeChanged = (value: MaintenanceType) => {
     this.setState({ maintenanceType: value, errorText: '' });
-    this.maintenanceType = this.mTypeInput.options.find((option: any) => option.value === value).text;
   };
 
   getCurrentTimeEpoch = (currentTime?: Date) => {
@@ -1369,13 +1381,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     let valid = true;
     this.scope.errorText = '';
     // Check for validity
-    if (wizardPhase === 1) {
-      if (maintenanceType === '2') {
+    if (wizardPhase === WizardPhase.FirstDates) {
+      if (maintenanceType === MaintenanceType.Daily) {
         if (!this.state.everyNDays || !/^[0-9]*$/.test(this.state.everyNDays + '')) {
           valid = false;
           this.scope.errorText += this.texts.dayFieldMustContainInteger + ' ';
         }
-      } else if (maintenanceType === '3') {
+      } else if (maintenanceType === MaintenanceType.Weekly) {
         if (!this.state.everyNWeeks || !/^[0-9]*$/.test(this.state.everyNWeeks + '')) {
           valid = false;
           this.scope.errorText += this.texts.weekFieldMustContainInteger + ' ';
@@ -1390,7 +1402,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           valid = false;
           this.scope.errorText += this.texts.oneWeekdayMustBeChosen + ' ';
         }
-      } else if (maintenanceType === '4') {
+      } else if (maintenanceType === MaintenanceType.Monthly) {
         let someMonthSelected = false;
         Object.keys(this.state.months).map((month) => {
           if (this.state.months[month]) {
@@ -1436,7 +1448,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       const stopDateTime = moment(startDate).add(duration, 'second').toDate();
 
       // Periodical maintenance
-      if (maintenanceType === '2' || maintenanceType === '3' || maintenanceType === '4') {
+      if (
+        maintenanceType === MaintenanceType.Daily ||
+        maintenanceType === MaintenanceType.Weekly ||
+        maintenanceType === MaintenanceType.Monthly
+      ) {
         if (stopPeriodDate <= startDate) {
           valid = false;
           this.scope.errorText += this.texts.repeatMustEndAfterStartTime + ' ';
@@ -1475,17 +1491,21 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             this.texts.repeatEndTimeCantOverlapDaylight + ' ' + nextChange.format('DD.MM.YYYY HH:mm') + ' ';
         }
       }
-      if (maintenanceType === '0' && this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
+      if (
+        maintenanceType === MaintenanceType.OneTime &&
+        this.state.strictEndTimeSelected &&
+        this.getStrictEndTimeDuration() <= 0
+      ) {
         valid = false;
         this.scope.errorText += this.texts.maintenanceEndMustBeAfterStart + ' ';
       }
-      if (maintenanceType === '0' && stopDateTime < currentDate) {
+      if (maintenanceType === MaintenanceType.OneTime && stopDateTime < currentDate) {
         valid = false;
         this.scope.errorText += this.texts.maintenanceEndCantBeInPast + ' ';
       }
       if (valid) {
-        this.scope.wizardPhase = 2;
-        this.setState({ wizardPhase: 2 });
+        this.scope.wizardPhase = WizardPhase.SecondDescriptionAndHosts;
+        this.setState({ wizardPhase: WizardPhase.SecondDescriptionAndHosts });
       }
     } else {
       let anyHostSelected = false;
@@ -1504,11 +1524,11 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         valid = false;
       }
       if (valid) {
-        this.scope.wizardPhase = 3;
-        this.setState({ wizardPhase: 3 });
+        this.scope.wizardPhase = WizardPhase.ThirdSummary;
+        this.setState({ wizardPhase: WizardPhase.ThirdSummary });
 
         // Format maintenance dates for the summary phase
-        if (maintenanceType === '0') {
+        if (maintenanceType === MaintenanceType.OneTime) {
           this.displayStartDate = moment(
             new Date(
               this.yearInput.value,
@@ -1618,7 +1638,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
    * Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
    */
   renderRepeateSelection() {
-    if (this.state.maintenanceType === '2') {
+    if (this.state.maintenanceType === MaintenanceType.Daily) {
       // Daily maintenance: Every N days selection
       return (
         <div className="gf-form-group maintenance-row-container">
@@ -1637,7 +1657,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       );
     }
 
-    if (this.state.maintenanceType === '3') {
+    if (this.state.maintenanceType === MaintenanceType.Weekly) {
       // Weekly maintenance: Every N weeks selection and weekday selection
       return (
         <>
@@ -1682,7 +1702,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       );
     }
 
-    if (this.state.maintenanceType === '4') {
+    if (this.state.maintenanceType === MaintenanceType.Monthly) {
       // Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
       return (
         <>
@@ -2302,17 +2322,17 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
             </div>
 
             {/* Repeating maintenance: how often the maintenance repeats */}
-            {this.state.maintenanceType !== '0' ? this.renderRepeateSelection() : null}
+            {this.state.maintenanceType !== MaintenanceType.OneTime ? this.renderRepeateSelection() : null}
 
             {/* Maintenance start date & time or repeating maintenance start & stop dates */}
             <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-              {this.state.maintenanceType === '0'
+              {this.state.maintenanceType === MaintenanceType.OneTime
                 ? this.renderSingleMaintenanceStartDateTime()
                 : this.renderRepeatingMaintenanceStartAndStopDates()}
             </div>
 
             {/* Maintenance duration (or strict end time) */}
-            {this.state.maintenanceType === '0' ? (
+            {this.state.maintenanceType === MaintenanceType.OneTime ? (
               <div className="gf-form-group maintenance-row-container">{this.renderSingleMaintenanceDuration()}</div>
             ) : (
               <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
@@ -2515,8 +2535,8 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           </div>
         </div>
 
-        {/* Single maintenance start and end times */}
-        {this.state.maintenanceType === '0' ? (
+        {/* One-time maintenance start and end times */}
+        {this.state.maintenanceType === MaintenanceType.OneTime ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
@@ -2530,7 +2550,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ) : null}
 
         {/* Daily maintenance: repeate every N days */}
-        {this.state.maintenanceType === '2' ? (
+        {this.state.maintenanceType === MaintenanceType.Daily ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNDays}</div>
@@ -2540,7 +2560,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ) : null}
 
         {/* Weekly maintenance: repeate every N weeks, on which weekdays */}
-        {this.state.maintenanceType === '3' ? (
+        {this.state.maintenanceType === MaintenanceType.Weekly ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNWeeks}</div>
@@ -2554,7 +2574,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ) : null}
 
         {/* Monthly maintenance: repeate on which months and on Nth day / weekday(s) of the month */}
-        {this.state.maintenanceType === '4' ? (
+        {this.state.maintenanceType === MaintenanceType.Monthly ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnMonth}</div>
@@ -2581,7 +2601,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
         ) : null}
 
         {/* Repeating maintenance: start and end times */}
-        {parseInt(this.state.maintenanceType, 10) > 0 ? (
+        {this.state.maintenanceType > 0 ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
               <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
@@ -2631,13 +2651,13 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
           <div>
             <div className="modal-content">
               {/* Wizard phase 1: Maintenance dates */}
-              {this.state.wizardPhase === 1 ? this.renderWizardPhase1() : null}
+              {this.state.wizardPhase === WizardPhase.FirstDates ? this.renderWizardPhase1() : null}
 
               {/* Wizard phase 2: Description and selected hosts */}
-              {this.state.wizardPhase === 2 ? this.renderWizardPhase2() : null}
+              {this.state.wizardPhase === WizardPhase.SecondDescriptionAndHosts ? this.renderWizardPhase2() : null}
 
               {/* Wizard phase 3: Summary */}
-              {this.state.wizardPhase === 3 ? this.renderWizardPhase3() : null}
+              {this.state.wizardPhase === WizardPhase.ThirdSummary ? this.renderWizardPhase3() : null}
             </div>
           </div>
         </Modal>
