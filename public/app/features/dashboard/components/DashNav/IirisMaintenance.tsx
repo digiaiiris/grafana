@@ -27,7 +27,7 @@ export type OnCreateOrUpdateMaintenanceCallback = (
   maintenanceType: MaintenanceType,
   description: string,
   duration: number,
-  hostIds: string[],
+  hostIds: number[],
   options: any,
   startDate: Date,
   stopDate: Date,
@@ -264,8 +264,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
    * @param {string} groupid Get maintenances from specified group
    */
   getMaintenanceList = (hostIds: string[], groupIds?: number[]) => {
-    const showOnlyOneUpcomingPerPeriod = true;
-    getMaintenances(hostIds, groupIds, this.availableDatasources, this.datasourceSrv, showOnlyOneUpcomingPerPeriod)
+    getMaintenances(hostIds, groupIds, this.availableDatasources, this.datasourceSrv)
       .then((maintenances: Maintenance[]) => {
         if (maintenances.length > 0) {
           this.ongoingMaintenances = getOngoingMaintenances(maintenances);
@@ -490,7 +489,7 @@ class IirisMaintenance extends PureComponent<Props, State> {
     maintenanceType: MaintenanceType,
     description: string,
     duration: number,
-    hostIds: string[],
+    hostIds: number[],
     options: any,
     startDate: Date,
     stopDate: Date,

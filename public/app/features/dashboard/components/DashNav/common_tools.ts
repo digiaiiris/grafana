@@ -212,8 +212,7 @@ export function getMaintenances(
   hostIds: string[],
   groupIds: number[] | undefined,
   availableDatasources: string[],
-  datasourceSrv: any,
-  oneUpcomingMaintenance?: boolean
+  datasourceSrv: any
 ): Promise<Maintenance[]> {
   return new Promise<Maintenance[]>((resolve: any, reject: any) => {
     getZabbix(availableDatasources, datasourceSrv)
@@ -221,7 +220,7 @@ export function getMaintenances(
         zabbix.zabbixAPI
           .getMaintenances(hostIds, groupIds)
           .then((maintenances: any) => {
-            const allMaintenances = handleMaintenances(maintenances, oneUpcomingMaintenance);
+            const allMaintenances = handleMaintenances(maintenances);
             resolve(allMaintenances);
           })
           .catch((err: any) => {
@@ -241,10 +240,11 @@ export function getMaintenances(
  * 3 - Weekly period
  * 4 - Monthly period
  * @param {any} maintenances fetched from Zabbix API
- * @param {boolean} oneUpcomingMaintenance  Show only one upcoming maintenance for daily/weekly/monthly periods
  * @returns {Maintenance[]} maintenances
+ *
+ * Not that the method returns only one upcoming maintenance for daily/weekly/monthly periods.
  */
-export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?: boolean): Maintenance[] {
+export function handleMaintenances(maintenances: any[]): Maintenance[] {
   const handledMaintenances: Maintenance[] = [];
   maintenances.map((maintenance: any) => {
     maintenance.timeperiods.map((timeperiod: any) => {
@@ -286,7 +286,7 @@ export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?:
             activeTill,
             activeSince
           );
-          if (oneUpcomingMaintenance && beginningOfPeriod + i * dayLengthMS > currentTime) {
+          if (beginningOfPeriod + i * dayLengthMS > currentTime) {
             break;
           }
         }
@@ -318,14 +318,14 @@ export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?:
                   activeTill,
                   activeSince
                 );
-                if (oneUpcomingMaintenance && startTime * 1000 > currentTime) {
+                if (startTime * 1000 > currentTime) {
                   oneMaintenanceAdded = true;
                   break;
                 }
               }
             }
           }
-          if (oneUpcomingMaintenance && oneMaintenanceAdded) {
+          if (oneMaintenanceAdded) {
             break;
           }
         }
@@ -359,7 +359,7 @@ export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?:
                     activeTill,
                     activeSince
                   );
-                  if (oneUpcomingMaintenance && startTimeMS > currentTime) {
+                  if (startTimeMS > currentTime) {
                     oneMaintenanceAdded = true;
                     break;
                   }
@@ -397,7 +397,7 @@ export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?:
                         activeTill,
                         activeSince
                       );
-                      if (oneUpcomingMaintenance && startTimeMS > currentTime) {
+                      if (startTimeMS > currentTime) {
                         oneMaintenanceAdded = true;
                         break;
                       }
@@ -406,12 +406,12 @@ export function handleMaintenances(maintenances: any[], oneUpcomingMaintenance?:
                 }
               }
             }
-            if (oneUpcomingMaintenance && oneMaintenanceAdded) {
+            if (oneMaintenanceAdded) {
               break;
             }
           }
           yearCounter = yearCounter.add(1, 'year');
-          if (oneUpcomingMaintenance && oneMaintenanceAdded) {
+          if (oneMaintenanceAdded) {
             break;
           }
         }
