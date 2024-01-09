@@ -3,8 +3,6 @@
 import _ from 'lodash';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
 
-const GLOBAL = 'global';
-
 export const MACRO_RESOLVE_LEVELS = 3;
 
 // Code copied from Zabbix-triggers panel
