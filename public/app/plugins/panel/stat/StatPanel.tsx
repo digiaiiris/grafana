@@ -12,13 +12,7 @@ import {
   getFieldDisplayValues,
   NumericRange,
   PanelProps,
-  urlUtil,
-  DataLinkBuiltInVars,
 } from '@grafana/data';
-import {
-  getExpandedUrlLink,
-  getExpandedTemplateVariables
-} from 'app/features/dashboard/components/DashNav/common_tools';
 import { getTemplateSrv } from '@grafana/runtime';
 import { findNumericFieldMinMax } from '@grafana/data/src/field/fieldOverrides';
 import {
@@ -90,20 +84,22 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
 
   hasPanelLinks = () => {
     return this.panel && this.panel.links && this.panel.links.length > 0;
-  }
+  };
 
   hasFieldConfigLinks = () => {
     return (
-      this.panel && this.panel.fieldConfig &&
+      this.panel &&
+      this.panel.fieldConfig &&
       this.panel.fieldConfig.defaults &&
       this.panel.fieldConfig.defaults.links &&
       this.panel.fieldConfig.defaults.links.length > 0
     );
-  }
+  };
 
   hasFieldConfigOverrides = () => {
     return (
-      this.panel && this.panel.fieldConfig &&
+      this.panel &&
+      this.panel.fieldConfig &&
       this.panel.fieldConfig.overrides &&
       this.panel.fieldConfig.overrides.length === 1 &&
       this.panel.fieldConfig.overrides[0].properties &&
@@ -112,19 +108,12 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
       this.panel.fieldConfig.overrides[0].properties[0].value.length > 0 &&
       this.panel.fieldConfig.overrides[0].properties[0].value[0].url
     );
-  }
+  };
 
   expandVariables = (linkUrl: string, linkTitle: string) => {
-    const vars = Object.assign({}, this.panel.scopedVars);
-    this.linkUrl = getExpandedUrlLink(
-      linkUrl,
-      getTemplateSrv(),
-      urlUtil,
-      DataLinkBuiltInVars,
-      vars
-    );
-    this.linkTitle = getExpandedTemplateVariables(linkTitle, getTemplateSrv(), vars);
-  }
+    this.linkUrl = getTemplateSrv().replace(linkUrl, this.panel.scopedVars);
+    this.linkTitle = getTemplateSrv().replace(linkTitle, this.panel.scopedVars);
+  };
 
   onPanelClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.stopPropagation();

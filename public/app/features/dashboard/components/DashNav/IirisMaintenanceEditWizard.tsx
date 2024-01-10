@@ -3,102 +3,61 @@
  * for creating a new maintenance or editing an existing one.
  */
 
-//import { DateTime } from 'luxon';
+import { DateTime } from 'luxon';
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
 import React, { PureComponent } from 'react';
 
 import 'moment/locale/fi';
-import { Modal } from '@grafana/ui';
+import { AppEvents } from '@grafana/data';
+import { Modal, ConfirmModal } from '@grafana/ui';
+import appEvents from 'app/core/app_events';
 import { contextSrv } from 'app/core/core';
 
-import { OnCreateOrUpdateMaintenanceCallback } from './IirisMaintenance';
-import { Maintenance, MaintenanceType } from './common_tools';
+import {
+  Maintenance,
+  MaintenanceType,
+  getNextDailyMaintenances,
+  getNextWeeklyMaintenances,
+  getNextMonthlyMaintenances,
+  WeekdaySelection,
+  MonthSelection,
+  saveMaintenance,
+  MaintenanceInstanceDates,
+} from './IirisMaintenanceModel';
 
+// The wizard consists of three phases
 enum WizardPhase {
   FirstDates = 1,
   SecondDescriptionAndHosts = 2,
   ThirdSummary = 3,
 }
 
-// Used as a type for both weekly and monthly maintenances where weekday(s) can be selected
-interface WeekdaySelection {
-  monday: boolean;
-  tuesday: boolean;
-  wednesday: boolean;
-  thursday: boolean;
-  friday: boolean;
-  saturday: boolean;
-  sunday: boolean;
+// Modal dialog shown currently
+enum ShownDialog {
+  None = 0,
+  NewMaintenanceStarted,
+  OngoingMaintenanceUpdated,
+  FutureMaintenanceCreated,
+  FutureMaintenanceUpdated,
 }
 
-// Type for this.weekdayNames
-interface WeekdayNames {
-  monday: string;
-  tuesday: string;
-  wednesday: string;
-  thursday: string;
-  friday: string;
-  saturday: string;
-  sunday: string;
-}
-
-// Used as a type for month selection for monthly maintenances
-interface MonthSelection {
-  january: boolean;
-  february: boolean;
-  march: boolean;
-  april: boolean;
-  may: boolean;
-  june: boolean;
-  july: boolean;
-  august: boolean;
-  september: boolean;
-  october: boolean;
-  november: boolean;
-  december: boolean;
-  all: boolean;
-}
-
-// Type for this.monthNames
-interface MonthNames {
-  january: string;
-  february: string;
-  march: string;
-  april: string;
-  may: string;
-  june: string;
-  july: string;
-  august: string;
-  september: string;
-  october: string;
-  november: string;
-  december: string;
-}
-
+// Monthly maintenance has two repeate modes
 enum MonthlyDayPeriodSelection {
   Week = 1, // The maintenance is repeated on Nth weekday(s) of the month
   Month = 2, // The maintenance is repeated on Nth day of the month
 }
 
-// Options type for dropdowns
-interface Options {
-  text: string;
-  value: number;
-}
-
 interface Props {
   show: boolean; // Show modal dialog
-  onDismiss(): void;
-  onCreateOrUpdateMaintenance: OnCreateOrUpdateMaintenanceCallback;
-  selectedMaintenance?: Maintenance;
-  openAllMaintenancesModal(): void;
-  hosts: Array<{ text: string; value: number }>;
-  user: string;
-  allMaintenances: Maintenance[];
+  onCloseMaintenanceEditWizard(): void;
+  hosts: Array<{ name: string; hostid: number }>; // All hosts of the configured host group
+  selectedMaintenance?: Maintenance; // Undefined if creating a new maintenance
+  zabbixDataSource: string; // Zabbix data source
 }
 
 interface State {
   wizardPhase: WizardPhase;
+  shownDialog: ShownDialog;
   maintenanceType: MaintenanceType;
   everyNDays: number; // Daily maintanance: repeat every N days
   everyNWeeks: number; // Weekly maintenance: repeat every N weeks
@@ -107,108 +66,98 @@ interface State {
   dayOfMonthOrWeekSelected: MonthlyDayPeriodSelection; // Monthly maintenance: manner in which the maintenance is repeated
   dayOfMonth: number; // Monthly maintenance: Nth day of the month; only if dayOfMonthOrWeekSelected is Month
   monthlyWeekdays: WeekdaySelection; // Monthly maintenance: selected weekday if repeated on Nth weekday(s) of the month
-  everyDayOfWeekInput: number; // Monthly maintenance: the week of month (1 - first, 2 - second, ..., 5 - last); only if dayOfMonthOrWeekSelected is Week
+  monthlyWeekNumberInput: number; // Monthly maintenance: the week of month (1 - first, 2 - second, ..., 5 - last); only if dayOfMonthOrWeekSelected is Week
 
-  // For single maintenance: maintenance start date
-  // For repeating maintenance: repeat start date
-  dayInput: number;
-  monthInput: number;
-  yearInput: number;
+  oneTimeStartTimestamp: DateTime; // One-time maintenance start timestamp
+  periodicActiveSinceTimestamp: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat start date
+  periodicActiveTillTimestamp: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat end date
+  periodicStartHour: number; // Periodic maintenance (daily, weekly or monthly): hour of day when maintenance starts in seconds
+  periodicStartMinute: number; // Periodic maintenance (daily, weekly or monthly): minute when maintenance starts in seconds
 
-  // Maintenance start time (either for the single maintenance or the repeating maintenance)
-  hourInput: number;
-  minuteInput: number;
+  // Duration of the maintenance in seconds
+  duration: number;
 
-  // For single maintenance: maintenance end date
-  // For repeating maintenance: repeate end date
-  dayStopInput: number;
-  monthStopInput: number;
-  yearStopInput: number;
-
-  // For single maintenance: Maintenance end date
-  // For repeating maintenance: N/A
-  strictEndDayInput: number;
-  strictEndMonthInput: number;
-  strictEndYearInput: number;
-
-  // Maintenance end time (either for the single maintenance or the repeating maintenance)
-  // If strictEndTimeSelected is false and the duration is given with durationInput
-  // these fields are set automatically according to the configured duration.
-  strictEndHourInput: number;
-  strictEndMinuteInput: number;
-
-  // True if end time is selected manually, false if duration is selected
+  // True if end time (ie. duration) is entered manually, false if duration is selected from a dropdown
   strictEndTimeSelected: boolean;
 
-  // Duration of the maintenance in seconds; valid if strictEndTimeSelected is false
-  durationInput: number;
-
+  // Maintenance description
   description: string;
+
+  // Search filter for hosts selection
   searchText: string;
-  allHostsSelected: boolean;
-  selectedHosts: Array<{ text: string; value: number; selected: boolean }>;
+
+  // This contains all the hosts and selected flag
+  selectedHosts: Array<{ name: string; hostid: number; selected: boolean }>;
 }
 
 export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
-  durationInput: {
-    options: Array<{ text: string; value: number }>;
+  // Initial state
+  state: State = {
+    wizardPhase: WizardPhase.FirstDates,
+    shownDialog: ShownDialog.None,
+    maintenanceType: MaintenanceType.OneTime,
+    everyNDays: 1,
+    everyNWeeks: 1,
+    weeklyWeekdays: [false, false, false, false, false, false, false],
+    months: [false, false, false, false, false, false, false, false, false, false, false, false],
+    dayOfMonthOrWeekSelected: MonthlyDayPeriodSelection.Month,
+    dayOfMonth: 1,
+    monthlyWeekdays: [false, false, false, false, false, false, false],
+    monthlyWeekNumberInput: 1,
+    oneTimeStartTimestamp: DateTime.now(),
+    periodicActiveSinceTimestamp: DateTime.now(),
+    periodicActiveTillTimestamp: DateTime.now(),
+    periodicStartHour: 0,
+    periodicStartMinute: 0,
+    duration: 0,
+    strictEndTimeSelected: false,
+    description: '',
+    searchText: '',
+    selectedHosts: [],
   };
-  mTypeInput: {
-    options: Array<{ label: string; value: MaintenanceType }>;
-  };
-  everyDayOfWeekInputOptions: Array<{ label: string; value: number }>;
-  weekdayNames: WeekdayNames;
-  monthNames: MonthNames;
+
+  // Pre-set duration dropdown options
+  durationOptions: Array<{ text: string; value: number }>;
+
+  // Maintenance type dropdown options
+  mTypeInputOptions: Array<{ label: string; value: MaintenanceType }>;
+
+  // Monthly maintenance: Nth day of month or Nth weekday(s) of month selection
+  monthlyWeekNumberInputOptions: Array<{ label: string; value: number }>;
+
+  weekdayNames: string[] = []; // Mon-Sun 0-7
+  monthNames: string[] = []; // Jan-Dec 0-11
   texts: any;
 
+  // Class constructor
   constructor(props: Props) {
     super(props);
     this.texts = contextSrv.getLocalizedTexts();
-    this.weekdayNames = {
-      monday: this.texts.monday,
-      tuesday: this.texts.tuesday,
-      wednesday: this.texts.wednesday,
-      thursday: this.texts.thursday,
-      friday: this.texts.friday,
-      saturday: this.texts.saturday,
-      sunday: this.texts.sunday,
-    };
-    this.monthNames = {
-      january: this.texts.january,
-      february: this.texts.february,
-      march: this.texts.march,
-      april: this.texts.april,
-      may: this.texts.may,
-      june: this.texts.june,
-      july: this.texts.july,
-      august: this.texts.august,
-      september: this.texts.september,
-      october: this.texts.october,
-      november: this.texts.november,
-      december: this.texts.december,
-    };
-    this.durationInput = {
-      options: [
-        { text: '1h', value: 3600 },
-        { text: '2h', value: 7200 },
-        { text: '4h', value: 14400 },
-        { text: '8h', value: 28800 },
-        { text: '12h', value: 43200 },
-        { text: '24h', value: 86400 },
-        { text: '2d', value: 172800 },
-        { text: '3d', value: 259200 },
-        { text: '5d', value: 432000 },
-      ],
-    };
-    this.mTypeInput = {
-      options: [
-        { label: this.texts.oneTime, value: MaintenanceType.OneTime },
-        { label: this.texts.daily, value: MaintenanceType.Daily },
-        { label: this.texts.weekly, value: MaintenanceType.Weekly },
-        { label: this.texts.monthly, value: MaintenanceType.Monthly },
-      ],
-    };
-    this.everyDayOfWeekInputOptions = [
+
+    for (var weekday = 0; weekday < 7; weekday++) {
+      this.weekdayNames[weekday] = this.texts['weekday' + weekday];
+    }
+    for (var month = 0; month < 12; month++) {
+      this.monthNames[month] = this.texts['month' + month];
+    }
+    this.durationOptions = [
+      { text: '1h', value: 3600 },
+      { text: '2h', value: 7200 },
+      { text: '4h', value: 14400 },
+      { text: '8h', value: 28800 },
+      { text: '12h', value: 43200 },
+      { text: '24h', value: 86400 },
+      { text: '2d', value: 172800 },
+      { text: '3d', value: 259200 },
+      { text: '5d', value: 432000 },
+    ];
+    this.mTypeInputOptions = [
+      { label: this.texts.oneTime, value: MaintenanceType.OneTime },
+      { label: this.texts.daily, value: MaintenanceType.Daily },
+      { label: this.texts.weekly, value: MaintenanceType.Weekly },
+      { label: this.texts.monthly, value: MaintenanceType.Monthly },
+    ];
+    this.monthlyWeekNumberInputOptions = [
       { label: this.texts.first, value: 1 },
       { label: this.texts.second, value: 2 },
       { label: this.texts.third, value: 3 },
@@ -230,18 +179,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       // Initialize state variables related to weekly and monthly maintenances
       var stateWeeklyMonthlyProperties = this.initializeWeeklyMonthlyState(type, m);
 
-      // TBD: This is current a legacy way
+      // Initialize state variables related to when maintenance starts and ends
       var stateDateProperties = this.initializeDatesToState(type, m);
 
       const selectedHosts = this.props.hosts.map((host) => ({ ...host, selected: true }));
-      var allHostsSelected = true;
       if (m) {
         // Set host selection based on selected maintenance
         const maintenanceHostIds: number[] = m.hosts.map((host) => host.hostid);
         selectedHosts.map((host, index: number) => {
-          if (maintenanceHostIds.indexOf(host.value) === -1) {
+          if (maintenanceHostIds.indexOf(host.hostid) === -1) {
             selectedHosts[index].selected = false;
-            allHostsSelected = false;
           }
         });
       }
@@ -258,7 +205,6 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         searchText: '',
 
         selectedHosts: selectedHosts,
-        allHostsSelected: allHostsSelected,
       });
     }
   }
@@ -266,56 +212,15 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   // Initialize weekly and monthly maintenance related state variables when the dialog is shown
   initializeWeeklyMonthlyState(type: MaintenanceType, m?: Maintenance) {
     // Selected weekdays of weekly maintenance
-    var weeklyWeekdays: WeekdaySelection = {
-      monday: false,
-      tuesday: false,
-      wednesday: false,
-      thursday: false,
-      friday: false,
-      saturday: false,
-      sunday: false,
-    };
+    var weeklyWeekdays = [false, false, false, false, false, false, false];
     if (m && type === MaintenanceType.Weekly) {
-      // Turn dayOfWeek number to binary and then to array to get selected weekdays
-      const daysBinary = m.dayOfWeek.toString(2).split('').reverse();
-      for (let i = 0; i < daysBinary.length; i++) {
-        if (daysBinary[i] === '1') {
-          const dayTitles = Object.keys(weeklyWeekdays) as Array<keyof WeekdaySelection>;
-          weeklyWeekdays[dayTitles[i]] = true;
-        }
-      }
+      weeklyWeekdays = m.weekdays;
     }
 
     // Selected months of monthly maintenance
-    var months: MonthSelection = {
-      january: false,
-      february: false,
-      march: false,
-      april: false,
-      may: false,
-      june: false,
-      july: false,
-      august: false,
-      september: false,
-      october: false,
-      november: false,
-      december: false,
-      all: false,
-    };
+    var months = [false, false, false, false, false, false, false, false, false, false, false, false];
     if (m && type === MaintenanceType.Monthly) {
-      // Turn month number to binary and then to array to get selected months
-      const monthBinary = m.month.toString(2).split('').reverse();
-      let monthAmount = 0;
-      for (let i = 0; i < monthBinary.length; i++) {
-        if (monthBinary[i] === '1') {
-          const monthTitles = Object.keys(months) as Array<keyof MonthSelection>;
-          months[monthTitles[i]] = true;
-          monthAmount++;
-        }
-      }
-      if (monthAmount === 12) {
-        months.all = true;
-      }
+      months = m.months;
     }
 
     // Monthly maintenance: Is it repeated Nth day of month of Nth weekday(s) of month
@@ -325,24 +230,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     }
 
     // Selected weekdays of monthly maintenance when Nth weekday(s) of the month option is selected
-    var monthlyWeekdays: WeekdaySelection = {
-      monday: false,
-      tuesday: false,
-      wednesday: false,
-      thursday: false,
-      friday: false,
-      saturday: false,
-      sunday: false,
-    };
+    var monthlyWeekdays = [false, false, false, false, false, false, false];
     if (m && type === MaintenanceType.Monthly && dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week) {
-      // Turn dayOfWeek number to binary and then to array to get selected weekdays
-      const daysBinary = m.dayOfWeek.toString(2).split('').reverse();
-      for (let i = 0; i < daysBinary.length; i++) {
-        if (daysBinary[i] === '1') {
-          const dayTitles = Object.keys(monthlyWeekdays) as Array<keyof WeekdaySelection>;
-          monthlyWeekdays[dayTitles[i]] = true;
-        }
-      }
+      monthlyWeekdays = m.weekdays;
     }
 
     return {
@@ -352,8 +242,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         m && type === MaintenanceType.Monthly && dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month
           ? m.day
           : 1,
+      months: months,
       monthlyWeekdays: monthlyWeekdays,
-      everyDayOfWeekInput:
+      monthlyWeekNumberInput:
         m && type === MaintenanceType.Monthly && dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week
           ? m.every
           : 1,
@@ -361,750 +252,225 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   }
 
   // Initialize date properties to state when the dialog is shown
-  // TBD: This is the old and messy way of doing things that needs to be blown up
   initializeDatesToState(type: MaintenanceType, m?: Maintenance) {
-    let currentDate = new Date();
-    let currentHours = currentDate.getHours();
-    let currentMinutes = currentDate.getMinutes();
+    let duration = 3600;
     if (m) {
-      const currentStartTime = new Date(m.startTime * 1000);
-      currentHours = currentStartTime.getHours();
-      currentMinutes = currentStartTime.getMinutes();
-      if (m.maintenanceType > 0) {
-        currentDate = moment(m.activeSince * 1000)
-          .startOf('day')
-          .add(currentHours, 'hour')
-          .add(currentMinutes, 'minute')
-          .toDate();
-      } else {
-        currentDate = new Date(m.startTime * 1000);
-      }
+      duration = m.duration;
     }
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentDay = currentDate.getDate();
-
-    // Stop repeat date selector
-    let stopDate = moment(currentDate).add(1, 'day').toDate();
-    if (m) {
-      if (m.maintenanceType > 0) {
-        stopDate = new Date(m.activeTill * 1000);
-      } else {
-        stopDate = new Date(m.endTime * 1000);
-      }
-    }
-    const stopYear = stopDate.getFullYear();
-    const stopMonth = stopDate.getMonth() + 1;
-    const stopDay = stopDate.getDate();
-
-    // Set strict end time selector
-    const duration = m ? m.duration : 3600;
-    let strictEndTimeDate = moment(currentDate).add(duration, 'second').toDate();
-
-    const strictEndTimeHours = strictEndTimeDate.getHours();
-    const strictEndTimeMinutes = strictEndTimeDate.getMinutes();
-    const strictEndTimeYear = strictEndTimeDate.getFullYear();
-    const strictEndTimeMonth = strictEndTimeDate.getMonth() + 1;
-    const strictEndTimeDay = strictEndTimeDate.getDate();
 
     // Check if selected maintenances duration is one of the presets
     let strictEndTimeSelected = false;
-    if (!this.durationInput.options.some((item) => item.value === duration)) {
+    if (!this.durationOptions.some((item) => item.value === duration)) {
       strictEndTimeSelected = true;
     }
 
+    let oneTimeStartTimestamp = DateTime.now();
+    let periodicActiveSinceTimestamp = DateTime.now().startOf('day');
+    let periodicActiveTillTimestamp = DateTime.now().plus({ days: 1 }).startOf('day');
+    let periodicStartHour: number = DateTime.now().hour;
+    let periodicStartMinute: number = DateTime.now().minute;
+    if (m && type === MaintenanceType.OneTime) {
+      oneTimeStartTimestamp = m.oneTimeStartTimestamp!;
+    } else if (m) {
+      // Periodic maintenance
+      periodicActiveSinceTimestamp = m.periodicActiveSinceTimestamp!;
+      periodicActiveTillTimestamp = m.periodicActiveTillTimestamp!;
+      periodicStartHour = Math.floor(m.periodicStartTime! / 3600);
+      periodicStartMinute = Math.floor((m.periodicStartTime! - periodicStartHour * 3600) / 60);
+    }
+
     return {
-      yearInput: currentYear,
-      monthInput: currentMonth,
-      dayInput: currentDay,
-      hourInput: currentHours,
-      minuteInput: currentMinutes,
-      yearStopInput: stopYear,
-      monthStopInput: stopMonth,
-      dayStopInput: stopDay,
-      strictEndYearInput: strictEndTimeYear,
-      strictEndMonthInput: strictEndTimeMonth,
-      strictEndDayInput: strictEndTimeDay,
-      strictEndHourInput: strictEndTimeHours,
-      strictEndMinuteInput: strictEndTimeMinutes,
+      duration: duration,
       strictEndTimeSelected: strictEndTimeSelected,
-      durationInput: duration,
+      oneTimeStartTimestamp: oneTimeStartTimestamp,
+      periodicActiveSinceTimestamp: periodicActiveSinceTimestamp,
+      periodicActiveTillTimestamp: periodicActiveTillTimestamp,
+      periodicStartHour: periodicStartHour,
+      periodicStartMinute: periodicStartMinute,
     };
   }
-
-  /* TBD
-  handleFormChange = () => {
-    this.setState({ preview: null }, () => {
-      this.updatePreview();
-
-      const currentDate = new Date(
-        this.state.yearInput,
-        this.state.monthInput - 1,
-        this.state.dayInput,
-        this.state.hourInput,
-        this.state.minuteInput
-      );
-
-      const currentStrictDate = new Date(
-        this.state.strictEndYearInput,
-        this.state.strictEndMonthInput - 1,
-        this.state.strictEndDayInput,
-        this.state.strictEndHourInput,
-        this.state.strictEndMinuteInput
-      );
-
-      // Adjust end time if strict end time is not selected or strict time is less than
-      // current date
-      if (this.state.strictEndTimeSelected === false || currentStrictDate < currentDate) {
-        const strictEndTimeDate = moment(currentDate).add(1, 'hours').toDate();
-
-        this.onStrictEndMinuteValueChanged(strictEndTimeDate.getMinutes());
-        this.onStrictEndHourValueChanged(strictEndTimeDate.getHours());
-        this.onStrictEndDayValueChanged(strictEndTimeDate.getDate());
-        this.onStrictEndMonthValueChanged(strictEndTimeDate.getMonth() + 1);
-        this.onStrictEndYearValueChanged(strictEndTimeDate.getFullYear());
-
-        this.setStrictEndTimeDate(strictEndTimeDate);
-      }
-    });
-  }; **/
 
   // Analyze the configured dates and generate top-10 list of upcoming maintenances to the state
   getMaintanenceDatesPreview = () => {
     const { maintenanceType } = this.state;
 
-    const startDate = new Date(
-      this.state.yearInput,
-      this.state.monthInput - 1,
-      this.state.dayInput,
-      this.state.hourInput,
-      this.state.minuteInput
-    );
-
-    const stopDate = moment(
-      new Date(this.state.yearStopInput, this.state.monthStopInput - 1, this.state.dayStopInput, 0, 0)
-    )
-      .endOf('day')
-      .toDate();
-
-    const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.state.durationInput;
-    const stopDateTime = moment(startDate).add(duration, 'second').toDate();
-    const diffDays = moment(stopDate).diff(startDate, 'days');
-    const diffWeeks = moment(stopDate).diff(startDate, 'weeks');
-
-    let dates: any = [];
-
-    if (maintenanceType === MaintenanceType.Daily) {
-      for (let i = 0; i < diffDays + 1; i++) {
-        // Only allow days that are every [N] days
-        if (i % this.state.everyNDays === 0) {
-          let date = moment(startDate).add(i, 'day').toDate();
-
-          // Check that dates are after start date and before stop date
-          if (
-            moment(date).isAfter(moment(startDate).subtract(1, 'days')) &&
-            moment(date).isBefore(moment(stopDate).add(1, 'days'))
-          ) {
-            dates.push({
-              startTime: moment(date).unix(),
-              endTime: moment(date).add(duration, 'second').unix(),
-              new: true,
-            });
-          }
-        }
-      }
+    let dates: MaintenanceInstanceDates[];
+    if (maintenanceType === MaintenanceType.OneTime) {
+      const endTime = this.state.oneTimeStartTimestamp.plus({ seconds: this.state.duration });
+      dates = [
+        {
+          startTime: this.state.oneTimeStartTimestamp,
+          endTime: endTime,
+          ongoing: this.state.oneTimeStartTimestamp <= DateTime.now() && endTime >= DateTime.now(),
+        },
+      ];
+    } else if (maintenanceType === MaintenanceType.Daily) {
+      dates = getNextDailyMaintenances(
+        this.state.periodicActiveSinceTimestamp,
+        this.state.periodicActiveTillTimestamp,
+        this.state.everyNDays,
+        this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60,
+        this.state.duration
+      );
     } else if (maintenanceType === MaintenanceType.Weekly) {
-      for (let i = 0; i < diffWeeks + 1; i++) {
-        // Only allow days that are every [N] weeks
-        if (i % this.state.everyNWeeks === 0) {
-          // Get weekdays as weekday name as key and included as value
-          for (const [key, value] of Object.entries(this.state.weeklyWeekdays)) {
-            if (value === true) {
-              // Add a week each iteration
-              let date = moment(startDate)
-                .add(i, 'week')
-                .isoWeekday(Object.keys(this.state.weeklyWeekdays).indexOf(key) + 1)
-                .toDate();
-
-              if (
-                moment(date).isSameOrAfter(moment(startDate)) &&
-                moment(date).add(duration, 'second').isBefore(moment(stopDate))
-              ) {
-                dates.push({
-                  startTime: moment(date).unix(),
-                  endTime: moment(date).add(duration, 'second').unix(),
-                  new: true,
-                });
-              }
-            }
-          }
-        }
-      }
-    } else if (maintenanceType === MaintenanceType.Monthly) {
-      if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month) {
-        // Start with looping though months with difference between months as stop
-        // condition adding the amount of months to it
-        for (let i = moment(startDate).month(); i < moment(startDate).month() + moment(stopDate).month(); i++) {
-          // Make a new object and remove "all" entry
-          let months: any = {};
-          Object.assign(months, this.state.months);
-          delete months['all'];
-
-          // Loop through month entries...
-          for (const [month, includeMonth] of Object.entries(months)) {
-            // ...and see if month is included
-            if (Object.keys(months).indexOf(month) === i && includeMonth === true) {
-              let date = moment(startDate).date(this.state.dayOfMonth).month(i).toDate();
-
-              if (
-                moment(date).isAfter(moment(startDate)) &&
-                moment(date).isAfter() &&
-                moment(date).add(duration, 'second').isBefore(moment(stopDate))
-              ) {
-                dates.push({
-                  startTime: moment(date).unix(),
-                  endTime: moment(date).add(duration, 'second').unix(),
-                  new: true,
-                });
-              }
-            }
-          }
-        }
-      } else if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week) {
-        // Start with looping though months with difference between months as stop
-        // condition adding the amount of months to it
-        for (let i = moment(startDate).month(); i < moment(startDate).month() + moment(stopDate).month(); i++) {
-          // Make a new object and remove "all" entry
-          const months: any = {};
-          Object.assign(months, this.state.months);
-          delete months['all'];
-
-          // Loop through month entries...
-          for (const [month, includeMonth] of Object.entries(months)) {
-            // ...and see if month is included
-            if (Object.keys(months).indexOf(month) === i && includeMonth === true) {
-              // Loop through days in current month
-              for (let j = 0; j < moment(startDate).add(i, 'months').daysInMonth(); j++) {
-                // Check if week is included and if weekday is included in the form
-                // and that date is between start and stop date
-                if (
-                  this.state.everyDayOfWeekInput === Math.ceil(j / 7) &&
-                  this.state.monthlyWeekdays[
-                    moment(startDate).month(i).date(j).format('dddd').toString().toLowerCase() as keyof WeekdaySelection
-                  ] === true &&
-                  moment(startDate).month(i).date(j).isAfter() &&
-                  moment(startDate).month(i).date(j).isAfter(moment(startDate)) &&
-                  moment(startDate).month(i).date(j).add(duration, 'second').isBefore(moment(stopDate))
-                ) {
-                  dates.push({
-                    startTime: moment(startDate).month(i).date(j).unix(),
-                    endTime: moment(startDate).month(i).date(j).add(duration, 'second').unix(),
-                    new: true,
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
+      dates = getNextWeeklyMaintenances(
+        this.state.periodicActiveSinceTimestamp,
+        this.state.periodicActiveTillTimestamp,
+        this.state.everyNWeeks,
+        this.state.weeklyWeekdays,
+        this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60,
+        this.state.duration
+      );
     } else {
-      dates.push({
-        startTime: moment(startDate).unix(),
-        endTime: moment(stopDateTime).unix(),
-        new: true,
-      });
+      dates = getNextMonthlyMaintenances(
+        this.state.periodicActiveSinceTimestamp,
+        this.state.periodicActiveTillTimestamp,
+        this.state.monthlyWeekNumberInput,
+        this.state.monthlyWeekdays,
+        this.state.dayOfMonth,
+        this.state.months,
+        this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60,
+        this.state.duration
+      );
     }
 
     return dates;
-
-    // TODO: Enable list of current maintenances
-    /*
-    let fullDatesList = this.props.allMaintenances.concat(dates);
-
-    fullDatesList.sort(function (a, b) {
-      let keyA = a.startTime,
-        keyB = b.startTime;
-
-      if (keyA < keyB) {
-        return -1;
-      }
-
-      if (keyA > keyB) {
-        return 1;
-      }
-
-      return 0;
-    });
-
-    this.setState({ preview: fullDatesList });
-    */
-  };
-
-  setStrictEndTimeDate = (strictEndTimeDate: Date) => {
-    const strictEndTimeHours = strictEndTimeDate.getHours();
-    const strictEndTimeMinutes = strictEndTimeDate.getMinutes();
-    const strictEndTimeYear = strictEndTimeDate.getFullYear();
-    const strictEndTimeMonth = strictEndTimeDate.getMonth() + 1;
-    const strictEndTimeDay = strictEndTimeDate.getDate();
-    this.setState({
-      strictEndYearInput: strictEndTimeYear,
-      strictEndMonthInput: strictEndTimeMonth,
-      strictEndDayInput: strictEndTimeDay,
-      strictEndHourInput: strictEndTimeHours,
-      strictEndMinuteInput: strictEndTimeMinutes,
-    });
   };
 
   /**
    * Save changes (either creating a new maintenance or editing an old one)
    */
   onSaveChanges = () => {
-    const maintenanceType = this.state.maintenanceType;
-    const options: any = {};
-    if (maintenanceType === MaintenanceType.Daily) {
-      options.every = this.state.everyNDays;
-    } else if (maintenanceType === MaintenanceType.Weekly) {
-      options.every = this.state.everyNWeeks;
-      let dayOfWeekBinary = '';
-      (Object.keys(this.state.weeklyWeekdays) as Array<keyof WeekdaySelection>).map((weekday) => {
-        if (this.state.weeklyWeekdays[weekday]) {
-          dayOfWeekBinary = '1' + dayOfWeekBinary;
+    // Create a new Maintenance object (even if we're editing an existing maintenance)
+    // to make sure it gets 100% correct
+    let m: Maintenance = {
+      id: this.props.selectedMaintenance ? this.props.selectedMaintenance.id : 0,
+      name: '',
+      description: this.state.description,
+      createdBy: contextSrv.user.email,
+      lastUpdatedTimestamp: DateTime.now(),
+      hosts: this.state.selectedHosts.filter((host) => host.selected),
+      maintenanceType: this.state.maintenanceType,
+      duration: this.state.duration,
+      every: 0,
+      day: 0,
+      months: [false, false, false, false, false, false, false, false, false, false, false, false],
+      weekdays: [false, false, false, false, false, false, false],
+      ongoing: false,
+      groups: [],
+      startTimeString: '',
+      endTimeString: '',
+      durationString: '',
+    };
+    if (this.state.maintenanceType === MaintenanceType.OneTime) {
+      m.oneTimeStartTimestamp = this.state.oneTimeStartTimestamp;
+      m.oneTimeEndTimestamp = this.state.oneTimeStartTimestamp.plus({ seconds: this.state.duration });
+    } else {
+      // Periodic maintenance
+      m.periodicActiveSinceTimestamp = this.state.periodicActiveSinceTimestamp.startOf('day');
+      m.periodicActiveTillTimestamp = this.state.periodicActiveTillTimestamp.startOf('day');
+      m.periodicStartTime = this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60;
+      if (this.state.maintenanceType === MaintenanceType.Daily) {
+        m.every = this.state.everyNDays;
+      } else if (this.state.maintenanceType === MaintenanceType.Weekly) {
+        m.every = this.state.everyNWeeks;
+        m.weekdays = this.state.weeklyWeekdays;
+      } else {
+        // Monthly maintenance, two possible modes
+        if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week) {
+          m.every = this.state.monthlyWeekNumberInput;
+          m.weekdays = this.state.monthlyWeekdays;
         } else {
-          dayOfWeekBinary = '0' + dayOfWeekBinary;
+          m.day = this.state.dayOfMonth;
+          m.weekdays = [];
         }
-      });
-      options.dayofweek = parseInt(dayOfWeekBinary, 2);
-    } else if (maintenanceType === MaintenanceType.Monthly) {
-      // Monthly maintenance
-      let monthBinary = '';
-      (Object.keys(this.state.months) as Array<keyof MonthSelection>).map((month) => {
-        if (this.state.months[month] && month !== 'all') {
-          monthBinary = '1' + monthBinary;
-        } else {
-          monthBinary = '0' + monthBinary;
-        }
-      });
-      options.month = parseInt(monthBinary, 2);
-      if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month) {
-        options.day = this.state.dayOfMonth;
-      } else if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week) {
-        options.every = this.state.everyDayOfWeekInput;
-        let dayOfWeekBinary = '';
-        (Object.keys(this.state.monthlyWeekdays) as Array<keyof WeekdaySelection>).map((weekday) => {
-          if (this.state.monthlyWeekdays[weekday]) {
-            dayOfWeekBinary = '1' + dayOfWeekBinary;
-          } else {
-            dayOfWeekBinary = '0' + dayOfWeekBinary;
-          }
-        });
-        options.dayofweek = parseInt(dayOfWeekBinary, 2);
       }
     }
-    const startDate = new Date(
-      this.state.yearInput,
-      this.state.monthInput - 1,
-      this.state.dayInput,
-      this.state.hourInput,
-      this.state.minuteInput
-    );
-    let stopDate = new Date(this.state.yearStopInput, this.state.monthStopInput - 1, this.state.dayStopInput);
-    stopDate = moment(stopDate).endOf('day').toDate();
-    if (
-      maintenanceType === MaintenanceType.Daily ||
-      maintenanceType === MaintenanceType.Weekly ||
-      maintenanceType === MaintenanceType.Monthly
-    ) {
-      options.start_time = moment.utc(startDate).hour() * 60 * 60 + moment.utc(startDate).minute() * 60;
-    }
-    const hostIds: number[] = this.state.selectedHosts.filter((host) => host.selected).map((host) => host.value);
-    const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
-    const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.state.durationInput;
-    this.props.onCreateOrUpdateMaintenance(
-      maintenanceType,
-      maintenanceName,
-      duration,
-      hostIds,
-      options,
-      startDate,
-      stopDate,
-      this.props.selectedMaintenance ? this.props.selectedMaintenance.id : undefined
-    );
-    this.onDismiss();
+
+    saveMaintenance(m, this.props.zabbixDataSource)
+      .then(() => {
+        // Prompt the user according to whether it was update or save and whether if affects the system
+        // state immediately
+        if (this.props.selectedMaintenance) {
+          if (
+            this.props.selectedMaintenance.ongoing ||
+            this.getMaintanenceDatesPreview().some((dates) => dates.ongoing)
+          ) {
+            this.setState({ shownDialog: ShownDialog.OngoingMaintenanceUpdated });
+          } else {
+            this.setState({ shownDialog: ShownDialog.FutureMaintenanceUpdated });
+          }
+        } else {
+          if (this.getMaintanenceDatesPreview().some((dates) => dates.ongoing)) {
+            this.setState({ shownDialog: ShownDialog.NewMaintenanceStarted });
+          } else {
+            this.setState({ shownDialog: ShownDialog.FutureMaintenanceCreated });
+          }
+        }
+
+        // Signal action panel to refresh its state once zabbix has updated
+        // the maintenance status of the hosts in a few minutes
+        setTimeout(() => {
+          document.dispatchEvent(new Event('iiris-maintenance-update'));
+        }, 2 * 60 * 1000);
+      })
+      .catch((err: any) => {
+        appEvents.emit(AppEvents.alertError, ['Failed to save a maintenance', err.toString()]);
+      });
   };
 
-  onDismiss = () => {
-    this.props.onDismiss();
-  };
-
-  /**
-   * Callback for select value changed
-   */
-  onDurationValueChanged = (value: number) => {
-    this.setState({ durationInput: value });
-    if (value > 0) {
-      this.onHourValueChanged(); // WHY ???
-    }
-  };
-
-  // Year options for dropdown
-  getYearOptions = (selectedYear: number) => {
-    var years: Options[] = [];
+  // Years for dropdown regaring the selected year the must be selectable
+  getYearsForDropdown = (selectedYear: number) => {
+    var years = [];
     const currentYear = new Date().getFullYear();
     for (let i = currentYear; i < currentYear + 2; i++) {
-      years.push({
-        text: '' + i,
-        value: i,
-      });
+      years.push(i);
     }
-    if (!years.some((option) => option.value === selectedYear)) {
-      years.push({
-        text: '' + selectedYear,
-        value: selectedYear,
-      });
+    if (!years.some((year) => year === selectedYear)) {
+      years.push(selectedYear);
     }
     return years;
   };
 
-  // Month options for dropdown
-  getMonthOptions = () => {
-    var months: Options[] = [];
-    for (let i = 1; i < 13; i++) {
-      months.push({
-        text: '' + i,
-        value: i,
-      });
-    }
-    return months;
+  // Days for dropdown for the month of the given date
+  getDaysForDropdown = (date: DateTime) => {
+    var maxDay = date.endOf('month').day;
+    return Array.from(Array(maxDay + 1).keys()).map((day) => day + 1);
   };
 
-  // Day options for dropdown
-  getDayOptions = (y: number, m: number) => {
-    var days: Options[] = [];
-    var maxAmount = this.getMaxDay(y, m);
-    for (let i = 1; i <= maxAmount; i++) {
-      days.push({
-        text: '' + i,
-        value: i,
-      });
-    }
-    return days;
-  };
-
-  // Get maximum day value of the given year and month
-  getMaxDay(y: number, m: number) {
-    let maxAmount = 0;
-    if (m === 1 || m === 3 || m === 5 || m === 7 || m === 8 || m === 10 || m === 12) {
-      maxAmount = 31;
-    } else if (m === 4 || m === 6 || m === 9 || m === 11) {
-      maxAmount = 30;
-    } else {
-      maxAmount = 28;
-    }
-    if (((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) && m === 2) {
-      maxAmount = 29;
-    }
-    return maxAmount;
+  // When the user has changed day, month, year, hour, or minute of when the maintenance ends
+  // calculate the new maintenance duration
+  calculateNewDurationForOnetimeMaintenance(changedComponent: string, newValue: number) {
+    const maintenanceStarts = this.state.oneTimeStartTimestamp;
+    const oldDuration = this.state.duration;
+    const oldMaintenanceEnds = maintenanceStarts.plus({ seconds: oldDuration });
+    var dateTimeChange: any = {};
+    dateTimeChange[changedComponent] = newValue;
+    const newMaintenanceEnds = oldMaintenanceEnds.set(dateTimeChange);
+    const newDuration = newMaintenanceEnds.diff(maintenanceStarts, 'seconds').seconds;
+    return newDuration;
   }
 
-  // Hour options for dropdown
-  getHourOptions = () => {
-    var hours: Options[] = [];
-    for (let i = 0; i < 24; i++) {
-      hours.push({
-        text: '' + i,
-        value: i,
-      });
+  // When the user has changed hour or minute of when the maintenance ends
+  // calculate the new maintenance duration
+  calculateNewDurationForPeriodicMaintenance(startTimeSeconds: number, newEndHour: number, newEndMinute: number) {
+    var endTimeSeconds = newEndHour * 3600 + newEndMinute * 60;
+
+    if (endTimeSeconds < startTimeSeconds) {
+      // Maintenance goes over to the next day
+      endTimeSeconds += 24 * 3600;
     }
-    return hours;
-  };
-
-  // Minute options for downdown
-  getMinuteOptions = () => {
-    var minutes: Options[] = [];
-    for (let i = 0; i < 60; i++) {
-      minutes.push({
-        text: '' + i,
-        value: i,
-      });
-    }
-    return minutes;
-  };
-
-  getStrictEndTimeDate = () => {
-    return new Date(
-      this.state.strictEndYearInput,
-      this.state.strictEndMonthInput - 1,
-      this.state.strictEndDayInput,
-      this.state.strictEndHourInput,
-      this.state.strictEndMinuteInput
-    );
-  };
-
-  /**
-   * Count maintenance duration if strict end time is selected
-   */
-  getStrictEndTimeDuration = () => {
-    const startDate = new Date(
-      this.state.yearInput,
-      this.state.monthInput - 1,
-      this.state.dayInput,
-      this.state.hourInput,
-      this.state.minuteInput
-    );
-    const stopDate = this.getStrictEndTimeDate();
-    const duration = Math.round((stopDate.getTime() - startDate.getTime()) / 1000);
-    return duration;
-  };
-
-  onDayValueChanged = (value: number) => {
-    this.setState({ dayInput: value, dayStopInput: value });
-    // Adjust end time if strict end time is not selected
-    if (this.state.strictEndTimeSelected === false) {
-      this.setState({ strictEndDayInput: value });
-    }
-  };
-
-  onHourValueChanged = (value?: number) => {
-    if (value || value === 0) {
-      this.setState({ hourInput: value });
-    }
-    // Adjust end time if strict end time is not selected
-    if (this.state.strictEndTimeSelected === false) {
-      const currentDate = new Date(
-        this.state.yearInput,
-        this.state.monthInput - 1,
-        this.state.dayInput,
-        this.state.hourInput,
-        this.state.minuteInput
-      );
-      let strictEndTimeDate = moment(currentDate).add(this.state.durationInput, 'second').toDate();
-      this.setStrictEndTimeDate(strictEndTimeDate);
-    }
-  };
-
-  onMinuteValueChanged = (value: number) => {
-    this.setState({ minuteInput: value });
-
-    // Adjust end time if strict end time is not selected
-    if (this.state.strictEndTimeSelected === false) {
-      this.setState({ strictEndMinuteInput: value });
-    }
-  };
-
-  /**
-   * Callback for select month
-   */
-  onMonthValueChanged = (value: number) => {
-    this.setState({ monthInput: value, monthStopInput: value });
-
-    // Day options vary per month
-    var maxDay = this.getMaxDay(this.state.yearInput, this.state.monthInput);
-    if (this.state.dayInput > maxDay) {
-      this.setState({ dayInput: maxDay });
-    }
-    maxDay = this.getMaxDay(this.state.yearStopInput, this.state.monthStopInput);
-    if (this.state.dayStopInput > maxDay) {
-      this.setState({ dayStopInput: maxDay });
-    }
-
-    // Adjust end time if strict end time is not selected
-    if (this.state.strictEndTimeSelected === false) {
-      this.setState({ strictEndMonthInput: value });
-
-      maxDay = this.getMaxDay(this.state.strictEndYearInput, this.state.strictEndMonthInput);
-      if (this.state.strictEndDayInput > maxDay) {
-        this.setState({ strictEndDayInput: maxDay });
-      }
-    }
-  };
-
-  /**
-   * Callback for select year
-   */
-  onYearValueChanged = (value: number) => {
-    this.setState({ yearInput: value, yearStopInput: value });
-
-    // Day options vary per year
-    var maxDay = this.getMaxDay(this.state.yearInput, this.state.monthInput);
-    if (this.state.dayInput > maxDay) {
-      this.setState({ dayInput: maxDay });
-    }
-    maxDay = this.getMaxDay(this.state.yearStopInput, this.state.monthStopInput);
-    if (this.state.dayStopInput > maxDay) {
-      this.setState({ dayStopInput: maxDay });
-    }
-
-    // Adjust end time if strict end time is not selected
-    if (this.state.strictEndTimeSelected === false) {
-      this.setState({ strictEndYearInput: value });
-
-      maxDay = this.getMaxDay(this.state.strictEndYearInput, this.state.strictEndMonthInput);
-      if (this.state.strictEndDayInput > maxDay) {
-        this.setState({ strictEndDayInput: maxDay });
-      }
-    }
-  };
-
-  onDayStopValueChanged = (value: number) => {
-    this.setState({ dayStopInput: value });
-  };
-
-  /**
-   * Callback for select month
-   */
-  onMonthStopValueChanged = (value: number) => {
-    this.setState({ monthStopInput: value });
-
-    var maxDay = this.getMaxDay(this.state.yearStopInput, this.state.monthStopInput);
-    if (this.state.dayStopInput > maxDay) {
-      this.setState({ dayStopInput: maxDay });
-    }
-  };
-
-  /**
-   * Callback for select year
-   */
-  onYearStopValueChanged = (value: number) => {
-    this.setState({ yearStopInput: value });
-
-    var maxDay = this.getMaxDay(this.state.yearStopInput, this.state.monthStopInput);
-    if (this.state.dayStopInput > maxDay) {
-      this.setState({ dayStopInput: maxDay });
-    }
-  };
-
-  onStrictEndDayToggle = (value: boolean) => {
-    const currentDate = new Date(
-      this.state.yearInput,
-      this.state.monthInput,
-      this.state.dayInput,
-      this.state.hourInput,
-      this.state.minuteInput
-    );
-
-    const strictEndTimeDate = moment(currentDate).add(1, 'hours').toDate();
-
-    this.onStrictEndMinuteValueChanged(strictEndTimeDate.getMinutes());
-    this.onStrictEndHourValueChanged(strictEndTimeDate.getHours());
-    this.onStrictEndDayValueChanged(strictEndTimeDate.getDate());
-    this.onStrictEndMonthValueChanged(strictEndTimeDate.getMonth());
-    this.onStrictEndYearValueChanged(strictEndTimeDate.getFullYear());
-
-    this.setState({ strictEndTimeSelected: value });
-  };
-
-  onStrictEndMinuteValueChanged = (value: number) => {
-    this.setState({ strictEndMinuteInput: value });
-  };
-
-  onStrictEndHourValueChanged = (value: number) => {
-    this.setState({ strictEndHourInput: value });
-  };
-
-  onStrictEndDayValueChanged = (value: number) => {
-    this.setState({ strictEndDayInput: value });
-  };
-
-  /**
-   * Callback for select strict end month
-   */
-  onStrictEndMonthValueChanged = (value: number) => {
-    this.setState({ strictEndMonthInput: value });
-
-    var maxDay = this.getMaxDay(this.state.strictEndYearInput, this.state.strictEndMonthInput);
-    if (this.state.strictEndDayInput > maxDay) {
-      this.setState({ strictEndDayInput: maxDay });
-    }
-  };
-
-  /**
-   * Callback for select strict year
-   */
-  onStrictEndYearValueChanged = (value: number) => {
-    this.setState({ strictEndYearInput: value });
-
-    var maxDay = this.getMaxDay(this.state.strictEndYearInput, this.state.strictEndMonthInput);
-    if (this.state.strictEndDayInput > maxDay) {
-      this.setState({ strictEndDayInput: maxDay });
-    }
-  };
+    const newDuration = endTimeSeconds - startTimeSeconds;
+    return newDuration;
+  }
 
   /**
    * Callback for selecting all hosts
    */
   selectAllHosts = (allSelected: boolean) => {
-    const selectedHosts = [...this.state.selectedHosts];
-    selectedHosts.forEach((host) => {
+    this.state.selectedHosts.forEach((host) => {
       host.selected = allSelected;
     });
-    this.setState({ allHostsSelected: allSelected, selectedHosts });
-  };
-
-  /**
-   * Callback for selecting host
-   */
-  selectHost = (id: number, checked: boolean) => {
-    const selectedHosts = [...this.state.selectedHosts];
-    const index = selectedHosts.findIndex((host) => host.value === id);
-    if (index > -1) {
-      selectedHosts[index].selected = checked;
-    }
-    const allHostsSelected = !selectedHosts.some((item) => !item.selected);
-    this.setState({ selectedHosts, allHostsSelected });
-  };
-
-  /**
-   * Callback for selecting a month; check if all are selected
-   */
-  toggleMonthSelection = (month: keyof MonthSelection, selected: boolean) => {
-    const months = { ...this.state.months };
-    months[month] = selected;
-    let allSelected = true;
-    (Object.keys(months) as Array<keyof MonthSelection>).map((monthName) => {
-      if (!months[monthName] && monthName !== 'all') {
-        allSelected = false;
-      }
-    });
-    months.all = allSelected;
-    this.setState({ months });
-  };
-
-  /**
-   * Callback for toggling all months on/off
-   */
-  toggleAllMonthsSelection = (selected: boolean) => {
-    const months = { ...this.state.months };
-    (Object.keys(months) as Array<keyof MonthSelection>).map((month) => {
-      if (selected) {
-        months[month] = true;
-      } else {
-        months[month] = false;
-      }
-    });
-    this.setState({ months });
-  };
-
-  /**
-   * Callback for changing maintenance
-   */
-  onMaintenanceTypeChanged = (value: MaintenanceType) => {
-    this.setState({ maintenanceType: value });
-  };
-
-  getCurrentTimeEpoch = (currentTime?: Date) => {
-    if (!currentTime) {
-      currentTime = new Date();
-    }
-    return (
-      Date.UTC(
-        currentTime.getUTCFullYear(),
-        currentTime.getUTCMonth(),
-        currentTime.getUTCDate(),
-        currentTime.getUTCHours(),
-        currentTime.getUTCMinutes(),
-        currentTime.getUTCSeconds()
-      ) / 1000
-    );
   };
 
   // Check the validity of wizard phase 1 configuration;
@@ -1119,22 +485,12 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       if (!this.state.everyNWeeks || !/^[0-9]*$/.test(this.state.everyNWeeks + '')) {
         return this.texts.weekFieldMustContainInteger;
       }
-      let someWeekdaySelected = false;
-      (Object.keys(this.state.weeklyWeekdays) as Array<keyof WeekdaySelection>).map((weekday) => {
-        if (this.state.weeklyWeekdays[weekday]) {
-          someWeekdaySelected = true;
-        }
-      });
+      let someWeekdaySelected = this.state.weeklyWeekdays.some((weekdaySelected) => weekdaySelected);
       if (!someWeekdaySelected) {
         return this.texts.oneWeekdayMustBeChosen;
       }
     } else if (maintenanceType === MaintenanceType.Monthly) {
-      let someMonthSelected = false;
-      (Object.keys(this.state.months) as Array<keyof MonthSelection>).map((month) => {
-        if (this.state.months[month]) {
-          someMonthSelected = true;
-        }
-      });
+      let someMonthSelected = this.state.months.some((monthSelected) => monthSelected);
       if (!someMonthSelected) {
         return this.texts.oneMonthMustBeChosen;
       }
@@ -1143,32 +499,17 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           return this.texts.monthFieldMustContainInteger;
         }
       } else if (this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week) {
-        let someWeekdaySelected = false;
-        (Object.keys(this.state.monthlyWeekdays) as Array<keyof WeekdaySelection>).map((weekday) => {
-          if (this.state.monthlyWeekdays[weekday]) {
-            someWeekdaySelected = true;
-          }
-        });
+        let someWeekdaySelected = this.state.monthlyWeekdays.some((weekdaySelected) => weekdaySelected);
         if (!someWeekdaySelected) {
           return this.texts.oneWeekdayMustBeChosen;
         }
       }
     }
-    const startDate = new Date(
-      this.state.yearInput,
-      this.state.monthInput - 1,
-      this.state.dayInput,
-      this.state.hourInput,
-      this.state.minuteInput
-    );
-    const stopPeriodDate = moment(
-      new Date(this.state.yearStopInput, this.state.monthStopInput - 1, this.state.dayStopInput)
-    )
-      .endOf('day')
-      .toDate();
-    const currentDate = new Date();
-    const duration = this.state.strictEndTimeSelected ? this.getStrictEndTimeDuration() : this.state.durationInput;
-    const stopDateTime = moment(startDate).add(duration, 'second').toDate();
+
+    // Duration must be positive
+    if (this.state.duration <= 0) {
+      return this.texts.maintenanceEndMustBeAfterStart;
+    }
 
     // Periodical maintenance
     if (
@@ -1176,12 +517,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       maintenanceType === MaintenanceType.Weekly ||
       maintenanceType === MaintenanceType.Monthly
     ) {
-      if (stopPeriodDate <= startDate) {
+      if (this.state.periodicActiveTillTimestamp <= this.state.periodicActiveSinceTimestamp) {
         return this.texts.repeatMustEndAfterStartTime;
-      } else if (stopPeriodDate < currentDate) {
+      } else if (this.state.periodicActiveSinceTimestamp < DateTime.now().startOf('day')) {
         return this.texts.repeatEndTimeCantBeInPast;
-      } else if (this.state.strictEndTimeSelected && this.getStrictEndTimeDuration() <= 0) {
-        return this.texts.maintenanceEndMustBeAfterStart;
       }
       // Check if period continues over next DST change
       const curYear = new Date().getFullYear();
@@ -1205,18 +544,14 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           nextChange.add(1, 'year');
         }
       }
-      if (moment(stopPeriodDate).valueOf() > nextChange.valueOf()) {
+      if (this.state.periodicActiveTillTimestamp.toMillis() > nextChange.valueOf()) {
         return this.texts.repeatEndTimeCantOverlapDaylight + ' ' + nextChange.format('DD.MM.YYYY HH:mm');
       }
     }
     if (
       maintenanceType === MaintenanceType.OneTime &&
-      this.state.strictEndTimeSelected &&
-      this.getStrictEndTimeDuration() <= 0
+      this.state.oneTimeStartTimestamp.plus({ seconds: this.state.duration }) < DateTime.now()
     ) {
-      return this.texts.maintenanceEndMustBeAfterStart;
-    }
-    if (maintenanceType === MaintenanceType.OneTime && stopDateTime < currentDate) {
       return this.texts.maintenanceEndCantBeInPast;
     }
     return null;
@@ -1225,13 +560,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   // Check the validity of wizard phase 2 configuration;
   // returns error text or null if there are no errors
   checkWizardPhase2Errors(): string | null {
-    let anyHostSelected = false;
-    this.state.selectedHosts.forEach((option) => {
-      if (option.selected) {
-        anyHostSelected = true;
-      }
-    });
-    const maintenanceName = (this.state.description || '') + '|' + this.props.user + '|' + this.getCurrentTimeEpoch();
+    let anyHostSelected = this.state.selectedHosts.some((hostSelected) => hostSelected);
+    const maintenanceName =
+      (this.state.description || '') + '|' + contextSrv.user.email + '|' + DateTime.now().toUnixInteger();
     if (!anyHostSelected) {
       return this.texts.atLeastOneHostMustBeSelected;
     } else if (maintenanceName.length > 128) {
@@ -1286,97 +617,56 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
 
     // Format maintenance dates for the summary phase
     if (maintenanceType === MaintenanceType.OneTime) {
-      summaryData.displayStartDate = moment(
-        new Date(
-          this.state.yearInput,
-          this.state.monthInput - 1,
-          this.state.dayInput,
-          this.state.hourInput,
-          this.state.minuteInput
-        )
-      ).format('DD.MM.YYYY HH:mm');
-      summaryData.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
+      summaryData.displayStartDate = this.state.oneTimeStartTimestamp.toFormat('dd.LL.yyyy HH:mm');
+      summaryData.displayStopDate = this.state.oneTimeStartTimestamp
+        .plus({ seconds: this.state.duration })
+        .toFormat('dd.LL.yyyy HH:mm');
     } else {
       // Repeat start and end dates don't have hours or minutes
-      summaryData.displayRepeatStartDate = moment(
-        new Date(this.state.yearInput, this.state.monthInput - 1, this.state.dayStopInput)
-      ).format('DD.MM.YYYY');
-      summaryData.displayRepeatStopDate = moment(
-        new Date(this.state.yearStopInput, this.state.monthStopInput - 1, this.state.dayStopInput)
-      ).format('DD.MM.YYYY');
+      summaryData.displayRepeatStartDate = this.state.periodicActiveSinceTimestamp.toFormat('dd.LL.yyyy');
+      summaryData.displayRepeatStopDate = this.state.periodicActiveTillTimestamp.toFormat('dd.LL.yyyy');
 
       // Show time (without date) when the repeating maintenance starts
-      var hourWithLeadingZeros = '00' + this.state.hourInput;
-      var minutesWithLeadingZeros = '00' + this.state.minuteInput;
+      var hourWithLeadingZeros = '00' + this.state.periodicStartHour;
+      var minutesWithLeadingZeros = '00' + this.state.periodicStartMinute;
       summaryData.displayStartDate =
         hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
         ':' +
         minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
 
       // Show time (without date) when the repeating maintenance ends
-      if (this.state.strictEndTimeSelected) {
-        // User has selected strict hour and minute
-        hourWithLeadingZeros = '00' + this.state.strictEndHourInput;
-        minutesWithLeadingZeros = '00' + this.state.strictEndMinuteInput;
-        summaryData.displayStopDate =
-          hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
-          ':' +
-          minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
-      } else {
-        // User has selected duration; use moment to calculate hour and minute
-        // The date used in this calculation is quite absurd (start date of the repeat period)
-        const currentDate = new Date(
-          this.state.yearInput,
-          this.state.monthInput - 1,
-          this.state.dayInput,
-          this.state.hourInput,
-          this.state.minuteInput
-        );
-        let endTimeDate = moment(currentDate).add(this.state.durationInput, 'second');
-        summaryData.displayStopDate = endTimeDate.format('HH:mm');
-      }
+      const startTimeSeconds = this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60;
+      const endTimeSeconds = startTimeSeconds + this.state.duration;
+      const endHour = Math.floor(endTimeSeconds / 3600);
+      const endMinute = Math.floor((endTimeSeconds - endHour * 3600) / 60);
+      hourWithLeadingZeros = '00' + endHour;
+      minutesWithLeadingZeros = '00' + endMinute;
+      summaryData.displayStopDate =
+        hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+        ':' +
+        minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
     }
 
-    summaryData.displayHosts = '';
-    this.state.selectedHosts.forEach((host) => {
-      if (host.selected) {
-        if (summaryData.displayHosts) {
-          summaryData.displayHosts += ', ';
-        }
-        summaryData.displayHosts += host.text;
-      }
-    });
-    summaryData.displayWeeklyDays = '';
-    (Object.keys(this.state.weeklyWeekdays) as Array<keyof WeekdayNames>).forEach((weekday) => {
-      if (this.state.weeklyWeekdays[weekday]) {
-        if (summaryData.displayWeeklyDays) {
-          summaryData.displayWeeklyDays += ', ';
-        }
-        summaryData.displayWeeklyDays += this.weekdayNames[weekday];
-      }
-    });
-    summaryData.displayMonths = '';
-    (Object.keys(this.state.months) as Array<keyof MonthNames>).forEach((month) => {
-      if (this.state.months[month]) {
-        if (summaryData.displayMonths) {
-          summaryData.displayMonths += ', ';
-        }
-        summaryData.displayMonths += this.monthNames[month];
-      }
-    });
-    const everyDayOfWeekInputOption = this.everyDayOfWeekInputOptions.find(
-      (option) => option.value === this.state.everyDayOfWeekInput
+    summaryData.displayHosts = this.state.selectedHosts.map((host) => host.name).join(', ');
+    summaryData.displayWeeklyDays = this.state.weeklyWeekdays
+      .map((weekdaySelected, weekday) => {
+        return this.weekdayNames[weekday];
+      })
+      .join(', ');
+    summaryData.displayMonths = this.state.months
+      .map((monthSelected, month) => {
+        return this.monthNames[month];
+      })
+      .join(', ');
+    const monthlyWeekNumberInputOption = this.monthlyWeekNumberInputOptions.find(
+      (option) => option.value === this.state.monthlyWeekNumberInput
     );
-    summaryData.displayMonthlyWeekdayNumber = everyDayOfWeekInputOption ? everyDayOfWeekInputOption.label : '';
-    summaryData.displayMonthlyWeekdayNames = '';
-    (Object.keys(this.state.monthlyWeekdays) as Array<keyof WeekdayNames>).forEach((weekday) => {
-      if (this.state.monthlyWeekdays[weekday]) {
-        if (summaryData.displayMonthlyWeekdayNames) {
-          summaryData.displayMonthlyWeekdayNames += ', ';
-        }
-        summaryData.displayMonthlyWeekdayNames += this.weekdayNames[weekday];
-      }
-    });
+    summaryData.displayMonthlyWeekdayNumber = monthlyWeekNumberInputOption ? monthlyWeekNumberInputOption.label : '';
+    summaryData.displayMonthlyWeekdayNames = this.state.monthlyWeekdays
+      .map((weekdaySelected, weekday) => {
+        return this.weekdayNames[weekday];
+      })
+      .join(', ');
     return summaryData;
   }
 
@@ -1429,19 +719,21 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           <div className="gf-form-group maintenance-row-container">
             <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
             <div className="checkbox-block">
-              {(Object.keys(this.state.weeklyWeekdays) as Array<keyof WeekdayNames>).map((day) => (
-                <div className="checkbox-container" key={day}>
+              {Array.from(Array(7).keys()).map((weekday) => (
+                <div className="checkbox-container" key={'weekday-selection' + weekday}>
                   <input
                     className="action-panel-cb"
                     type="checkbox"
-                    checked={this.state.weeklyWeekdays[day]}
+                    checked={this.state.weeklyWeekdays[weekday]}
                     onChange={(e) =>
-                      this.setState({ weeklyWeekdays: { ...this.state.weeklyWeekdays, [day]: e.target.checked } })
+                      this.setState({
+                        weeklyWeekdays: Object.assign([], this.state.weeklyWeekdays, { weekday: e.target.checked }),
+                      })
                     }
-                    id={day}
+                    id={'weekday-selection' + weekday}
                   />
-                  <label className="gf-form-label checkbox-label" htmlFor={day}>
-                    {this.weekdayNames[day]}
+                  <label className="gf-form-label checkbox-label" htmlFor={'weekday-selection' + weekday}>
+                    {this.weekdayNames[weekday]}
                   </label>
                 </div>
               ))}
@@ -1461,20 +753,24 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="checkbox-block">
               {[0, 3, 6, 9].map((index) => (
                 <div className="checkbox-column" key={'col' + index}>
-                  {(Object.keys(this.state.months) as Array<keyof MonthNames>).slice(index, index + 3).map((month) => (
-                    <div className="checkbox-container" key={month}>
-                      <input
-                        className="action-panel-cb"
-                        type="checkbox"
-                        checked={this.state.months[month]}
-                        onChange={(e) => this.toggleMonthSelection(month, e.target.checked)}
-                        id={month}
-                      />
-                      <label className="gf-form-label checkbox-label" htmlFor={month}>
-                        {this.monthNames[month]}
-                      </label>
-                    </div>
-                  ))}
+                  {Array.from(Array(12).keys())
+                    .slice(index, index + 3)
+                    .map((month) => (
+                      <div className="checkbox-container" key={'month-selection-' + month}>
+                        <input
+                          className="action-panel-cb"
+                          type="checkbox"
+                          checked={this.state.months[month]}
+                          onChange={(e) =>
+                            this.setState({ months: Object.assign([], this.state.months, { month: e.target.checked }) })
+                          }
+                          id={'month-selection-' + month}
+                        />
+                        <label className="gf-form-label checkbox-label" htmlFor={'month-selection-' + month}>
+                          {this.monthNames[month]}
+                        </label>
+                      </div>
+                    ))}
                 </div>
               ))}
               <div className="checkbox-column">
@@ -1482,9 +778,11 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   <input
                     className="action-panel-cb"
                     type="checkbox"
-                    checked={this.state.months.all}
+                    checked={this.state.months.every((monthSelection) => monthSelection)}
                     id="all"
-                    onChange={(e) => this.toggleAllMonthsSelection(e.target.checked)}
+                    onChange={(e) =>
+                      this.setState({ months: this.state.months.map((monthSelected) => e.target.checked) })
+                    }
                   />
                   <label className="gf-form-label checkbox-label width-8" htmlFor="all">
                     {this.texts.selectAll}
@@ -1559,10 +857,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   <div className="gf-form-select-wrapper">
                     <select
                       className="gf-form-input"
-                      value={this.state.everyDayOfWeekInput}
-                      onChange={(e) => this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })}
+                      value={this.state.monthlyWeekNumberInput}
+                      onChange={(e) => this.setState({ monthlyWeekNumberInput: parseInt(e.target.value, 10) })}
                     >
-                      {this.everyDayOfWeekInputOptions.map((option) => (
+                      {this.monthlyWeekNumberInputOptions.map((option) => (
                         <option value={option.value} key={option.value}>
                           {option.label}
                         </option>
@@ -1570,21 +868,26 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                     </select>
                   </div>
                   <div className="checkbox-block checkbox-top-spacer">
-                    {(Object.keys(this.state.monthlyWeekdays) as Array<keyof WeekdayNames>).map((day) => (
-                      <div className="checkbox-container" key={'w' + day}>
+                    {Array.from(Array(7).keys()).map((weekday) => (
+                      <div className="checkbox-container" key={'monthly-weekday-selection-' + weekday}>
                         <input
                           className="action-panel-cb"
                           type="checkbox"
-                          checked={this.state.monthlyWeekdays[day]}
+                          checked={this.state.monthlyWeekdays[weekday]}
                           onChange={(e) =>
                             this.setState({
-                              monthlyWeekdays: { ...this.state.monthlyWeekdays, [day]: e.target.checked },
+                              monthlyWeekdays: Object.assign([], this.state.monthlyWeekdays, {
+                                weekday: e.target.checked,
+                              }),
                             })
                           }
-                          id={'w' + day}
+                          id={'monthly-weekday-selection-' + weekday}
                         />
-                        <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>
-                          {this.weekdayNames[day]}
+                        <label
+                          className="gf-form-label checkbox-label"
+                          htmlFor={'monthly-weekday-selection-' + weekday}
+                        >
+                          {this.weekdayNames[weekday]}
                         </label>
                       </div>
                     ))}
@@ -1613,12 +916,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.dayInput}
-                onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+                value={this.state.oneTimeStartTimestamp.day}
+                onChange={(e) =>
+                  this.setState({
+                    oneTimeStartTimestamp: this.state.oneTimeStartTimestamp.set({ day: parseInt(e.target.value, 10) }),
+                  })
+                }
               >
-                {this.getDayOptions(this.state.yearInput, this.state.monthInput).map((option) => (
-                  <option value={option.value} key={'d' + option.value}>
-                    {option.text}
+                {this.getDaysForDropdown(this.state.oneTimeStartTimestamp).map((day) => (
+                  <option value={day} key={'one-time-start-day-' + day}>
+                    {day}
                   </option>
                 ))}
               </select>
@@ -1629,14 +936,22 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.monthInput}
-                onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+                value={this.state.oneTimeStartTimestamp.month}
+                onChange={(e) =>
+                  this.setState({
+                    oneTimeStartTimestamp: this.state.oneTimeStartTimestamp.set({
+                      month: parseInt(e.target.value, 10),
+                    }),
+                  })
+                }
               >
-                {this.getMonthOptions().map((option) => (
-                  <option value={option.value} key={'m' + option.value}>
-                    {option.text}
-                  </option>
-                ))}
+                {Array.from(Array(12).keys())
+                  .map((month) => month + 1)
+                  .map((month) => (
+                    <option value={month} key={'one-time-start-month-' + month}>
+                      {month}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -1645,12 +960,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.yearInput}
-                onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+                value={this.state.oneTimeStartTimestamp.year}
+                onChange={(e) =>
+                  this.setState({
+                    oneTimeStartTimestamp: this.state.oneTimeStartTimestamp.set({ year: parseInt(e.target.value, 10) }),
+                  })
+                }
               >
-                {this.getYearOptions(this.state.yearInput).map((option) => (
-                  <option value={option.value} key={'y' + option.value}>
-                    {option.text}
+                {this.getYearsForDropdown(this.state.oneTimeStartTimestamp.year).map((year) => (
+                  <option value={year} key={'one-time-start-year-' + year}>
+                    {year}
                   </option>
                 ))}
               </select>
@@ -1661,12 +980,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.hourInput}
-                onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+                value={this.state.oneTimeStartTimestamp.hour}
+                onChange={(e) =>
+                  this.setState({
+                    oneTimeStartTimestamp: this.state.oneTimeStartTimestamp.set({ hour: parseInt(e.target.value, 10) }),
+                  })
+                }
               >
-                {this.getHourOptions().map((option) => (
-                  <option value={option.value} key={'h' + option.value}>
-                    {option.text}
+                {Array.from(Array(24).keys()).map((hour) => (
+                  <option value={hour} key={'one-time-start-hour-' + hour}>
+                    {hour}
                   </option>
                 ))}
               </select>
@@ -1677,12 +1000,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.minuteInput}
-                onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+                value={this.state.oneTimeStartTimestamp.minute}
+                onChange={(e) =>
+                  this.setState({
+                    oneTimeStartTimestamp: this.state.oneTimeStartTimestamp.set({
+                      minute: parseInt(e.target.value, 10),
+                    }),
+                  })
+                }
               >
-                {this.getMinuteOptions().map((option) => (
-                  <option value={option.value} key={'mi' + option.value}>
-                    {option.text}
+                {Array.from(Array(60).keys()).map((minute) => (
+                  <option value={minute} key={'one-time-start-minute-' + minute}>
+                    {minute}
                   </option>
                 ))}
               </select>
@@ -1708,12 +1037,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.dayInput}
-                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveSinceTimestamp.day}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveSinceTimestamp: this.state.periodicActiveSinceTimestamp.set({
+                        day: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getDayOptions(this.state.yearInput, this.state.monthInput).map((option) => (
-                    <option value={option.value} key={'d' + option.value}>
-                      {option.text}
+                  {this.getDaysForDropdown(this.state.periodicActiveSinceTimestamp).map((day) => (
+                    <option value={day} key={'start-repeate-day-' + day}>
+                      {day}
                     </option>
                   ))}
                 </select>
@@ -1724,14 +1059,22 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.monthInput}
-                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveSinceTimestamp.month}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveSinceTimestamp: this.state.periodicActiveSinceTimestamp.set({
+                        month: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getMonthOptions().map((option) => (
-                    <option value={option.value} key={'m' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
+                  {Array.from(Array(12).keys())
+                    .map((month) => month + 1)
+                    .map((month) => (
+                      <option value={month} key={'start-repeate-month-' + month}>
+                        {month}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -1740,12 +1083,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.yearInput}
-                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveSinceTimestamp.year}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveSinceTimestamp: this.state.periodicActiveSinceTimestamp.set({
+                        year: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getYearOptions(this.state.yearInput).map((option) => (
-                    <option value={option.value} key={'y' + option.value}>
-                      {option.text}
+                  {this.getYearsForDropdown(this.state.periodicActiveSinceTimestamp.year).map((year) => (
+                    <option value={year} key={'start-repeate-year-' + year}>
+                      {year}
                     </option>
                   ))}
                 </select>
@@ -1762,12 +1111,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.dayStopInput}
-                  onChange={(e) => this.onDayStopValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveTillTimestamp.day}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveTillTimestamp: this.state.periodicActiveTillTimestamp.set({
+                        day: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getDayOptions(this.state.yearStopInput, this.state.monthStopInput).map((option) => (
-                    <option value={option.value} key={'ds' + option.value}>
-                      {option.text}
+                  {this.getDaysForDropdown(this.state.periodicActiveTillTimestamp).map((day) => (
+                    <option value={day} key={'end-repeate-day-' + day}>
+                      {day}
                     </option>
                   ))}
                 </select>
@@ -1778,14 +1133,22 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.monthStopInput}
-                  onChange={(e) => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveTillTimestamp.month}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveTillTimestamp: this.state.periodicActiveTillTimestamp.set({
+                        month: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getMonthOptions().map((option) => (
-                    <option value={option.value} key={'ms' + option.value}>
-                      {option.text}
-                    </option>
-                  ))}
+                  {Array.from(Array(12).keys())
+                    .map((month) => month + 1)
+                    .map((month) => (
+                      <option value={month} key={'end-repeate-month-' + month}>
+                        {month}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -1794,12 +1157,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.yearStopInput}
-                  onChange={(e) => this.onYearStopValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicActiveTillTimestamp.year}
+                  onChange={(e) =>
+                    this.setState({
+                      periodicActiveTillTimestamp: this.state.periodicActiveTillTimestamp.set({
+                        year: parseInt(e.target.value, 10),
+                      }),
+                    })
+                  }
                 >
-                  {this.getYearOptions(this.state.yearStopInput).map((option) => (
-                    <option value={option.value} key={'ys' + option.value}>
-                      {option.text}
+                  {this.getYearsForDropdown(this.state.periodicActiveTillTimestamp.year).map((year) => (
+                    <option value={year} key={'end-repeate-year-' + year}>
+                      {year}
                     </option>
                   ))}
                 </select>
@@ -1816,18 +1185,18 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
    */
   renderSingleMaintenanceDuration() {
     if (!this.state.strictEndTimeSelected) {
-      // Maintenance duration in hours
+      // Maintenance duration is selected from a dropdown list
       return (
         <>
           <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
           <div className="gf-form-select-wrapper iiris-fixed-width-select">
             <select
               className="gf-form-input"
-              value={this.state.durationInput}
-              onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+              value={this.state.duration}
+              onChange={(e) => this.setState({ duration: parseInt(e.target.value, 10) })}
             >
-              {this.durationInput.options.map((option) => (
-                <option value={option.value} key={option.value}>
+              {this.durationOptions.map((option) => (
+                <option value={option.value} key={'onetime-maintenance-duration-' + option.value}>
                   {option.text}
                 </option>
               ))}
@@ -1837,7 +1206,8 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       );
     }
 
-    // Strict end date & time of the maintenance
+    // Manually entered end date & time of the maintenance
+    const maintenanceEnds = this.state.oneTimeStartTimestamp.plus({ seconds: this.state.duration });
     return (
       <>
         <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
@@ -1847,12 +1217,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.strictEndDayInput}
-                onChange={(e) => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}
+                value={maintenanceEnds.day}
+                onChange={(e) =>
+                  this.setState({
+                    duration: this.calculateNewDurationForOnetimeMaintenance('day', parseInt(e.target.value, 10)),
+                  })
+                }
               >
-                {this.getDayOptions(this.state.strictEndYearInput, this.state.strictEndMonthInput).map((option) => (
-                  <option value={option.value} key={'sd' + option.value}>
-                    {option.text}
+                {this.getDaysForDropdown(maintenanceEnds).map((day) => (
+                  <option value={day} key={'one-time-end-day-' + day}>
+                    {day}
                   </option>
                 ))}
               </select>
@@ -1863,14 +1237,20 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.strictEndMonthInput}
-                onChange={(e) => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}
+                value={maintenanceEnds.month}
+                onChange={(e) =>
+                  this.setState({
+                    duration: this.calculateNewDurationForOnetimeMaintenance('month', parseInt(e.target.value, 10)),
+                  })
+                }
               >
-                {this.getMonthOptions().map((option) => (
-                  <option value={option.value} key={'sm' + option.value}>
-                    {option.text}
-                  </option>
-                ))}
+                {Array.from(Array(12).keys())
+                  .map((month) => month + 1)
+                  .map((month) => (
+                    <option value={month} key={'one-time-end-month-' + month}>
+                      {month}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -1879,12 +1259,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.strictEndYearInput}
-                onChange={(e) => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}
+                value={maintenanceEnds.year}
+                onChange={(e) =>
+                  this.setState({
+                    duration: this.calculateNewDurationForOnetimeMaintenance('year', parseInt(e.target.value, 10)),
+                  })
+                }
               >
-                {this.getYearOptions(this.state.strictEndYearInput).map((option) => (
-                  <option value={option.value} key={'sy' + option.value}>
-                    {option.text}
+                {this.getYearsForDropdown(maintenanceEnds.year).map((year) => (
+                  <option value={year} key={'one-time-end-year-' + year}>
+                    {year}
                   </option>
                 ))}
               </select>
@@ -1895,12 +1279,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.strictEndHourInput}
-                onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
+                value={maintenanceEnds.hour}
+                onChange={(e) =>
+                  this.setState({
+                    duration: this.calculateNewDurationForOnetimeMaintenance('hour', parseInt(e.target.value, 10)),
+                  })
+                }
               >
-                {this.getHourOptions().map((option) => (
-                  <option value={option.value} key={'sh' + option.value}>
-                    {option.text}
+                {Array.from(Array(24).keys()).map((hour) => (
+                  <option value={hour} key={'one-time-end-hour-' + hour}>
+                    {hour}
                   </option>
                 ))}
               </select>
@@ -1911,12 +1299,16 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             <div className="gf-form-select-wrapper">
               <select
                 className="gf-form-input"
-                value={this.state.strictEndMinuteInput}
-                onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
+                value={maintenanceEnds.minute}
+                onChange={(e) =>
+                  this.setState({
+                    duration: this.calculateNewDurationForOnetimeMaintenance('minute', parseInt(e.target.value, 10)),
+                  })
+                }
               >
-                {this.getMinuteOptions().map((option) => (
-                  <option value={option.value} key={'smi' + option.value}>
-                    {option.text}
+                {Array.from(Array(60).keys()).map((minute) => (
+                  <option value={minute} key={'one-time-end-minute-' + minute}>
+                    {minute}
                   </option>
                 ))}
               </select>
@@ -1931,6 +1323,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
    * Render maintenance start time and duration for repeating maintenances
    */
   renderRepeatingMaintenanceStartTimeAndDuration() {
+    const startTimeSeconds = this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60;
+    const endTimeSeconds = startTimeSeconds + this.state.duration;
+    const endHour = Math.floor(endTimeSeconds / 3600);
+    const endMinute = Math.floor((endTimeSeconds - endHour * 3600) / 60);
     return (
       <>
         <div className="iiris-modal-column">
@@ -1942,12 +1338,12 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.hourInput}
-                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicStartHour}
+                  onChange={(e) => this.setState({ periodicStartHour: parseInt(e.target.value, 10) })}
                 >
-                  {this.getHourOptions().map((option) => (
-                    <option value={option.value} key={'h' + option.value}>
-                      {option.text}
+                  {Array.from(Array(24).keys()).map((hour) => (
+                    <option value={hour} key={'periodic-start-hour-' + hour}>
+                      {hour}
                     </option>
                   ))}
                 </select>
@@ -1960,12 +1356,12 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <div className="gf-form-select-wrapper">
                 <select
                   className="gf-form-input"
-                  value={this.state.minuteInput}
-                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+                  value={this.state.periodicStartMinute}
+                  onChange={(e) => this.setState({ periodicStartMinute: parseInt(e.target.value, 10) })}
                 >
-                  {this.getMinuteOptions().map((option) => (
-                    <option value={option.value} key={'mi' + option.value}>
-                      {option.text}
+                  {Array.from(Array(60).keys()).map((minute) => (
+                    <option value={minute} key={'periodic-start-minute-' + minute}>
+                      {minute}
                     </option>
                   ))}
                 </select>
@@ -1985,11 +1381,11 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                 <div className="gf-form-select-wrapper iiris-fixed-width-select">
                   <select
                     className="gf-form-input"
-                    value={this.state.durationInput}
-                    onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+                    value={this.state.duration}
+                    onChange={(e) => this.setState({ duration: parseInt(e.target.value, 10) })}
                   >
-                    {this.durationInput.options.map((option) => (
-                      <option value={option.value} key={option.value}>
+                    {this.durationOptions.map((option) => (
+                      <option value={option.value} key={'periodic-maintenance-duration-' + option.value}>
                         {option.text}
                       </option>
                     ))}
@@ -2010,12 +1406,20 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                 <div className="gf-form-select-wrapper">
                   <select
                     className="gf-form-input"
-                    value={this.state.strictEndHourInput}
-                    onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
+                    value={endHour}
+                    onChange={(e) =>
+                      this.setState({
+                        duration: this.calculateNewDurationForPeriodicMaintenance(
+                          startTimeSeconds,
+                          parseInt(e.target.value, 10),
+                          endMinute
+                        ),
+                      })
+                    }
                   >
-                    {this.getHourOptions().map((option) => (
-                      <option value={option.value} key={'sh' + option.value}>
-                        {option.text}
+                    {Array.from(Array(24).keys()).map((hour) => (
+                      <option value={hour} key={'periodic-end-hour-' + hour}>
+                        {hour}
                       </option>
                     ))}
                   </select>
@@ -2026,12 +1430,20 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                 <div className="gf-form-select-wrapper">
                   <select
                     className="gf-form-input"
-                    value={this.state.strictEndMinuteInput}
-                    onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
+                    value={endMinute}
+                    onChange={(e) =>
+                      this.setState({
+                        duration: this.calculateNewDurationForPeriodicMaintenance(
+                          startTimeSeconds,
+                          endHour,
+                          parseInt(e.target.value, 10)
+                        ),
+                      })
+                    }
                   >
-                    {this.getMinuteOptions().map((option) => (
-                      <option value={option.value} key={'smi' + option.value}>
-                        {option.text}
+                    {Array.from(Array(60).keys()).map((minute) => (
+                      <option value={minute} key={'periodic-end-minute-' + minute}>
+                        {minute}
                       </option>
                     ))}
                   </select>
@@ -2059,9 +1471,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                 <select
                   className="gf-form-input"
                   value={this.state.maintenanceType}
-                  onChange={(e) => this.onMaintenanceTypeChanged(parseInt(e.target.value, 10))}
+                  onChange={(e) => this.setState({ maintenanceType: parseInt(e.target.value, 10) })}
                 >
-                  {this.mTypeInput.options.map((option) => (
+                  {this.mTypeInputOptions.map((option) => (
                     <option value={option.value} key={option.value}>
                       {option.label}
                     </option>
@@ -2089,14 +1501,14 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               </div>
             )}
 
-            {/* Selection of whether the end time is strictly defined instead of a duration */}
+            {/* Selection of whether the end time is manually defined instead of selecting duration from a dropdown */}
             <div className="gf-form-group maintenance-row-container">
               <div className="iiris-checkbox">
                 <input
                   id="strict_end_time"
                   type="checkbox"
                   checked={this.state.strictEndTimeSelected}
-                  onChange={(e) => this.onStrictEndDayToggle(e.target.checked)}
+                  onChange={(e) => this.setState({ strictEndTimeSelected: e.target.checked })}
                 />
                 <label className="checkbox-label" htmlFor="strict_end_time">
                   {this.texts.setPreciseEndTime}
@@ -2106,10 +1518,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
 
             {/* Wizard buttons */}
             <div className="gf-form-button-row">
-              <button className="btn btn-secondary" onClick={() => this.props.openAllMaintenancesModal()}>
-                {this.texts.back}
-              </button>
-              <button className="btn btn-secondary" onClick={() => this.onDismiss()}>
+              <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
                 {this.texts.cancel}
               </button>
               <button className="btn btn-primary" disabled={validationErrors !== null} onClick={() => this.goToNext()}>
@@ -2141,17 +1550,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   (dates: any, index: number) =>
                     index < 11 && (
                       <React.Fragment key={index}>
-                        <tr className={dates.new && 'tr-new'}>
-                          <td>
-                            {moment(dates.startTime * 1000)
-                              .locale(contextSrv.storedLanguage)
-                              .format('dd DD.MM.YYYY HH:mm')}
-                          </td>
-                          <td>
-                            {moment(dates.endTime * 1000)
-                              .locale(contextSrv.storedLanguage)
-                              .format('dd DD.MM.YYYY HH:mm')}
-                          </td>
+                        <tr className={dates.ongoing ? 'iiris-colored-row' : ''}>
+                          <td>{dates.startTime.toFormat('dd.LL.yyyy HH:mm')}</td>
+                          <td>{dates.endTime.toFormat('dd.LL.yyyy HH:mm')}</td>
                         </tr>
                         {index === 10 && (
                           <tr>
@@ -2208,7 +1609,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <input
                 id="select_all"
                 type="checkbox"
-                checked={this.state.allHostsSelected}
+                checked={this.state.selectedHosts.every((host) => host.selected)}
                 onChange={(e) => this.selectAllHosts(e.target.checked)}
               />
               <label className="checkbox-label" htmlFor="select_all">
@@ -2221,18 +1622,31 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           {this.state.selectedHosts
             .filter(
               (fHost) =>
-                !this.state.searchText || fHost.text.toLowerCase().indexOf(this.state.searchText.toLowerCase()) > -1
+                !this.state.searchText || fHost.name.toLowerCase().indexOf(this.state.searchText.toLowerCase()) > -1
             )
             .map((host) => (
-              <div className="iiris-checkbox" key={host.value}>
+              <div className="iiris-checkbox" key={'cb' + host.hostid}>
                 <input
-                  id={'cb' + host.value}
+                  id={'cb' + host.hostid}
                   type="checkbox"
                   checked={host.selected}
-                  onChange={(e) => this.selectHost(host.value, e.target.checked)}
+                  onChange={(e) =>
+                    this.setState({
+                      selectedHosts: this.state.selectedHosts.map((sh) => {
+                        if (sh === host) {
+                          return {
+                            ...sh,
+                            selected: e.target.checked,
+                          };
+                        } else {
+                          return sh;
+                        }
+                      }),
+                    })
+                  }
                 />
-                <label className="checkbox-label" htmlFor={'cb' + host.value}>
-                  {host.text}
+                <label className="checkbox-label" htmlFor={'cb' + host.hostid}>
+                  {host.name}
                 </label>
               </div>
             ))}
@@ -2243,7 +1657,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           <button className="btn btn-secondary" onClick={(e) => this.goToPrevious()}>
             {this.texts.back}
           </button>
-          <button className="btn btn-secondary" onClick={(e) => this.onDismiss()}>
+          <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
             {this.texts.cancel}
           </button>
           <button className="btn btn-primary" disabled={validationErrors !== null} onClick={(e) => this.goToNext()}>
@@ -2278,7 +1692,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         <div className="iiris-maintenance-modal-text-row">
           <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceType}</div>
           <div className="iiris-maintenance-modal-text-normal">
-            {(this.mTypeInput.options.find((item) => item.value === this.state.maintenanceType) || { label: '' }).label}
+            {(this.mTypeInputOptions.find((item) => item.value === this.state.maintenanceType) || { label: '' }).label}
           </div>
         </div>
 
@@ -2374,7 +1788,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           <button className="btn btn-secondary" onClick={() => this.goToPrevious()}>
             {this.texts.back}
           </button>
-          <button className="btn btn-secondary" onClick={() => this.onDismiss()}>
+          <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
             {this.texts.cancel}
           </button>
           <button className="btn btn-primary" onClick={() => this.onSaveChanges()}>
@@ -2385,6 +1799,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     );
   }
 
+  // Render component
   render() {
     const title = (
       <h2 className="modal-header modal-header-title">
@@ -2394,7 +1809,13 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
 
     return (
       <>
-        <Modal isOpen={this.props.show} title={title} onDismiss={this.onDismiss} className="modal modal-body">
+        {/* This actual model dialog */}
+        <Modal
+          isOpen={this.props.show}
+          title={title}
+          onDismiss={() => this.props.onCloseMaintenanceEditWizard()}
+          className="modal modal-body"
+        >
           <div>
             <div className="modal-content">
               {/* Wizard phase 1: Maintenance dates */}
@@ -2408,6 +1829,42 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
             </div>
           </div>
         </Modal>
+        {/* Prompt the user that a new maintenance has been created and started */}
+        <ConfirmModal
+          isOpen={this.state.shownDialog === ShownDialog.NewMaintenanceStarted}
+          title={this.texts.maintenanceSavedTitle}
+          body={this.texts.newMaintenanceHasBeenStarted + '\n' + this.texts.systemStatusWillBeUpdated}
+          confirmText=""
+          onConfirm={() => {}}
+          onDismiss={() => this.props.onCloseMaintenanceEditWizard()}
+        />
+        {/* Prompt the user that an ongoing maintenance has been updated */}
+        <ConfirmModal
+          isOpen={this.state.shownDialog === ShownDialog.OngoingMaintenanceUpdated}
+          title={this.texts.maintenanceSavedTitle}
+          body={this.texts.maintenanceHasBeenUpdated + '\n' + this.texts.systemStatusWillBeUpdated}
+          confirmText=""
+          onConfirm={() => {}}
+          onDismiss={() => this.props.onCloseMaintenanceEditWizard()}
+        />
+        {/* Prompt the user that a new maintenance has been created (for the future) */}
+        <ConfirmModal
+          isOpen={this.state.shownDialog === ShownDialog.FutureMaintenanceCreated}
+          title={this.texts.maintenanceSavedTitle}
+          body={this.texts.newMaintenanceHasBeenCreated}
+          confirmText=""
+          onConfirm={() => {}}
+          onDismiss={() => this.props.onCloseMaintenanceEditWizard()}
+        />
+        {/* Prompt the user that an existing maintenance has been updated (for the future) */}
+        <ConfirmModal
+          isOpen={this.state.shownDialog === ShownDialog.FutureMaintenanceUpdated}
+          title={this.texts.maintenanceSavedTitle}
+          body={this.texts.maintenanceHasBeenUpdated}
+          confirmText=""
+          onConfirm={() => {}}
+          onDismiss={() => this.props.onCloseMaintenanceEditWizard()}
+        />
       </>
     );
   }
