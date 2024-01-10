@@ -22,8 +22,6 @@ enum ShownDialog {
   DeleteOneTimeMaintenance,
   CancelPeriodicOngoingMaintenance,
   DeletePeriodicMaintenance,
-  MaintenanceHasBeenDeleted,
-  MaintenanceHasBeenCanceled,
 }
 
 interface Props {
@@ -147,7 +145,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         }
         return zabbix.zabbixAPI
           .request('host.get', hostQuery)
-          .then((hosts: Array<{ name: string; hostid: number }>) => {
+          .then((hosts: Array<{ name: string; hostid: string }>) => {
             if (hostGroupName) {
               // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
               hosts = hosts.filter((host) => !/[-_.](sla|SLA)$/.test(host.name));
@@ -156,8 +154,14 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
             // Sort
             hosts = hosts.sort(this.sortHostNames);
 
+            // Parse hostid numbers
+            const hostsWithNumbers = hosts.map((host) => ({
+              name: host.name,
+              hostid: parseInt(host.hostid, 10),
+            }));
+
             return {
-              hosts: hosts,
+              hosts: hostsWithNumbers,
               groupIds: groupIds,
             };
           });
@@ -240,12 +244,15 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         // That effectively prevents the maintenance from activating any more in the future
         const options: any = {
           maintenanceid: this.state.selectedMaintenance!.id,
-          active_till: Date.now() / 1000,
+          active_till: Math.floor(Date.now() / 1000),
         };
         return zabbix.zabbixAPI.request('maintenance.update', options).then((answer: any) => {
           // Prompt user that the maintenance has been deleted or canceled
+          const texts = contextSrv.getLocalizedTexts();
           if (this.state.selectedMaintenance!.ongoing) {
-            this.setState({ shownDialog: ShownDialog.MaintenanceHasBeenCanceled });
+            appEvents.emit(AppEvents.alertSuccess, [
+              texts.maintenancehasBeenCanceled + '\n' + texts.systemStatusWillBeUpdated,
+            ]);
 
             // Signal action panel to refresh its state once zabbix has updated
             // the maintenance status of the hosts in a few minutes
@@ -253,8 +260,14 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
               document.dispatchEvent(new Event('iiris-maintenance-update'));
             }, 2 * 60 * 1000);
           } else {
-            this.setState({ shownDialog: ShownDialog.MaintenanceHasBeenDeleted });
+            appEvents.emit(AppEvents.alertSuccess, [texts.maintenanceHasBeenDeleted]);
           }
+
+          // Update the maintenance list
+          this.fetchMaintenanceList().then(() => {
+            // Close confirm dialog once maintenance list has been reloaded
+            this.setState({ shownDialog: ShownDialog.None });
+          });
         });
       })
       .catch((err: any) => {
@@ -272,7 +285,6 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
 
   // User has clicked Create new maintenance button
   showCreateNewMaintenanceWizard() {
-    //props.onDismiss();
     this.setState({
       shownDialog: ShownDialog.MaintenanceEditWizard,
       selectedMaintenance: undefined,
@@ -311,8 +323,8 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
               </div>
             </div>
             <div className="gf-form-button-row">
-              <a className="btn btn-primary" onClick={() => this.props.onDismiss()}>
-                {texts.cancel}
+              <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>
+                {texts.close}
               </a>
               <a className="btn btn-secondary" onClick={() => this.showCreateNewMaintenanceWizard()}>
                 {texts.createNewMaintenance}
@@ -360,24 +372,6 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
           }
           confirmText={texts.deleteMaintenanceConfirmButtonText}
           onConfirm={() => this.onUpdateMaintenanceEndTime()}
-          onDismiss={() => this.setState({ shownDialog: ShownDialog.None })}
-        />
-        {/* Prompt the user that a maintenance has been deleted */}
-        <ConfirmModal
-          isOpen={this.state.shownDialog === ShownDialog.MaintenanceHasBeenDeleted}
-          title={texts.deleteMaintenanceConfirmTitle}
-          body={texts.maintenanceHasBeenDeleted}
-          confirmText=""
-          onConfirm={() => {}}
-          onDismiss={() => this.setState({ shownDialog: ShownDialog.None })}
-        />
-        {/* Prompt the user that a maintenance has been canceled */}
-        <ConfirmModal
-          isOpen={this.state.shownDialog === ShownDialog.MaintenanceHasBeenCanceled}
-          title={texts.cancelMaintenanceConfirmTitle}
-          body={texts.maintenancehasBeenCanceled + '\n' + texts.systemStatusWillBeUpdated}
-          confirmText=""
-          onConfirm={() => {}}
           onDismiss={() => this.setState({ shownDialog: ShownDialog.None })}
         />
         {/* Edit an existing maintenance or create a new one */}

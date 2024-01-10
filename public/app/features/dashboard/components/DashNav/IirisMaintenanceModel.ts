@@ -31,8 +31,8 @@ export type Maintenance = {
   maintenanceType: MaintenanceType; // zabbix time period timeperiod_type property
   oneTimeStartTimestamp?: DateTime; // One-time maintenance start timestamp; max of active_since and period's start_date properties
   oneTimeEndTimestamp?: DateTime; // One-time maintenance end timestamp; min of active_till and start_date + period properties
-  periodicActiveSinceTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat start date; active_since property
-  periodicActiveTillTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat end date; active_till property
+  periodicActiveSinceTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat start timestamp; active_since property (includes also time part)
+  periodicActiveTillTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat end timestamp; active_till property (includes also time part)
   periodicStartTime?: number; // Periodic maintenance (daily, weekly or monthly): time of day when maintenance starts in seconds; start_time property
   duration: number; // Maintenance duration in seconds; zabbix time period's period property
   every: number; // Periodic maintenance (daily, weekly or monthly): zabbix time period every property
@@ -91,6 +91,11 @@ export async function getMaintenances(
   return new Promise<Maintenance[]>((resolve: any, reject: any) => {
     getZabbixDataSource(zabbixDatasource)
       .then((zabbix: any) => {
+        // Usually zabbix data source has caching enabled so that getMaintenances() results are cached for 1 minute
+        // Invalidate the cache so that maintenances list will reflect the current situation
+        // (it's important eg. when the user cancels a maintanance and the list is subsequently refreshed)
+        delete zabbix.cachingProxy.cache['getMaintenances'];
+
         zabbix.zabbixAPI
           .getMaintenances(hostIds, groupIds)
           .then((maintenances: any) => {
@@ -162,7 +167,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
-          repeatEndString: activeTill.toFormat('dd.LL.yyyy'),
+          repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
 
         // Figure out the next (or ongoing) maintenance time
@@ -193,7 +198,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
-          repeatEndString: activeTill.toFormat('dd.LL.yyyy'),
+          repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
 
         // Figure out the next (or ongoing) maintenance time
@@ -225,7 +230,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
-          repeatEndString: activeTill.toFormat('dd.LL.yyyy'),
+          repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
 
         // Figure out the next (or ongoing) maintenance time
@@ -293,7 +298,7 @@ function parseBasicMaintenanceFields(maintenance: any, timeperiod: any) {
   // Selected weekdays of weekly or monthly maintenance
   // Turn dayofweek number to binary and then to array to get selected weekdays
   var weekdays: WeekdaySelection = [false, false, false, false, false, false, false];
-  const daysBinary = parseInt(maintenance.dayofweek, 10).toString(2).split('').reverse();
+  const daysBinary = parseInt(timeperiod.dayofweek, 10).toString(2).split('').reverse();
   for (let i = 0; i < 7; i++) {
     if (daysBinary[i] === '1') {
       weekdays[i] = true;
@@ -303,7 +308,7 @@ function parseBasicMaintenanceFields(maintenance: any, timeperiod: any) {
   // Selected months of monthly maintenance
   // Turn month number to binary and then to array to get selected months
   var months: MonthSelection = [false, false, false, false, false, false, false, false, false, false, false, false];
-  const monthsBinary = parseInt(maintenance.month, 10).toString(2).split('').reverse();
+  const monthsBinary = parseInt(timeperiod.month, 10).toString(2).split('').reverse();
   for (let i = 0; i < 12; i++) {
     if (monthsBinary[i] === '1') {
       months[i] = true;
@@ -373,14 +378,14 @@ export function getNextDailyMaintenances(
   duration: number // Duration in seconds
 ) {
   const repeateStartDate = periodicActiveSinceTimestamp.startOf('day');
-  const repeateEnd = periodicActiveTillTimestamp;
   const now = DateTime.now();
   let repeateIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
   while (true) {
     let maintenanceStart = repeateStartDate.plus({ days: repeateIndex * every }).plus({ seconds: periodicStartTime });
-    let maintenanceEnd = DateTime.min(repeateEnd, maintenanceStart.plus({ seconds: duration }));
-    if (maintenanceStart > repeateEnd) {
+    let maintenanceEnd = DateTime.min(periodicActiveTillTimestamp, maintenanceStart.plus({ seconds: duration }));
+    maintenanceStart = DateTime.max(periodicActiveSinceTimestamp, maintenanceStart);
+    if (maintenanceStart >= periodicActiveTillTimestamp) {
       break;
     }
     if (maintenanceEnd >= now) {
@@ -410,14 +415,13 @@ export function getNextWeeklyMaintenances(
   duration: number // Duration in seconds
 ) {
   const repeateStartWeek = periodicActiveSinceTimestamp.startOf('week');
-  const repeateEnd = periodicActiveTillTimestamp;
   const now = DateTime.now();
   let repeateIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
   let reachedEnd = false;
   while (!reachedEnd) {
     let weekStart = repeateStartWeek.plus({ weeks: repeateIndex * every });
-    if (weekStart > repeateEnd) {
+    if (weekStart > periodicActiveTillTimestamp) {
       // A safety measure for a maintenance that has no weekdays selected (should not happen)
       break;
     }
@@ -426,12 +430,13 @@ export function getNextWeeklyMaintenances(
         return;
       }
       let maintenanceStart = weekStart.plus({ days: weekday }).plus({ seconds: periodicStartTime });
-      let maintenanceEnd = DateTime.min(repeateEnd, maintenanceStart.plus({ seconds: duration }));
-      if (maintenanceStart < periodicActiveSinceTimestamp) {
+      let maintenanceEnd = DateTime.min(periodicActiveTillTimestamp, maintenanceStart.plus({ seconds: duration }));
+      maintenanceStart = DateTime.max(periodicActiveSinceTimestamp, maintenanceStart);
+      if (maintenanceEnd <= periodicActiveSinceTimestamp) {
         // Since looping starts from beginning of active since week
         return;
       }
-      if (maintenanceStart > repeateEnd) {
+      if (maintenanceStart >= periodicActiveTillTimestamp) {
         reachedEnd = true;
         return;
       }
@@ -465,7 +470,6 @@ export function getNextMonthlyMaintenances(
   duration: number // Duration in seconds
 ) {
   const repeateStartYear = periodicActiveSinceTimestamp.startOf('year');
-  const repeateEnd = periodicActiveTillTimestamp;
   const now = DateTime.now();
   let repeateYearIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
@@ -473,7 +477,7 @@ export function getNextMonthlyMaintenances(
   let reachedEnd = false;
   while (!reachedEnd) {
     let yearStart = repeateStartYear.plus({ years: repeateYearIndex });
-    if (yearStart > repeateEnd) {
+    if (yearStart > periodicActiveTillTimestamp) {
       // A safety measure for a maintenance that has no months selected (should not happen)
       break;
     }
@@ -506,12 +510,13 @@ export function getNextMonthlyMaintenances(
             }
           }
           let maintenanceStart = weekdayStart.plus({ seconds: periodicStartTime });
-          let maintenanceEnd = DateTime.min(repeateEnd, maintenanceStart.plus({ seconds: duration }));
-          if (maintenanceStart < periodicActiveSinceTimestamp) {
+          let maintenanceEnd = DateTime.min(periodicActiveTillTimestamp, maintenanceStart.plus({ seconds: duration }));
+          maintenanceStart = DateTime.max(periodicActiveSinceTimestamp, maintenanceStart);
+          if (maintenanceEnd <= periodicActiveSinceTimestamp) {
             // Since looping starts from beginning of active since year
             return;
           }
-          if (maintenanceStart > repeateEnd) {
+          if (maintenanceStart >= periodicActiveTillTimestamp) {
             reachedEnd = true;
             return;
           }
@@ -529,13 +534,18 @@ export function getNextMonthlyMaintenances(
         });
       } else {
         // Maintenance occurs on the Nth day of the month
-        let maintenanceStart = monthStart.plus({ days: day });
-        let maintenanceEnd = DateTime.min(repeateEnd, maintenanceStart.plus({ seconds: duration }));
-        if (maintenanceStart < periodicActiveSinceTimestamp) {
+        let maintenanceStart = monthStart.plus({ days: day - 1 }).plus({ seconds: periodicStartTime });
+        if (maintenanceStart.month !== monthStart.month) {
+          // The month does not have enough days for the configured Nth day of the month
+          return;
+        }
+        let maintenanceEnd = DateTime.min(periodicActiveTillTimestamp, maintenanceStart.plus({ seconds: duration }));
+        maintenanceStart = DateTime.max(periodicActiveSinceTimestamp, maintenanceStart);
+        if (maintenanceEnd <= periodicActiveSinceTimestamp) {
           // Since looping starts from beginning of active since year
           return;
         }
-        if (maintenanceStart > repeateEnd) {
+        if (maintenanceStart >= periodicActiveTillTimestamp) {
           reachedEnd = true;
           return;
         }
@@ -554,7 +564,14 @@ export function getNextMonthlyMaintenances(
     });
     repeateYearIndex++;
   }
-  return dates;
+
+  // "Last weekdays" of month may generate dates in other than ascending order
+  // (eg. if last Wednesday is before last Monday of the month)
+  // That's why sort the dates
+  function ascendingStartTimeOrder(a: MaintenanceInstanceDates, b: MaintenanceInstanceDates) {
+    return a.startTime.toMillis() - b.startTime.toMillis();
+  }
+  return dates.sort(ascendingStartTimeOrder);
 }
 
 // Save maintenance into Zabbix
@@ -580,7 +597,6 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
       maintenanceObj.active_since = m.periodicActiveSinceTimestamp!.toUnixInteger();
       maintenanceObj.active_till = m.periodicActiveTillTimestamp!.toUnixInteger();
       period.start_time = m.periodicStartTime;
-      period.every = m.every;
       if (m.maintenanceType === MaintenanceType.Monthly) {
         // Encode selected month(s) into binary format
         let monthBinary = '';
@@ -592,6 +608,9 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
           }
         }
         period.month = parseInt(monthBinary, 2);
+      }
+      if (m.maintenanceType === MaintenanceType.Daily || m.maintenanceType === MaintenanceType.Weekly) {
+        period.every = m.every;
       }
       if (
         m.maintenanceType === MaintenanceType.Weekly ||
@@ -607,6 +626,7 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
           }
         }
         period.dayofweek = parseInt(dayOfWeekBinary, 2);
+        period.every = m.every;
       } else if (m.maintenanceType === MaintenanceType.Monthly) {
         // Every Nth day of month
         period.day = m.day;
