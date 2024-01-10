@@ -30,21 +30,41 @@ interface State {
   dayOfMonth: number;
   monthlyWeekdays: any;
   everyDayOfWeekInput: number;
+
+  // For single maintenance: maintenance start date
+  // For repeating maintenance: repeat start date
   dayInput: number;
   monthInput: number;
   yearInput: number;
+
+  // Maintenance start time (either for the single maintenance or the repeating maintenance)
   hourInput: number;
   minuteInput: number;
+
+  // For single maintenance: maintenance end date
+  // For repeating maintenance: repeate end date
   dayStopInput: number;
   monthStopInput: number;
   yearStopInput: number;
+
+  // For single maintenance: Maintenance end date
+  // For repeating maintenance: N/A
   strictEndDayInput: number;
   strictEndMonthInput: number;
   strictEndYearInput: number;
+
+  // Maintenance end time (either for the single maintenance or the repeating maintenance)
+  // If strictEndTimeSelected is false and the duration is given with durationInput
+  // these fields are set automatically according to the configured duration.
   strictEndHourInput: number;
   strictEndMinuteInput: number;
+
+  // True if end time is selected manually, false if duration is selected
   strictEndTimeSelected: boolean;
+
+  // Duration of the maintenance; valid if strictEndTimeSelected is false
   durationInput: number;
+
   errorText: string;
   description: string;
   searchText: string;
@@ -180,6 +200,7 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
   maintenanceType: any;
   displayStartDate: any;
   displayStopDate: any;
+  displayRepeatStartDate: any;
   displayRepeatStopDate: any;
   displayHosts: any;
   displayWeeklyDays: any;
@@ -1485,21 +1506,60 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
       if (valid) {
         this.scope.wizardPhase = 3;
         this.setState({ wizardPhase: 3 });
-        this.displayStartDate = moment(
-          new Date(
-            this.yearInput.value,
-            this.monthInput.value - 1,
-            this.dayInput.value,
-            parseInt(this.hourInput.value, 10),
-            parseInt(this.minuteInput.value, 10)
-          )
-        ).format('DD.MM.YYYY HH:mm');
-        this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
-        this.displayRepeatStopDate = moment(
-          new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
-        )
-          .endOf('day')
-          .format('DD.MM.YYYY HH:mm');
+
+        // Format maintenance dates for the summary phase
+        if (maintenanceType === '0') {
+          this.displayStartDate = moment(
+            new Date(
+              this.yearInput.value,
+              this.monthInput.value - 1,
+              this.dayInput.value,
+              parseInt(this.hourInput.value, 10),
+              parseInt(this.minuteInput.value, 10)
+            )
+          ).format('DD.MM.YYYY HH:mm');
+          this.displayStopDate = moment(this.getStrictEndTimeDate()).format('DD.MM.YYYY HH:mm');
+        } else {
+          // Repeat start and end dates don't have hours or minutes
+          this.displayRepeatStartDate = moment(
+            new Date(this.yearInput.value, this.monthInput.value - 1, this.dayInput.value)
+          ).format('DD.MM.YYYY');
+          this.displayRepeatStopDate = moment(
+            new Date(this.yearStopInput.value, this.monthStopInput.value - 1, this.dayStopInput.value)
+          ).format('DD.MM.YYYY');
+
+          // Show time (without date) when the repeating maintenance starts
+          var hourWithLeadingZeros = '00' + this.hourInput.value;
+          var minutesWithLeadingZeros = '00' + this.minuteInput.value;
+          this.displayStartDate =
+            hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+            ':' +
+            minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
+
+          // Show time (without date) when the repeating maintenance ends
+          if (this.state.strictEndTimeSelected) {
+            // User has selected strict hour and minute
+            hourWithLeadingZeros = '00' + this.strictEndHourInput.value;
+            minutesWithLeadingZeros = '00' + this.strictEndMinuteInput.value;
+            this.displayStopDate =
+              hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+              ':' +
+              minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
+          } else {
+            // User has selected duration; use moment to calculate hour and minute
+            // The date used in this calculation is quite absurd (start date of the repeat period)
+            const currentDate = new Date(
+              this.yearInput.value,
+              this.monthInput.value - 1,
+              this.dayInput.value,
+              parseInt(this.hourInput.value, 10),
+              parseInt(this.minuteInput.value, 10)
+            );
+            let endTimeDate = moment(currentDate).add(this.durationInput.value, 'second');
+            this.displayStopDate = endTimeDate.format('HH:mm');
+          }
+        }
+
         this.displayHosts = '';
         this.state.selectedHosts.forEach((option: any) => {
           if (option.selected) {
@@ -1551,765 +1611,1033 @@ export class IirisMaintenanceModal extends PureComponent<Props, State> {
     this.setState({ wizardPhase: this.state.wizardPhase - 1 });
   };
 
+  /**
+   * For repeating maintenances, render the selection of how often the maintenance repeats.
+   * Daily maintenance: Every N days
+   * Weekly maintenance: Every N weeks plus weekday(s) selection
+   * Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
+   */
+  renderRepeateSelection() {
+    if (this.state.maintenanceType === '2') {
+      // Daily maintenance: Every N days selection
+      return (
+        <div className="gf-form-group maintenance-row-container">
+          <label className="gf-form-label">{this.texts.repeatEveryNDays}</label>
+          <div>
+            <input
+              className="input-small gf-form-input iiris-fixed-width-select"
+              type="number"
+              value={this.state.everyNDays}
+              onChange={(e: any) => this.setState({ everyNDays: e.target.value })}
+              min="1"
+              step="1"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (this.state.maintenanceType === '3') {
+      // Weekly maintenance: Every N weeks selection and weekday selection
+      return (
+        <>
+          {/* Every N weeks selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatEveryNWeeks}</label>
+            <div>
+              <input
+                className="input-small gf-form-input iiris-fixed-width-select"
+                type="number"
+                value={this.state.everyNWeeks}
+                onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })}
+                min="1"
+                step="1"
+              />
+            </div>
+          </div>
+
+          {/* Weekday selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
+            <div className="checkbox-block">
+              {Object.keys(this.state.weekdays).map((day: string) => (
+                <div className="checkbox-container" key={day}>
+                  <input
+                    className="action-panel-cb"
+                    type="checkbox"
+                    checked={this.state.weekdays[day]}
+                    onChange={(e: any) =>
+                      this.setState({ weekdays: { ...this.state.weekdays, [day]: e.target.checked } })
+                    }
+                    id={day}
+                  />
+                  <label className="gf-form-label checkbox-label" htmlFor={day}>
+                    {this.weekdayNames[day]}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    if (this.state.maintenanceType === '4') {
+      // Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
+      return (
+        <>
+          {/* Month selection */}
+          <div className="gf-form-group maintenance-row-container">
+            <label className="gf-form-label">{this.texts.repeatOnMonth}</label>
+            <div className="checkbox-block">
+              {[0, 3, 6, 9].map((index) => (
+                <div className="checkbox-column" key={'col' + index}>
+                  {Object.keys(this.state.months)
+                    .slice(index, index + 3)
+                    .map((month) => (
+                      <div className="checkbox-container" key={month}>
+                        <input
+                          className="action-panel-cb"
+                          type="checkbox"
+                          checked={this.state.months[month]}
+                          onChange={(e: any) => this.toggleMonthSelection(month, e.target.checked)}
+                          id={month}
+                        />
+                        <label className="gf-form-label checkbox-label" htmlFor={month}>
+                          {this.monthNames[month]}
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              ))}
+              <div className="checkbox-column">
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="checkbox"
+                    checked={this.state.months.all}
+                    id="all"
+                    onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)}
+                  />
+                  <label className="gf-form-label checkbox-label width-8" htmlFor="all">
+                    {this.texts.selectAll}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Is it repeated Nth day of month or Nth weekday of month? */}
+          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+            <div className="iiris-modal-column">
+              <label className="gf-form-label iiris-radio-button-block">
+                {this.texts.repeatOn}
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="radio"
+                    name="monthtype"
+                    checked={this.state.dayOfMonthOrWeekSelected === MONTH}
+                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
+                    value={MONTH}
+                    id="dayOfMonthSelected"
+                  />
+                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">
+                    {this.texts.nthDayOfMonth}
+                  </label>
+                </div>
+                <div className="checkbox-container">
+                  <input
+                    className="action-panel-cb"
+                    type="radio"
+                    name="monthtype"
+                    checked={this.state.dayOfMonthOrWeekSelected === WEEK}
+                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
+                    value={WEEK}
+                    id="dayOfWeekSelected"
+                  />
+                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">
+                    {this.texts.nthDayOfWeek}
+                  </label>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+            <div className="iiris-modal-column">
+              {/* Nth day of month selection */}
+              {this.state.dayOfMonthOrWeekSelected === MONTH ? (
+                <div className="gf-form-group">
+                  <label className="gf-form-label">{this.texts.repeatOnDayOfMonth}</label>
+                  <div>
+                    <input
+                      className="input-small gf-form-input iiris-fixed-width-select"
+                      type="number"
+                      value={this.state.dayOfMonth}
+                      onChange={(e) => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })}
+                      min="1"
+                      step="1"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Nth weekday(s) of month selection */}
+              {this.state.dayOfMonthOrWeekSelected === WEEK ? (
+                <div className="gf-form-group">
+                  <label className="gf-form-label">
+                    {this.texts.repeatOnDayOfWeek + ' ' + this.texts.secondTuesdayOfApril}
+                  </label>
+                  <div className="gf-form-select-wrapper">
+                    <select
+                      className="gf-form-input"
+                      value={this.state.everyDayOfWeekInput}
+                      onChange={(e) => this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })}
+                    >
+                      {this.everyDayOfWeekInput.options.map((option: any) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="checkbox-block checkbox-top-spacer">
+                    {Object.keys(this.state.monthlyWeekdays).map((day: string) => (
+                      <div className="checkbox-container" key={'w' + day}>
+                        <input
+                          className="action-panel-cb"
+                          type="checkbox"
+                          checked={this.state.monthlyWeekdays[day]}
+                          onChange={(e: any) =>
+                            this.setState({
+                              monthlyWeekdays: { ...this.state.monthlyWeekdays, [day]: e.target.checked },
+                            })
+                          }
+                          id={'w' + day}
+                        />
+                        <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>
+                          {this.weekdayNames[day]}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  }
+
+  /**
+   * Render maintenance start date & time for single (non-repeating) maintenances
+   */
+  renderSingleMaintenanceStartDateTime() {
+    return (
+      <div className="iiris-modal-column">
+        <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+        <div className="date-selection-row">
+          <div className="date-selection-container">
+            <div>{this.texts.day}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.dayInput}
+                onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.dayInput.options.map((option: any) => (
+                  <option value={option.value} key={'d' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.month}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.monthInput}
+                onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.monthInput.options.map((option: any) => (
+                  <option value={option.value} key={'m' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.year}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.yearInput}
+                onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.yearInput.options.map((option: any) => (
+                  <option value={option.value} key={'y' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container hour-input">
+            <div>{this.texts.hour}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.hourInput}
+                onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.hourInput.options.map((option: any) => (
+                  <option value={option.value} key={'h' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.minute}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.minuteInput}
+                onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.minuteInput.options.map((option: any) => (
+                  <option value={option.value} key={'mi' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /**
+   * Render maintenance start and stop dates repeating maintenances.
+   * This is the dates between which the maintenance will be repeated.
+   */
+  renderRepeatingMaintenanceStartAndStopDates() {
+    return (
+      <>
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">{this.texts.startRepeat}</label>
+          <div className="date-selection-row">
+            <div className="date-selection-container">
+              <div>{this.texts.day}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.dayInput}
+                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.dayInput.options.map((option: any) => (
+                    <option value={option.value} key={'d' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.month}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.monthInput}
+                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.monthInput.options.map((option: any) => (
+                    <option value={option.value} key={'m' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.year}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.yearInput}
+                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.yearInput.options.map((option: any) => (
+                    <option value={option.value} key={'y' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">{this.texts.endRepeat}</label>
+          <div className="date-selection-row">
+            <div className="date-selection-container">
+              <div>{this.texts.day}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.dayStopInput}
+                  onChange={(e) => this.onDayStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.dayStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ds' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.month}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.monthStopInput}
+                  onChange={(e) => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.monthStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ms' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="date-selection-container">
+              <div>{this.texts.year}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.yearStopInput}
+                  onChange={(e) => this.onYearStopValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.yearStopInput.options.map((option: any) => (
+                    <option value={option.value} key={'ys' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  /**
+   * Render maintenance duration for single (non-repeating) maintenances
+   */
+  renderSingleMaintenanceDuration() {
+    if (!this.state.strictEndTimeSelected) {
+      // Maintenance duration in hours
+      return (
+        <>
+          <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
+          <div className="gf-form-select-wrapper iiris-fixed-width-select">
+            <select
+              className="gf-form-input"
+              value={this.state.durationInput}
+              onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+            >
+              {this.durationInput.options.map((option: any) => (
+                <option value={option.value} key={option.value}>
+                  {option.text}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      );
+    }
+
+    // Strict end date & time of the maintenance
+    return (
+      <>
+        <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
+        <div className="date-selection-row">
+          <div className="date-selection-container">
+            <div>{this.texts.day}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.strictEndDayInput}
+                onChange={(e) => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.strictEndDayInput.options.map((option: any) => (
+                  <option value={option.value} key={'sd' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.month}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.strictEndMonthInput}
+                onChange={(e) => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.strictEndMonthInput.options.map((option: any) => (
+                  <option value={option.value} key={'sm' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.year}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.strictEndYearInput}
+                onChange={(e) => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.strictEndYearInput.options.map((option: any) => (
+                  <option value={option.value} key={'sy' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container hour-input">
+            <div>{this.texts.hour}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.strictEndHourInput}
+                onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.strictEndHourInput.options.map((option: any) => (
+                  <option value={option.value} key={'sh' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="date-selection-container">
+            <div>{this.texts.minute}</div>
+            <div className="gf-form-select-wrapper">
+              <select
+                className="gf-form-input"
+                value={this.state.strictEndMinuteInput}
+                onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
+              >
+                {this.strictEndMinuteInput.options.map((option: any) => (
+                  <option value={option.value} key={'smi' + option.value}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  /**
+   * Render maintenance start time and duration for repeating maintenances
+   */
+  renderRepeatingMaintenanceStartTimeAndDuration() {
+    return (
+      <>
+        <div className="iiris-modal-column">
+          <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+          <div className="date-selection-row">
+            {/* Hour input */}
+            <div className="date-selection-container">
+              <div>{this.texts.hour}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.hourInput}
+                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.hourInput.options.map((option: any) => (
+                    <option value={option.value} key={'h' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Minute input */}
+            <div className="date-selection-container">
+              <div>{this.texts.minute}</div>
+              <div className="gf-form-select-wrapper">
+                <select
+                  className="gf-form-input"
+                  value={this.state.minuteInput}
+                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
+                >
+                  {this.minuteInput.options.map((option: any) => (
+                    <option value={option.value} key={'mi' + option.value}>
+                      {option.text}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Maintenance duration in hours */}
+        {!this.state.strictEndTimeSelected && (
+          <div className="iiris-modal-column">
+            <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
+            {/* date-selection-row and date-selection-container are used to vertically align duration with maintenance start time */}
+            <div className="date-selection-row">
+              <div className="date-selection-container">
+                <div>&nbsp;</div>
+                <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.durationInput}
+                    onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.durationInput.options.map((option: any) => (
+                      <option value={option.value} key={option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Maintenance strict end time */}
+        {this.state.strictEndTimeSelected && (
+          <div className="iiris-modal-column">
+            <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
+            <div className="date-selection-row">
+              <div className="date-selection-container">
+                <div>{this.texts.hour}</div>
+                <div className="gf-form-select-wrapper">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.strictEndHourInput}
+                    onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.strictEndHourInput.options.map((option: any) => (
+                      <option value={option.value} key={'sh' + option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="date-selection-container">
+                <div>{this.texts.minute}</div>
+                <div className="gf-form-select-wrapper">
+                  <select
+                    className="gf-form-input"
+                    value={this.state.strictEndMinuteInput}
+                    onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
+                  >
+                    {this.strictEndMinuteInput.options.map((option: any) => (
+                      <option value={option.value} key={'smi' + option.value}>
+                        {option.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Render maintenance create/edit wizard phase 1: Maintenance dates
+  renderWizardPhase1() {
+    return (
+      <form onChange={this.handleFormChange}>
+        <div className="maintenance-column-wrapper">
+          <div className="maintenance-column-left">
+            {/* Maintenance type */}
+            <div className="gf-form-group maintenance-row-container">
+              <label className="gf-form-label">{this.texts.maintenanceType}</label>
+              <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                <select
+                  className="gf-form-input"
+                  value={this.state.maintenanceType}
+                  onChange={(e: any) => this.onMaintenanceTypeChanged(e.target.value)}
+                >
+                  {this.mTypeInput.options.map((option: any) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Repeating maintenance: how often the maintenance repeats */}
+            {this.state.maintenanceType !== '0' ? this.renderRepeateSelection() : null}
+
+            {/* Maintenance start date & time or repeating maintenance start & stop dates */}
+            <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+              {this.state.maintenanceType === '0'
+                ? this.renderSingleMaintenanceStartDateTime()
+                : this.renderRepeatingMaintenanceStartAndStopDates()}
+            </div>
+
+            {/* Maintenance duration (or strict end time) */}
+            {this.state.maintenanceType === '0' ? (
+              <div className="gf-form-group maintenance-row-container">{this.renderSingleMaintenanceDuration()}</div>
+            ) : (
+              <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+                {this.renderRepeatingMaintenanceStartTimeAndDuration()}
+              </div>
+            )}
+
+            {/* Selection of whether the end time is strictly defined instead of a duration */}
+            <div className="gf-form-group maintenance-row-container">
+              <div className="iiris-checkbox">
+                <input
+                  id="strict_end_time"
+                  type="checkbox"
+                  checked={this.state.strictEndTimeSelected}
+                  onChange={(e) => this.onStrictEndDayToggle(e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="strict_end_time">
+                  {this.texts.setPreciseEndTime}
+                </label>
+              </div>
+            </div>
+
+            {/* Configuration error text */}
+            <div className="maintenance-config-error-text">{this.state.errorText}</div>
+
+            {/* Wizard buttons */}
+            <div className="gf-form-button-row">
+              <a className="btn btn-secondary" onClick={() => this.props.openAllMaintenancesModal()}>
+                {this.texts.back}
+              </a>
+              <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
+                {this.texts.cancel}
+              </a>
+              <a className="btn btn-primary" onClick={() => this.goToNext()}>
+                {this.texts.next}
+              </a>
+            </div>
+          </div>
+
+          {/* Upcoming maintenances summary */}
+          <div className="maintenance-column-right maintenance-column-right-preview">
+            <h4>{this.texts.upcomingMaintenances}</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>
+                    <strong>{this.texts.startTime}</strong>
+                  </td>
+                  <td>
+                    <strong>{this.texts.endTime}</strong>
+                  </td>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Show first 10 upcoming maintenance dates and times */}
+                {this.state.preview &&
+                  this.state.preview.map(
+                    (dates: any, index: number) =>
+                      index < 11 && (
+                        <React.Fragment key={index}>
+                          <tr className={dates.new && 'tr-new'}>
+                            <td>
+                              {moment(dates.startTime * 1000)
+                                .locale(contextSrv.storedLanguage)
+                                .format('dd DD.MM.YYYY HH:mm')}
+                            </td>
+                            <td>
+                              {moment(dates.endTime * 1000)
+                                .locale(contextSrv.storedLanguage)
+                                .format('dd DD.MM.YYYY HH:mm')}
+                            </td>
+                          </tr>
+                          {index === 10 && (
+                            <tr>
+                              <td colSpan={2} className="td-end">
+                                ...
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      )
+                  )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </form>
+    );
+  }
+
+  // Render maintenance create/edit wizard phase 2: Description and selected hosts
+  renderWizardPhase2() {
+    return (
+      <>
+        {/* Maintenance description */}
+        <div className="gf-form-group maintenance-row-container">
+          <label className="gf-form-label">{this.texts.maintenanceDescription}</label>
+          <textarea
+            className="gf-form-input"
+            value={this.state.description}
+            onChange={(e) => this.setState({ description: e.target.value })}
+            rows={3}
+            maxLength={128}
+          ></textarea>
+        </div>
+
+        <label className="gf-form-label">{this.texts.selectHosts}</label>
+
+        {/* Search hosts */}
+        <div className="iiris-text-search-container">
+          <span className="iiris-search-icon fa fa-search"></span>
+          <input
+            className="input-small gf-form-input iiris-fixed-width-select"
+            type="text"
+            value={this.state.searchText}
+            onChange={(e) => this.setState({ searchText: e.target.value })}
+            placeholder={this.texts.searchWithName}
+          />
+        </div>
+        <div className="gf-form-group maintenance-host-list">
+          {/* All hosts selection */}
+          {!this.state.searchText ? (
+            <div className="iiris-checkbox">
+              <input
+                id="select_all"
+                type="checkbox"
+                checked={this.state.allHostsSelected}
+                onChange={(e) => this.selectAllHosts(e.target.checked)}
+              />
+              <label className="checkbox-label" htmlFor="select_all">
+                {this.texts.allHosts}
+              </label>
+            </div>
+          ) : null}
+
+          {/* Hosts list */}
+          {this.state.selectedHosts
+            .filter(
+              (fHost: any) =>
+                !this.state.searchText || fHost.text.toLowerCase().indexOf(this.state.searchText.toLowerCase()) > -1
+            )
+            .map((host: any) => (
+              <div className="iiris-checkbox" key={host.value}>
+                <input
+                  id={'cb' + host.value}
+                  type="checkbox"
+                  checked={host.selected}
+                  onChange={(e) => this.selectHost(host.value, e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor={'cb' + host.value}>
+                  {host.text}
+                </label>
+              </div>
+            ))}
+        </div>
+
+        {/* Configuration error text */}
+        <div className="maintenance-config-error-text">{this.state.errorText}</div>
+
+        {/* Wizard buttons */}
+        <div className="gf-form-button-row">
+          <a className="btn btn-secondary" onClick={(e) => this.goToPrevious()}>
+            {this.texts.back}
+          </a>
+          <a className="btn btn-secondary" onClick={(e) => this.onDismiss()}>
+            {this.texts.cancel}
+          </a>
+          <a className="btn btn-primary" onClick={(e) => this.goToNext()}>
+            {this.texts.next}
+          </a>
+        </div>
+      </>
+    );
+  }
+
+  // Render maintenance create/edit wizard phase 3: Summary
+  renderWizardPhase3() {
+    return (
+      <>
+        {/* Maintenance description */}
+        <div className="iiris-maintenance-modal-text-row">
+          <div className="iiris-maintenance-modal-text-label">{this.texts.description}</div>
+          <div className="iiris-maintenance-modal-text-normal">{this.state.description}</div>
+        </div>
+
+        {/* Selected hosts (comma-separated list) */}
+        <div className="iiris-maintenance-modal-text-row">
+          <div className="iiris-maintenance-modal-text-label">{this.texts.hosts}</div>
+          <div className="iiris-maintenance-modal-text-normal">{this.displayHosts}</div>
+        </div>
+
+        {/* Maintenance type: single, daily, weekly, or monthly */}
+        <div className="iiris-maintenance-modal-text-row">
+          <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceType}</div>
+          <div className="iiris-maintenance-modal-text-normal">
+            {
+              (this.mTypeInput.options.find((item: any) => item.value === this.state.maintenanceType) || { label: '' })
+                .label
+            }
+          </div>
+        </div>
+
+        {/* Single maintenance start and end times */}
+        {this.state.maintenanceType === '0' ? (
+          <div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+            </div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Daily maintenance: repeate every N days */}
+        {this.state.maintenanceType === '2' ? (
+          <div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNDays}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.state.everyNDays}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Weekly maintenance: repeate every N weeks, on which weekdays */}
+        {this.state.maintenanceType === '3' ? (
+          <div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNWeeks}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.state.everyNWeeks}</div>
+            </div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnWeekday}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayWeeklyDays}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Monthly maintenance: repeate on which months and on Nth day / weekday(s) of the month */}
+        {this.state.maintenanceType === '4' ? (
+          <div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnMonth}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayMonths}</div>
+            </div>
+            {this.state.dayOfMonthOrWeekSelected === MONTH ? (
+              <div>
+                <div className="iiris-maintenance-modal-text-row">
+                  <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfMonth}</div>
+                  <div className="iiris-maintenance-modal-text-normal">{this.state.dayOfMonth}</div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="iiris-maintenance-modal-text-row">
+                  <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfWeek}</div>
+                  <div className="iiris-maintenance-modal-text-normal">
+                    {this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {/* Repeating maintenance: start and end times */}
+        {parseInt(this.state.maintenanceType, 10) > 0 ? (
+          <div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
+            </div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
+            </div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatStarts}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStartDate}</div>
+            </div>
+            <div className="iiris-maintenance-modal-text-row">
+              <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEnds}</div>
+              <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStopDate}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Wizard buttons */}
+        <div className="gf-form-button-row">
+          <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>
+            {this.texts.back}
+          </a>
+          <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
+            {this.texts.cancel}
+          </a>
+          <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>
+            {this.props.selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance}
+          </a>
+        </div>
+      </>
+    );
+  }
+
   render() {
-    const { show, selectedMaintenance, openAllMaintenancesModal } = this.props;
-    const {
-      wizardPhase,
-      maintenanceType,
-      everyNDays,
-      everyNWeeks,
-      weekdays,
-      months,
-      dayOfMonthOrWeekSelected,
-      dayOfMonth,
-      monthlyWeekdays,
-      everyDayOfWeekInput,
-      dayInput,
-      monthInput,
-      yearInput,
-      hourInput,
-      minuteInput,
-      dayStopInput,
-      monthStopInput,
-      yearStopInput,
-      strictEndTimeSelected,
-      durationInput,
-      strictEndMinuteInput,
-      strictEndHourInput,
-      strictEndDayInput,
-      strictEndMonthInput,
-      strictEndYearInput,
-      errorText,
-      description,
-      searchText,
-      allHostsSelected,
-      selectedHosts,
-    } = this.state;
     const title = (
       <h2 className="modal-header modal-header-title">
-        {selectedMaintenance ? this.texts.modifyMaintenance : this.texts.createNewMaintenance}
+        {this.props.selectedMaintenance ? this.texts.modifyMaintenance : this.texts.createNewMaintenance}
       </h2>
     );
 
     return (
       <>
-        <Modal isOpen={show} title={title} onDismiss={this.onDismiss} className="modal modal-body">
+        <Modal isOpen={this.props.show} title={title} onDismiss={this.onDismiss} className="modal modal-body">
           <div>
             <div className="modal-content">
-              {wizardPhase === 1 ? (
-                <form onChange={this.handleFormChange}>
-                  <div className="maintenance-column-wrapper">
-                    <div className="maintenance-column-left">
-                      <div className="gf-form-group maintenance-row-container">
-                        <label className="gf-form-label">{this.texts.maintenanceType}</label>
-                        <div className="gf-form-select-wrapper iiris-fixed-width-select">
-                          <select
-                            className="gf-form-input"
-                            value={maintenanceType}
-                            onChange={(e: any) => this.onMaintenanceTypeChanged(e.target.value)}
-                          >
-                            {this.mTypeInput.options.map((option: any) => (
-                              <option value={option.value} key={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      {maintenanceType === '2' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatEveryNDays}</label>
-                          <div>
-                            <input
-                              className="input-small gf-form-input iiris-fixed-width-select"
-                              type="number"
-                              value={everyNDays}
-                              onChange={(e: any) => this.setState({ everyNDays: e.target.value })}
-                              min="1"
-                              step="1"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '3' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatEveryNWeeks}</label>
-                          <div>
-                            <input
-                              className="input-small gf-form-input iiris-fixed-width-select"
-                              type="number"
-                              value={everyNWeeks}
-                              onChange={(e: any) => this.setState({ everyNWeeks: e.target.value })}
-                              min="1"
-                              step="1"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '3' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatOnWeekday}</label>
-                          <div className="checkbox-block">
-                            {Object.keys(weekdays).map((day: string) => (
-                              <div className="checkbox-container" key={day}>
-                                <input
-                                  className="action-panel-cb"
-                                  type="checkbox"
-                                  checked={weekdays[day]}
-                                  onChange={(e: any) =>
-                                    this.setState({ weekdays: { ...weekdays, [day]: e.target.checked } })
-                                  }
-                                  id={day}
-                                />
-                                <label className="gf-form-label checkbox-label" htmlFor={day}>
-                                  {this.weekdayNames[day]}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '4' ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.repeatOnMonth}</label>
-                          <div className="checkbox-block">
-                            {[0, 3, 6, 9].map((index) => (
-                              <div className="checkbox-column" key={'col' + index}>
-                                {Object.keys(months)
-                                  .slice(index, index + 3)
-                                  .map((month) => (
-                                    <div className="checkbox-container" key={month}>
-                                      <input
-                                        className="action-panel-cb"
-                                        type="checkbox"
-                                        checked={months[month]}
-                                        onChange={(e: any) => this.toggleMonthSelection(month, e.target.checked)}
-                                        id={month}
-                                      />
-                                      <label className="gf-form-label checkbox-label" htmlFor={month}>
-                                        {this.monthNames[month]}
-                                      </label>
-                                    </div>
-                                  ))}
-                              </div>
-                            ))}
-                            <div className="checkbox-column">
-                              <div className="checkbox-container">
-                                <input
-                                  className="action-panel-cb"
-                                  type="checkbox"
-                                  checked={months.all}
-                                  id="all"
-                                  onChange={(e: any) => this.toggleAllMonthsSelection(e.target.checked)}
-                                />
-                                <label className="gf-form-label checkbox-label width-8" htmlFor="all">
-                                  {this.texts.selectAll}
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                      {maintenanceType === '4' ? (
-                        <>
-                          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                            <div className="iiris-modal-column">
-                              <label className="gf-form-label iiris-radio-button-block">
-                                {this.texts.repeatOn}
-                                <div className="checkbox-container">
-                                  <input
-                                    className="action-panel-cb"
-                                    type="radio"
-                                    name="monthtype"
-                                    checked={dayOfMonthOrWeekSelected === MONTH}
-                                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
-                                    value={MONTH}
-                                    id="dayOfMonthSelected"
-                                  />
-                                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfMonthSelected">
-                                    {this.texts.nthDayOfMonth}
-                                  </label>
-                                </div>
-                                <div className="checkbox-container">
-                                  <input
-                                    className="action-panel-cb"
-                                    type="radio"
-                                    name="monthtype"
-                                    checked={dayOfMonthOrWeekSelected === WEEK}
-                                    onChange={(e: any) => this.setState({ dayOfMonthOrWeekSelected: e.target.value })}
-                                    value={WEEK}
-                                    id="dayOfWeekSelected"
-                                  />
-                                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">
-                                    {this.texts.nthDayOfWeek}
-                                  </label>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                            <div className="iiris-modal-column">
-                              {dayOfMonthOrWeekSelected === MONTH ? (
-                                <div className="gf-form-group">
-                                  <label className="gf-form-label">{this.texts.repeatOnDayOfMonth}</label>
-                                  <div>
-                                    <input
-                                      className="input-small gf-form-input iiris-fixed-width-select"
-                                      type="number"
-                                      value={dayOfMonth}
-                                      onChange={(e) => this.setState({ dayOfMonth: parseInt(e.target.value, 10) })}
-                                      min="1"
-                                      step="1"
-                                    />
-                                  </div>
-                                </div>
-                              ) : null}
-                              {dayOfMonthOrWeekSelected === WEEK ? (
-                                <div className="gf-form-group">
-                                  <label className="gf-form-label">
-                                    {this.texts.repeatOnDayOfWeek + ' ' + this.texts.secondTuesdayOfApril}
-                                  </label>
-                                  <div className="gf-form-select-wrapper">
-                                    <select
-                                      className="gf-form-input"
-                                      value={everyDayOfWeekInput}
-                                      onChange={(e) =>
-                                        this.setState({ everyDayOfWeekInput: parseInt(e.target.value, 10) })
-                                      }
-                                    >
-                                      {this.everyDayOfWeekInput.options.map((option: any) => (
-                                        <option value={option.value} key={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div className="checkbox-block checkbox-top-spacer">
-                                    {Object.keys(monthlyWeekdays).map((day: string) => (
-                                      <div className="checkbox-container" key={'w' + day}>
-                                        <input
-                                          className="action-panel-cb"
-                                          type="checkbox"
-                                          checked={monthlyWeekdays[day]}
-                                          onChange={(e: any) =>
-                                            this.setState({
-                                              monthlyWeekdays: { ...monthlyWeekdays, [day]: e.target.checked },
-                                            })
-                                          }
-                                          id={'w' + day}
-                                        />
-                                        <label className="gf-form-label checkbox-label" htmlFor={'w' + day}>
-                                          {this.weekdayNames[day]}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        </>
-                      ) : null}
-                      <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-                        <div className="iiris-modal-column">
-                          <label className="gf-form-label">
-                            {maintenanceType === '0' ? this.texts.maintenanceStartTime : this.texts.startRepeat}
-                          </label>
-                          <div className="date-selection-row">
-                            <div className="date-selection-container">
-                              <div>{this.texts.day}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={dayInput}
-                                  onChange={(e) => this.onDayValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.dayInput.options.map((option: any) => (
-                                    <option value={option.value} key={'d' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.month}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={monthInput}
-                                  onChange={(e) => this.onMonthValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.monthInput.options.map((option: any) => (
-                                    <option value={option.value} key={'m' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.year}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={yearInput}
-                                  onChange={(e) => this.onYearValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.yearInput.options.map((option: any) => (
-                                    <option value={option.value} key={'y' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container hour-input">
-                              <div>{this.texts.hour}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={hourInput}
-                                  onChange={(e) => this.onHourValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.hourInput.options.map((option: any) => (
-                                    <option value={option.value} key={'h' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.minute}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={minuteInput}
-                                  onChange={(e) => this.onMinuteValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.minuteInput.options.map((option: any) => (
-                                    <option value={option.value} key={'mi' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {parseInt(maintenanceType, 10) > 0 ? (
-                          <div className="iiris-modal-column">
-                            <label className="gf-form-label">{this.texts.endRepeat}</label>
-                            <div className="date-selection-row">
-                              <div className="date-selection-container">
-                                <div>{this.texts.day}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={dayStopInput}
-                                    onChange={(e) => this.onDayStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.dayStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ds' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="date-selection-container">
-                                <div>{this.texts.month}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={monthStopInput}
-                                    onChange={(e) => this.onMonthStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.monthStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ms' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="date-selection-container">
-                                <div>{this.texts.year}</div>
-                                <div className="gf-form-select-wrapper">
-                                  <select
-                                    className="gf-form-input"
-                                    value={yearStopInput}
-                                    onChange={(e) => this.onYearStopValueChanged(parseInt(e.target.value, 10))}
-                                  >
-                                    {this.yearStopInput.options.map((option: any) => (
-                                      <option value={option.value} key={'ys' + option.value}>
-                                        {option.text}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                      {!strictEndTimeSelected ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.maintenanceDuration}</label>
-                          <div className="gf-form-select-wrapper iiris-fixed-width-select">
-                            <select
-                              className="gf-form-input"
-                              value={durationInput}
-                              onChange={(e) => this.onDurationValueChanged(parseInt(e.target.value, 10))}
-                            >
-                              {this.durationInput.options.map((option: any) => (
-                                <option value={option.value} key={option.value}>
-                                  {option.text}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className="gf-form-group maintenance-row-container">
-                        <div className="iiris-checkbox">
-                          <input
-                            id="strict_end_time"
-                            type="checkbox"
-                            checked={strictEndTimeSelected}
-                            onChange={(e) => this.onStrictEndDayToggle(e.target.checked)}
-                          />
-                          <label className="checkbox-label" htmlFor="strict_end_time">
-                            {this.texts.setPreciseEndTime}
-                          </label>
-                        </div>
-                      </div>
-                      {strictEndTimeSelected ? (
-                        <div className="gf-form-group maintenance-row-container">
-                          <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
-                          <div className="date-selection-row">
-                            <div className="date-selection-container">
-                              <div>{this.texts.day}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={strictEndDayInput}
-                                  onChange={(e) => this.onStrictEndDayValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.strictEndDayInput.options.map((option: any) => (
-                                    <option value={option.value} key={'sd' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.month}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={strictEndMonthInput}
-                                  onChange={(e) => this.onStrictEndMonthValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.strictEndMonthInput.options.map((option: any) => (
-                                    <option value={option.value} key={'sm' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.year}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={strictEndYearInput}
-                                  onChange={(e) => this.onStrictEndYearValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.strictEndYearInput.options.map((option: any) => (
-                                    <option value={option.value} key={'sy' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container hour-input">
-                              <div>{this.texts.hour}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={strictEndHourInput}
-                                  onChange={(e) => this.onStrictEndHourValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.strictEndHourInput.options.map((option: any) => (
-                                    <option value={option.value} key={'sh' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="date-selection-container">
-                              <div>{this.texts.minute}</div>
-                              <div className="gf-form-select-wrapper">
-                                <select
-                                  className="gf-form-input"
-                                  value={strictEndMinuteInput}
-                                  onChange={(e) => this.onStrictEndMinuteValueChanged(parseInt(e.target.value, 10))}
-                                >
-                                  {this.strictEndMinuteInput.options.map((option: any) => (
-                                    <option value={option.value} key={'smi' + option.value}>
-                                      {option.text}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className="maintenance-config-error-text">{errorText}</div>
-                      <div className="gf-form-button-row">
-                        <a className="btn btn-secondary" onClick={() => openAllMaintenancesModal()}>
-                          {this.texts.back}
-                        </a>
-                        <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
-                          {this.texts.cancel}
-                        </a>
-                        <a className="btn btn-primary" onClick={() => this.goToNext()}>
-                          {this.texts.next}
-                        </a>
-                      </div>
-                    </div>
-                    <div className="maintenance-column-right maintenance-column-right-preview">
-                      <h4>{this.texts.upcomingMaintenances}</h4>
-                      <table>
-                        <thead>
-                          <tr>
-                            <td>
-                              <strong>{this.texts.startTime}</strong>
-                            </td>
-                            <td>
-                              <strong>{this.texts.endTime}</strong>
-                            </td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {this.state.preview &&
-                            this.state.preview.map(
-                              (dates: any, index: number) =>
-                                index < 11 && (
-                                  <React.Fragment key={index}>
-                                    <tr className={dates.new && 'tr-new'}>
-                                      <td>
-                                        {moment(dates.startTime * 1000)
-                                          .locale(contextSrv.storedLanguage)
-                                          .format('dd DD.MM.YYYY HH:mm')}
-                                      </td>
-                                      <td>
-                                        {moment(dates.endTime * 1000)
-                                          .locale(contextSrv.storedLanguage)
-                                          .format('dd DD.MM.YYYY HH:mm')}
-                                      </td>
-                                    </tr>
-                                    {index === 10 && (
-                                      <tr>
-                                        <td colSpan={2} className="td-end">
-                                          ...
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </React.Fragment>
-                                )
-                            )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </form>
-              ) : null}
-              {wizardPhase === 2 ? (
-                <>
-                  <div className="gf-form-group maintenance-row-container">
-                    <label className="gf-form-label">{this.texts.maintenanceDescription}</label>
-                    <textarea
-                      className="gf-form-input"
-                      value={description}
-                      onChange={(e) => this.setState({ description: e.target.value })}
-                      rows={3}
-                      maxLength={128}
-                    ></textarea>
-                  </div>
-                  <label className="gf-form-label">{this.texts.selectHosts}</label>
-                  <div className="iiris-text-search-container">
-                    <span className="iiris-search-icon fa fa-search"></span>
-                    <input
-                      className="input-small gf-form-input iiris-fixed-width-select"
-                      type="text"
-                      value={searchText}
-                      onChange={(e) => this.setState({ searchText: e.target.value })}
-                      placeholder={this.texts.searchWithName}
-                    />
-                  </div>
-                  <div className="gf-form-group maintenance-host-list">
-                    {!searchText ? (
-                      <div className="iiris-checkbox">
-                        <input
-                          id="select_all"
-                          type="checkbox"
-                          checked={allHostsSelected}
-                          onChange={(e) => this.selectAllHosts(e.target.checked)}
-                        />
-                        <label className="checkbox-label" htmlFor="select_all">
-                          {this.texts.allHosts}
-                        </label>
-                      </div>
-                    ) : null}
-                    {selectedHosts
-                      .filter(
-                        (fHost: any) => !searchText || fHost.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1
-                      )
-                      .map((host: any) => (
-                        <div className="iiris-checkbox" key={host.value}>
-                          <input
-                            id={'cb' + host.value}
-                            type="checkbox"
-                            checked={host.selected}
-                            onChange={(e) => this.selectHost(host.value, e.target.checked)}
-                          />
-                          <label className="checkbox-label" htmlFor={'cb' + host.value}>
-                            {host.text}
-                          </label>
-                        </div>
-                      ))}
-                  </div>
-                  <div className="maintenance-config-error-text">{errorText}</div>
-                  <div className="gf-form-button-row">
-                    <a className="btn btn-secondary" onClick={(e) => this.goToPrevious()}>
-                      {this.texts.back}
-                    </a>
-                    <a className="btn btn-secondary" onClick={(e) => this.onDismiss()}>
-                      {this.texts.cancel}
-                    </a>
-                    <a className="btn btn-primary" onClick={(e) => this.goToNext()}>
-                      {selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance}
-                    </a>
-                  </div>
-                </>
-              ) : null}
-              {wizardPhase === 3 ? (
-                <>
-                  <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">{this.texts.description}</div>
-                    <div className="iiris-maintenance-modal-text-normal">{description}</div>
-                  </div>
-                  <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">{this.texts.hosts}</div>
-                    <div className="iiris-maintenance-modal-text-normal">{this.displayHosts}</div>
-                  </div>
-                  <div className="iiris-maintenance-modal-text-row">
-                    <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceType}</div>
-                    <div className="iiris-maintenance-modal-text-normal">
-                      {
-                        (this.mTypeInput.options.find((item: any) => item.value === maintenanceType) || { label: '' })
-                          .label
-                      }
-                    </div>
-                  </div>
-                  {maintenanceType === '0' ? (
-                    <div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
-                      </div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  {maintenanceType === '2' ? (
-                    <div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNDays}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{everyNDays}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  {maintenanceType === '3' ? (
-                    <div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEveryNWeeks}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{everyNWeeks}</div>
-                      </div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnWeekday}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayWeeklyDays}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  {maintenanceType === '4' ? (
-                    <div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnMonth}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayMonths}</div>
-                      </div>
-                      {dayOfMonthOrWeekSelected === MONTH ? (
-                        <div>
-                          <div className="iiris-maintenance-modal-text-row">
-                            <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfMonth}</div>
-                            <div className="iiris-maintenance-modal-text-normal">{dayOfMonth}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="iiris-maintenance-modal-text-row">
-                            <div className="iiris-maintenance-modal-text-label">{this.texts.repeatOnDayOfWeek}</div>
-                            <div className="iiris-maintenance-modal-text-normal">
-                              {this.displayMonthlyWeekdayNumber + ' ' + this.displayMonthlyWeekdayNames}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                  {parseInt(maintenanceType, 10) > 0 ? (
-                    <div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
-                      </div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayStopDate}</div>
-                      </div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatStarts}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayStartDate}</div>
-                      </div>
-                      <div className="iiris-maintenance-modal-text-row">
-                        <div className="iiris-maintenance-modal-text-label">{this.texts.repeatEnds}</div>
-                        <div className="iiris-maintenance-modal-text-normal">{this.displayRepeatStopDate}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  <div className="gf-form-button-row">
-                    <a className="btn btn-secondary" onClick={() => this.goToPrevious()}>
-                      {this.texts.back}
-                    </a>
-                    <a className="btn btn-secondary" onClick={() => this.onDismiss()}>
-                      {this.texts.cancel}
-                    </a>
-                    <a className="btn btn-primary" onClick={() => this.onStartMaintenance()}>
-                      {selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance}
-                    </a>
-                  </div>
-                </>
-              ) : null}
+              {/* Wizard phase 1: Maintenance dates */}
+              {this.state.wizardPhase === 1 ? this.renderWizardPhase1() : null}
+
+              {/* Wizard phase 2: Description and selected hosts */}
+              {this.state.wizardPhase === 2 ? this.renderWizardPhase2() : null}
+
+              {/* Wizard phase 3: Summary */}
+              {this.state.wizardPhase === 3 ? this.renderWizardPhase3() : null}
             </div>
           </div>
         </Modal>

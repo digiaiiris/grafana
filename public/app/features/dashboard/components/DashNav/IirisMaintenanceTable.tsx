@@ -41,11 +41,12 @@ export function IirisMaintenanceTable(props: Props) {
         ))}
       </thead>
       <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
+        {rows.map((row) => {
           prepareRow(row);
+          const maintenanceId = props.data[row.index].id;
           return (
-            <tr {...row.getRowProps()} key={`tbody-tr-${i}`}>
-              {row.cells.map((cell) => {
+            <tr {...row.getRowProps()} key={`tbody-tr-${maintenanceId}`}>
+              {row.cells.map((cell, columnIndex) => {
                 return (
                   <td
                     {...cell.getCellProps()}
@@ -55,7 +56,7 @@ export function IirisMaintenanceTable(props: Props) {
                         ? 'iiris-colored-row'
                         : '')
                     }
-                    key={`tbody-td-${i}`}
+                    key={`tbody-td-${maintenanceId}-${columnIndex}`}
                   >
                     {cell.render('Cell')}
                   </td>
