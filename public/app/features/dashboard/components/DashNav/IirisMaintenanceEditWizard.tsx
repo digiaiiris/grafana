@@ -32,7 +32,7 @@ enum WizardPhase {
   ThirdSummary = 3,
 }
 
-// Monthly maintenance has two repeate modes
+// Monthly maintenance has two repeat modes
 enum MonthlyDayPeriodSelection {
   Week = 1, // The maintenance is repeated on Nth weekday(s) of the month
   Month = 2, // The maintenance is repeated on Nth day of the month
@@ -49,7 +49,7 @@ interface Props {
 interface State {
   wizardPhase: WizardPhase;
   maintenanceType: MaintenanceType;
-  everyNDays: number; // Daily maintanance: repeat every N days; NaN if input field is empty
+  everyNDays: number; // Daily maintenance: repeat every N days; NaN if input field is empty
   everyNWeeks: number; // Weekly maintenance: repeat every N weeks; NaN if input field is empty
   weeklyWeekdays: WeekdaySelection; // Weekly maintenance: selected weekdays
   months: MonthSelection; // Monthly maintenance: selected months
@@ -282,7 +282,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   }
 
   // Analyze the configured dates and generate top-10 list of upcoming maintenances to the state
-  getMaintanenceDatesPreview(): MaintenanceInstanceDates[] {
+  getMaintenanceDatesPreview(): MaintenanceInstanceDates[] {
     const { maintenanceType } = this.state;
 
     if (maintenanceType === MaintenanceType.OneTime) {
@@ -439,14 +439,14 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         if (this.props.selectedMaintenance) {
           if (
             this.props.selectedMaintenance.ongoing ||
-            this.getMaintanenceDatesPreview().some((dates) => dates.ongoing)
+            this.getMaintenanceDatesPreview().some((dates) => dates.ongoing)
           ) {
             text = this.texts.maintenanceHasBeenUpdated + '\n' + this.texts.systemStatusWillBeUpdated;
           } else {
             text = this.texts.maintenanceHasBeenUpdated;
           }
         } else {
-          if (this.getMaintanenceDatesPreview().some((dates) => dates.ongoing)) {
+          if (this.getMaintenanceDatesPreview().some((dates) => dates.ongoing)) {
             text = this.texts.newMaintenanceHasBeenStarted + '\n' + this.texts.systemStatusWillBeUpdated;
           } else {
             text = this.texts.newMaintenanceHasBeenCreated;
@@ -517,8 +517,11 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
    * Callback for selecting all hosts
    */
   selectAllHosts = (allSelected: boolean) => {
-    this.state.selectedHosts.forEach((host) => {
-      host.selected = allSelected;
+    this.setState({
+      selectedHosts: this.state.selectedHosts.map((host) => ({
+        ...host,
+        selected: allSelected,
+      })),
     });
   };
 
@@ -735,7 +738,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
    * Weekly maintenance: Every N weeks plus weekday(s) selection
    * Monthly maintenance: Month selection, Nth day of month or Nth weekday(s) of month
    */
-  renderRepeateSelection() {
+  renderRepeatSelection() {
     if (this.state.maintenanceType === MaintenanceType.Daily) {
       // Daily maintenance: Every N days selection
       return (
@@ -1106,7 +1109,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   }
                 >
                   {this.getDaysForDropdown(this.state.periodicRepeatStartDate).map((day) => (
-                    <option value={day} key={'start-repeate-day-' + day}>
+                    <option value={day} key={'start-repeat-day-' + day}>
                       {day}
                     </option>
                   ))}
@@ -1130,7 +1133,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   {Array.from(Array(12).keys())
                     .map((month) => month + 1)
                     .map((month) => (
-                      <option value={month} key={'start-repeate-month-' + month}>
+                      <option value={month} key={'start-repeat-month-' + month}>
                         {month}
                       </option>
                     ))}
@@ -1152,7 +1155,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   }
                 >
                   {this.getYearsForDropdown(this.state.periodicRepeatStartDate.year).map((year) => (
-                    <option value={year} key={'start-repeate-year-' + year}>
+                    <option value={year} key={'start-repeat-year-' + year}>
                       {year}
                     </option>
                   ))}
@@ -1180,7 +1183,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   }
                 >
                   {this.getDaysForDropdown(this.state.periodicRepeatEndDate).map((day) => (
-                    <option value={day} key={'end-repeate-day-' + day}>
+                    <option value={day} key={'end-repeat-day-' + day}>
                       {day}
                     </option>
                   ))}
@@ -1204,7 +1207,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   {Array.from(Array(12).keys())
                     .map((month) => month + 1)
                     .map((month) => (
-                      <option value={month} key={'end-repeate-month-' + month}>
+                      <option value={month} key={'end-repeat-month-' + month}>
                         {month}
                       </option>
                     ))}
@@ -1226,7 +1229,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   }
                 >
                   {this.getYearsForDropdown(this.state.periodicRepeatEndDate.year).map((year) => (
-                    <option value={year} key={'end-repeate-year-' + year}>
+                    <option value={year} key={'end-repeat-year-' + year}>
                       {year}
                     </option>
                   ))}
@@ -1521,7 +1524,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
 
   // Render maintenance create/edit wizard phase 1: Maintenance dates
   renderWizardPhase1() {
-    const previewDates = this.getMaintanenceDatesPreview();
+    const previewDates = this.getMaintenanceDatesPreview();
     const validationErrors = this.checkWizardPhase1Errors();
     return (
       <div className="maintenance-column-wrapper">
@@ -1545,7 +1548,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           </div>
 
           {/* Repeating maintenance: how often the maintenance repeats */}
-          {this.state.maintenanceType !== MaintenanceType.OneTime ? this.renderRepeateSelection() : null}
+          {this.state.maintenanceType !== MaintenanceType.OneTime ? this.renderRepeatSelection() : null}
 
           {/* Maintenance start date & time or repeating maintenance start & stop dates */}
           <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
@@ -1766,7 +1769,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           </div>
         ) : null}
 
-        {/* Daily maintenance: repeate every N days */}
+        {/* Daily maintenance: repeat every N days */}
         {this.state.maintenanceType === MaintenanceType.Daily ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
@@ -1776,7 +1779,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           </div>
         ) : null}
 
-        {/* Weekly maintenance: repeate every N weeks, on which weekdays */}
+        {/* Weekly maintenance: repeat every N weeks, on which weekdays */}
         {this.state.maintenanceType === MaintenanceType.Weekly ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
@@ -1790,7 +1793,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
           </div>
         ) : null}
 
-        {/* Monthly maintenance: repeate on which months and on Nth day / weekday(s) of the month */}
+        {/* Monthly maintenance: repeat on which months and on Nth day / weekday(s) of the month */}
         {this.state.maintenanceType === MaintenanceType.Monthly ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">

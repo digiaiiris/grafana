@@ -11,7 +11,13 @@ import appEvents from 'app/core/app_events';
 import { contextSrv } from 'app/core/core';
 
 import { IirisMaintenanceEditWizard } from './IirisMaintenanceEditWizard';
-import { getZabbixDataSource, getMaintenances, Maintenance, MaintenanceType } from './IirisMaintenanceModel';
+import {
+  getZabbixDataSource,
+  getMaintenances,
+  Maintenance,
+  MaintenanceType,
+  fetchHostsAndGroups,
+} from './IirisMaintenanceModel';
 import { IirisMaintenanceTable } from './IirisMaintenanceTable';
 
 // Modal dialog shown currently
@@ -57,7 +63,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
 
   // Fetch maintenance list for the table
   async fetchMaintenanceList() {
-    return this.fetchHostsAndGroups()
+    return fetchHostsAndGroups(this.props.zabbixDataSource, this.props.hostGroup)
       .then((hostsAndGroupIds) => {
         // Save hosts list for create/edit maintenance wizard where the user may select host(s)
         this.setState({ hosts: hostsAndGroupIds.hosts });
@@ -93,112 +99,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         this.setState({ allMaintenances: allMaintenances });
       })
       .catch((err: any) => {
-        appEvents.emit(AppEvents.alertError, ['Failed to fetch hosts for maintanence management', err.toString()]);
-      });
-  }
-
-  // Sort host list based on their names
-  sortHostNames(hostA: any, hostB: any) {
-    const nameA = hostA.name.toLowerCase();
-    const nameB = hostB.name.toLowerCase();
-    if (nameA < nameB) {
-      return -1;
-    } else if (nameA > nameB) {
-      return 1;
-    }
-    return 0;
-  }
-
-  // Fetch host and group ids so that maintenances can be fetched for the configured host group
-  async fetchHostsAndGroups(): Promise<{
-    hosts: Array<{ name: string; hostid: number }>;
-    groupIds: number[];
-  }> {
-    // Get Zabbix data source for Zabbix API queries
-    return getZabbixDataSource(this.props.zabbixDataSource).then((zabbix: any) => {
-      // Find out host group ids if not showing all hosts
-      var p: Promise<any>;
-      var groupIds: number[] | undefined;
-      const hostGroupName = this.props.hostGroup; // Undefined if getting all hosts regardless of host group
-      if (!hostGroupName) {
-        groupIds = undefined;
-        p = Promise.resolve();
-      } else {
-        p = this.getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((fetchedGroupIds) => {
-          if (fetchedGroupIds.length === 0) {
-            throw new Error('Configuration error: No host groups found with name: ' + hostGroupName);
-          }
-          groupIds = fetchedGroupIds;
-        });
-      }
-      return p.then(() => {
-        // Find the hosts
-        var hostQuery: any = {
-          output: ['hostid', 'name'],
-          filter: {
-            status: 0, // Only enabled hosts
-          },
-        };
-        if (hostGroupName) {
-          // Limit host query with the given host group
-          hostQuery.groupids = groupIds;
-        }
-        return zabbix.zabbixAPI
-          .request('host.get', hostQuery)
-          .then((hosts: Array<{ name: string; hostid: string }>) => {
-            if (hostGroupName) {
-              // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
-              hosts = hosts.filter((host) => !/[-_.](sla|SLA)$/.test(host.name));
-            }
-
-            // Sort
-            hosts = hosts.sort(this.sortHostNames);
-
-            // Parse hostid numbers
-            const hostsWithNumbers = hosts.map((host) => ({
-              name: host.name,
-              hostid: parseInt(host.hostid, 10),
-            }));
-
-            return {
-              hosts: hostsWithNumbers,
-              groupIds: groupIds,
-            };
-          });
-      });
-    });
-  }
-
-  // Find the host group and its nested groups from zabbix API; returns array of group ids
-  async getNestedHostGroups(hostGroupName: string, zabbixAPI: any) {
-    // Find find all the host groups that either match the name directly or are nested groups of it
-    // This must be done with two subsequent queries since Zabbix API does not support searching for them with one query
-    var ids: number[] = [];
-    return zabbixAPI
-      .request('hostgroup.get', {
-        filter: {
-          name: hostGroupName,
-        },
-      })
-      .then((groupData: any) => {
-        // It is possible that there is no group with the actual configure name; only nested groups => length may be zero
-        if (groupData.length > 0) {
-          ids.push(groupData[0].groupid);
-        }
-
-        return zabbixAPI
-          .request('hostgroup.get', {
-            search: {
-              name: hostGroupName + '/*',
-            },
-            searchWildcardsEnabled: true,
-          })
-          .then((nestedGroups: any) => {
-            for (var idx = 0; idx < nestedGroups.length; idx++) {
-              ids.push(nestedGroups[idx].groupid);
-            }
-            return ids;
-          });
+        appEvents.emit(AppEvents.alertError, ['Failed to fetch hosts for maintenance management', err.toString()]);
       });
   }
 

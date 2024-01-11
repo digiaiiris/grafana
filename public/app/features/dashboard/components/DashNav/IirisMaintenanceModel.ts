@@ -79,6 +79,112 @@ export function getZabbixDataSource(zabbixDataSourceName: string) {
   });
 }
 
+// Sort host list based on their names
+function sortHostNames(hostA: any, hostB: any) {
+  const nameA = hostA.name.toLowerCase();
+  const nameB = hostB.name.toLowerCase();
+  if (nameA < nameB) {
+    return -1;
+  } else if (nameA > nameB) {
+    return 1;
+  }
+  return 0;
+}
+
+// Fetch host and group ids so that maintenances can be fetched for the configured host group
+export async function fetchHostsAndGroups(
+  zabbixDataSource: string,
+  hostGroup: string | undefined
+): Promise<{
+  hosts: Array<{ name: string; hostid: number }>;
+  groupIds: number[];
+}> {
+  // Get Zabbix data source for Zabbix API queries
+  return getZabbixDataSource(zabbixDataSource).then((zabbix: any) => {
+    // Find out host group ids if not showing all hosts
+    var p: Promise<any>;
+    var groupIds: number[] | undefined;
+    const hostGroupName = hostGroup; // Undefined if getting all hosts regardless of host group
+    if (!hostGroupName) {
+      groupIds = undefined;
+      p = Promise.resolve();
+    } else {
+      p = getNestedHostGroups(hostGroupName, zabbix.zabbixAPI).then((fetchedGroupIds) => {
+        if (fetchedGroupIds.length === 0) {
+          throw new Error('Configuration error: No host groups found with name: ' + hostGroupName);
+        }
+        groupIds = fetchedGroupIds;
+      });
+    }
+    return p.then(() => {
+      // Find the hosts
+      var hostQuery: any = {
+        output: ['hostid', 'name'],
+        filter: {
+          status: 0, // Only enabled hosts
+        },
+      };
+      if (hostGroupName) {
+        // Limit host query with the given host group
+        hostQuery.groupids = groupIds;
+      }
+      return zabbix.zabbixAPI.request('host.get', hostQuery).then((hosts: Array<{ name: string; hostid: string }>) => {
+        if (hostGroupName) {
+          // Filter out hosts ending with -sla _sla .sla -SLA _SLA .SLA
+          hosts = hosts.filter((host) => !/[-_.](sla|SLA)$/.test(host.name));
+        }
+
+        // Sort
+        hosts = hosts.sort(sortHostNames);
+
+        // Parse hostid numbers
+        const hostsWithNumbers = hosts.map((host) => ({
+          name: host.name,
+          hostid: parseInt(host.hostid, 10),
+        }));
+
+        return {
+          hosts: hostsWithNumbers,
+          groupIds: groupIds,
+        };
+      });
+    });
+  });
+}
+
+// Find the host group and its nested groups from zabbix API; returns array of group ids
+export async function getNestedHostGroups(hostGroupName: string, zabbixAPI: any) {
+  // Find find all the host groups that either match the name directly or are nested groups of it
+  // This must be done with two subsequent queries since Zabbix API does not support searching for them with one query
+  var ids: number[] = [];
+  return zabbixAPI
+    .request('hostgroup.get', {
+      filter: {
+        name: hostGroupName,
+      },
+    })
+    .then((groupData: any) => {
+      // It is possible that there is no group with the actual configure name; only nested groups => length may be zero
+      if (groupData.length > 0) {
+        ids.push(groupData[0].groupid);
+      }
+
+      return zabbixAPI
+        .request('hostgroup.get', {
+          search: {
+            name: hostGroupName + '/*',
+          },
+          searchWildcardsEnabled: true,
+        })
+        .then((nestedGroups: any) => {
+          for (var idx = 0; idx < nestedGroups.length; idx++) {
+            ids.push(nestedGroups[idx].groupid);
+          }
+          return ids;
+        });
+    });
+}
+
 /**
  * Get all maintenances from Zabbix
  * @returns {Promise}
@@ -93,7 +199,7 @@ export async function getMaintenances(
       .then((zabbix: any) => {
         // Usually zabbix data source has caching enabled so that getMaintenances() results are cached for 1 minute
         // Invalidate the cache so that maintenances list will reflect the current situation
-        // (it's important eg. when the user cancels a maintanance and the list is subsequently refreshed)
+        // (it's important eg. when the user cancels a maintenance and the list is subsequently refreshed)
         delete zabbix.cachingProxy.cache['getMaintenances'];
 
         zabbix.zabbixAPI
@@ -171,18 +277,18 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
         };
 
         // Figure out the next (or ongoing) maintenance time
-        const nextMaintanences = getNextDailyMaintenances(
+        const nextMaintenances = getNextDailyMaintenances(
           parsedMaintenance.periodicActiveSinceTimestamp,
           parsedMaintenance.periodicActiveTillTimestamp,
           parsedMaintenance.every,
           parsedMaintenance.periodicStartTime,
           parsedMaintenance.duration
         );
-        if (nextMaintanences.length === 0) {
+        if (nextMaintenances.length === 0) {
           // The maintenance is in the past: ignore it
           return;
         }
-        const next = nextMaintanences[0];
+        const next = nextMaintenances[0];
         parsedMaintenance.ongoing = next.ongoing;
         parsedMaintenance.startTimeString = next.startTime.toFormat('dd.LL.yyyy HH:mm');
         parsedMaintenance.endTimeString = next.endTime.toFormat('dd.LL.yyyy HH:mm');
@@ -202,7 +308,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
         };
 
         // Figure out the next (or ongoing) maintenance time
-        const nextMaintanences = getNextWeeklyMaintenances(
+        const nextMaintenances = getNextWeeklyMaintenances(
           parsedMaintenance.periodicActiveSinceTimestamp,
           parsedMaintenance.periodicActiveTillTimestamp,
           parsedMaintenance.every,
@@ -210,11 +316,11 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           parsedMaintenance.periodicStartTime,
           parsedMaintenance.duration
         );
-        if (nextMaintanences.length === 0) {
+        if (nextMaintenances.length === 0) {
           // The maintenance is in the past: ignore it
           return;
         }
-        const next = nextMaintanences[0];
+        const next = nextMaintenances[0];
         parsedMaintenance.ongoing = next.ongoing;
         parsedMaintenance.startTimeString = next.startTime.toFormat('dd.LL.yyyy HH:mm');
         parsedMaintenance.endTimeString = next.endTime.toFormat('dd.LL.yyyy HH:mm');
@@ -234,7 +340,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
         };
 
         // Figure out the next (or ongoing) maintenance time
-        const nextMaintanences = getNextMonthlyMaintenances(
+        const nextMaintenances = getNextMonthlyMaintenances(
           parsedMaintenance.periodicActiveSinceTimestamp!,
           parsedMaintenance.periodicActiveTillTimestamp!,
           parsedMaintenance.every,
@@ -244,11 +350,11 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           parsedMaintenance.periodicStartTime!,
           parsedMaintenance.duration
         );
-        if (nextMaintanences.length === 0) {
+        if (nextMaintenances.length === 0) {
           // The maintenance is in the past: ignore it
           return;
         }
-        const next = nextMaintanences[0];
+        const next = nextMaintenances[0];
         parsedMaintenance.ongoing = next.ongoing;
         parsedMaintenance.startTimeString = next.startTime.toFormat('dd.LL.yyyy HH:mm');
         parsedMaintenance.endTimeString = next.endTime.toFormat('dd.LL.yyyy HH:mm');
@@ -377,12 +483,12 @@ export function getNextDailyMaintenances(
   periodicStartTime: number, // Start time in seconds of the day
   duration: number // Duration in seconds
 ) {
-  const repeateStartDate = periodicActiveSinceTimestamp.startOf('day');
+  const repeatStartDate = periodicActiveSinceTimestamp.startOf('day');
   const now = DateTime.now();
-  let repeateIndex = 0;
+  let repeatIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
   while (true) {
-    let maintenanceStart = repeateStartDate.plus({ days: repeateIndex * every }).plus({ seconds: periodicStartTime });
+    let maintenanceStart = repeatStartDate.plus({ days: repeatIndex * every }).plus({ seconds: periodicStartTime });
     let maintenanceEnd = DateTime.min(periodicActiveTillTimestamp, maintenanceStart.plus({ seconds: duration }));
     maintenanceStart = DateTime.max(periodicActiveSinceTimestamp, maintenanceStart);
     if (maintenanceStart >= periodicActiveTillTimestamp) {
@@ -399,7 +505,7 @@ export function getNextDailyMaintenances(
         break;
       }
     }
-    repeateIndex++;
+    repeatIndex++;
   }
   return dates;
 }
@@ -414,13 +520,13 @@ export function getNextWeeklyMaintenances(
   periodicStartTime: number, // Start time in seconds of the day
   duration: number // Duration in seconds
 ) {
-  const repeateStartWeek = periodicActiveSinceTimestamp.startOf('week');
+  const repeatStartWeek = periodicActiveSinceTimestamp.startOf('week');
   const now = DateTime.now();
-  let repeateIndex = 0;
+  let repeatIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
   let reachedEnd = false;
   while (!reachedEnd) {
-    let weekStart = repeateStartWeek.plus({ weeks: repeateIndex * every });
+    let weekStart = repeatStartWeek.plus({ weeks: repeatIndex * every });
     if (weekStart > periodicActiveTillTimestamp) {
       // A safety measure for a maintenance that has no weekdays selected (should not happen)
       break;
@@ -452,7 +558,7 @@ export function getNextWeeklyMaintenances(
         }
       }
     });
-    repeateIndex++;
+    repeatIndex++;
   }
   return dates;
 }
@@ -469,14 +575,14 @@ export function getNextMonthlyMaintenances(
   periodicStartTime: number, // Start time in seconds of the day
   duration: number // Duration in seconds
 ) {
-  const repeateStartYear = periodicActiveSinceTimestamp.startOf('year');
+  const repeatStartYear = periodicActiveSinceTimestamp.startOf('year');
   const now = DateTime.now();
-  let repeateYearIndex = 0;
+  let repeatYearIndex = 0;
   const dates: MaintenanceInstanceDates[] = [];
   const weekdaySet = weekdays.some((weekdaySelected) => weekdaySelected);
   let reachedEnd = false;
   while (!reachedEnd) {
-    let yearStart = repeateStartYear.plus({ years: repeateYearIndex });
+    let yearStart = repeatStartYear.plus({ years: repeatYearIndex });
     if (yearStart > periodicActiveTillTimestamp) {
       // A safety measure for a maintenance that has no months selected (should not happen)
       break;
@@ -562,7 +668,7 @@ export function getNextMonthlyMaintenances(
         }
       }
     });
-    repeateYearIndex++;
+    repeatYearIndex++;
   }
 
   // "Last weekdays" of month may generate dates in other than ascending order
