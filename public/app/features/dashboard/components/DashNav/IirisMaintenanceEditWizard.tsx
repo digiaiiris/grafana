@@ -571,8 +571,8 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     ) {
       if (this.state.periodicRepeatEndDate < this.state.periodicRepeatStartDate) {
         return this.texts.repeatMustEndAfterStartTime;
-      } else if (this.state.periodicRepeatStartDate < DateTime.now().startOf('day')) {
-        return this.texts.repeatStartTimeCantBeInPast;
+      } else if (this.state.periodicRepeatEndDate < DateTime.now().startOf('day')) {
+        return this.texts.repeatEndDateCantBeInPast;
       }
       // Check if period continues over next DST change
       const curYear = new Date().getFullYear();
@@ -1614,7 +1614,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                   <td>{dates.endTime.toFormat('dd.LL.yyyy HH:mm')}</td>
                 </tr>
               ))}
-              {previewDates.length > 10 && (
+              {previewDates.length === 10 && (
                 <tr key="preview-more-rows">
                   <td colSpan={2} className="td-end">
                     ...
