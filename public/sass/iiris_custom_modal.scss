@@ -169,22 +169,8 @@ div[role='dialog'].modal-body > div:nth-child(2) {
       width: 30%;
 
       &.maintenance-column-right-preview {
-        overflow-y: scroll;
-        max-height: calc(65vh - 64px);
-
         tbody {
-          td {
-            opacity: 1;
-          }
-
-          .tr-new {
-            td {
-              opacity: 1;
-            }
-          }
-
           .td-end {
-            opacity: 1;
             border-bottom: none;
             text-align: center;
           }
@@ -351,4 +337,9 @@ header .iiris-custom-toolbar {
 .maintenance-row-container .gf-form-select-wrapper select.gf-form-input {
   text-indent: 0;
   text-overflow: clip;
+}
+
+.maintenance-config-error-text {
+  color: #e60f0f;
+  display: inline-block;
 }

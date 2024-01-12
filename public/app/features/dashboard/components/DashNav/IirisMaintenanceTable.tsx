@@ -1,30 +1,65 @@
+/**
+ * Simple function component used to show maintenance table in the maintenance list modal dialog
+ */
+
 import React from 'react';
 import { useTable } from 'react-table';
 
-interface ColumnType {
-  accessor: string;
-  Header: string;
-}
+import { contextSrv } from 'app/core/core';
 
 interface Props {
   data: any[];
-  columns: ColumnType[];
-  onEditMaintenance: (maintenanceId: string) => void;
-  onStopMaintenance: (maintenanceId: string) => void;
-  ongoingMaintenanceIds: string[];
+  onEditMaintenance: (maintenanceId: number) => void;
+  onStopMaintenance: (maintenanceId: number) => void;
 }
 
 export function IirisMaintenanceTable(props: Props) {
-  const columns = props.columns;
+  const texts = contextSrv.getLocalizedTexts();
+  const columns = [
+    {
+      Header: texts.type,
+      accessor: 'maintenanceTypeString',
+    },
+    {
+      Header: texts.description,
+      accessor: 'description',
+    },
+    {
+      Header: texts.createdBy,
+      accessor: 'createdBy',
+    },
+    {
+      Header: texts.startTime,
+      accessor: 'startTimeString',
+    },
+    {
+      Header: texts.endTime,
+      accessor: 'endTimeString',
+    },
+    {
+      Header: texts.duration,
+      accessor: 'durationString',
+    },
+    {
+      Header: texts.repeatEnds,
+      accessor: 'repeatEndString',
+    },
+  ];
+
   const data = props.data.map((item) => {
     const obj: any = {};
-    columns.map((col: ColumnType) => {
+    columns.forEach((col) => {
       obj[col.accessor] = item[col.accessor];
     });
     return obj;
   });
 
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data });
+  // autoResetHiddenColumns is set to false to prevent infinity loop (see https://stackoverflow.com/questions/63549751/react-maximum-update-depth-exceeded-using-react-table)
+  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
+    columns,
+    data,
+    autoResetHiddenColumns: false,
+  });
 
   return (
     <table {...getTableProps()} className="table">
@@ -50,26 +85,14 @@ export function IirisMaintenanceTable(props: Props) {
                 return (
                   <td
                     {...cell.getCellProps()}
-                    className={
-                      'iiris-table-cell ' +
-                      (props.ongoingMaintenanceIds.indexOf(props.data[row.index].internalId) > -1
-                        ? 'iiris-colored-row'
-                        : '')
-                    }
+                    className={'iiris-table-cell ' + (props.data[row.index].ongoing ? 'iiris-colored-row' : '')}
                     key={`tbody-td-${maintenanceId}-${columnIndex}`}
                   >
                     {cell.render('Cell')}
                   </td>
                 );
               })}
-              <td
-                className={
-                  'iiris-button-cell ' +
-                  (props.ongoingMaintenanceIds.indexOf(props.data[row.index].internalId) > -1
-                    ? 'iiris-colored-row'
-                    : '')
-                }
-              >
+              <td className={'iiris-button-cell ' + (props.data[row.index].ongoing ? 'iiris-colored-row' : '')}>
                 <div
                   className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button"
                   onClick={() => props.onEditMaintenance(props.data[row.index].id)}
