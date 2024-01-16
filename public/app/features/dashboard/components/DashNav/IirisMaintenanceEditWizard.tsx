@@ -4,10 +4,8 @@
  */
 
 import { DateTime } from 'luxon';
-import moment from 'moment'; // eslint-disable-line no-restricted-imports
 import React, { PureComponent } from 'react';
 
-import 'moment/locale/fi';
 import { AppEvents } from '@grafana/data';
 import { Modal } from '@grafana/ui';
 import appEvents from 'app/core/app_events';
@@ -534,6 +532,15 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       if (!this.state.everyNDays || !/^[0-9]*$/.test(this.state.everyNDays + '')) {
         return this.texts.dayFieldMustContainInteger;
       }
+
+      if (this.state.everyNDays !== 1) {
+        // Check that period start time does not go into another day in UTC time
+        // Because otherwise the first occurance of daily maintenance is different than what the user has configured in local timezone
+        const startTimeError = this.checkPeriodicStartTimeConfigurationError();
+        if (startTimeError) {
+          return startTimeError;
+        }
+      }
     } else if (maintenanceType === MaintenanceType.Weekly) {
       // Number inputs allow the user to enter decimal separator; ensure that it's a valid integer
       if (!this.state.everyNWeeks || !/^[0-9]*$/.test(this.state.everyNWeeks + '')) {
@@ -542,6 +549,15 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       let someWeekdaySelected = this.state.weeklyWeekdays.some((weekdaySelected) => weekdaySelected);
       if (!someWeekdaySelected) {
         return this.texts.oneWeekdayMustBeChosen;
+      }
+
+      if (this.state.everyNWeeks !== 1) {
+        // Check that period start time does not go into another day in UTC time
+        // Because otherwise the first occurance of daily maintenance is different than what the user has configured in local timezone
+        const startTimeError = this.checkPeriodicStartTimeConfigurationError();
+        if (startTimeError) {
+          return startTimeError;
+        }
       }
     } else if (maintenanceType === MaintenanceType.Monthly) {
       let someMonthSelected = this.state.months.some((monthSelected) => monthSelected);
@@ -558,6 +574,13 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         if (!someWeekdaySelected) {
           return this.texts.oneWeekdayMustBeChosen;
         }
+      }
+
+      // Check that period start time does not go into another day in UTC time
+      // Because otherwise the first occurance of daily maintenance is different than what the user has configured in local timezone
+      const startTimeError = this.checkPeriodicStartTimeConfigurationError();
+      if (startTimeError) {
+        return startTimeError;
       }
     }
 
@@ -577,34 +600,6 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       } else if (this.state.periodicRepeatEndDate < DateTime.now().startOf('day')) {
         return this.texts.repeatEndDateCantBeInPast;
       }
-      // Check if period continues over next DST change
-      const curYear = new Date().getFullYear();
-      const isCurrentlyDST = moment().isDST();
-      let nextChange;
-      if (isCurrentlyDST) {
-        nextChange = moment(curYear + '-10-01')
-          .endOf('month')
-          .startOf('isoWeek')
-          .subtract(1, 'day')
-          .add(4, 'hour');
-      } else {
-        nextChange = moment(curYear + '-03-01')
-          .endOf('month')
-          .startOf('isoWeek')
-          .subtract(1, 'day')
-          .add(3, 'hour');
-
-        // Increase year if current date has surpassed last DST change
-        if (moment() >= nextChange) {
-          nextChange.add(1, 'year');
-        }
-      }
-      const activeTill = this.state.periodicRepeatEndDate
-        .set({ hour: this.state.periodicStartHour, minute: this.state.periodicStartMinute, second: 0, millisecond: 0 })
-        .plus({ seconds: this.state.duration });
-      if (activeTill.toMillis() > nextChange.valueOf()) {
-        return this.texts.repeatEndTimeCantOverlapDaylight + ' ' + nextChange.format('DD.MM.YYYY HH:mm');
-      }
     }
     if (
       maintenanceType === MaintenanceType.OneTime &&
@@ -613,6 +608,81 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       return this.texts.maintenanceEndCantBeInPast;
     }
     return null;
+  }
+
+  // Check that the start time won't go into a different day when converted from local time to UTC
+  // Returns error string or null if there are no configuration errors
+  checkPeriodicStartTimeConfigurationError() {
+    var utcOffsetSeconds = DateTime.now().offset * 60;
+    var periodicStartTimeSecondsLocal = this.state.periodicStartHour * 3600 + this.state.periodicStartMinute * 60;
+    var periodicStartTimeSecondsUTC = periodicStartTimeSecondsLocal - utcOffsetSeconds;
+    var errorLine1;
+    if (periodicStartTimeSecondsUTC < 0) {
+      // Eg. 01:00 local time would be 23:00 previous day UTC time with UTC+2 offset (Finland winter time)
+      if (
+        this.state.maintenanceType === MaintenanceType.Monthly &&
+        this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month &&
+        this.state.dayOfMonth > 1
+      ) {
+        // This case is ok; maintenance just moves one day earlier in UTC
+        return null;
+      }
+      const minStartTimeSecondsLocal = utcOffsetSeconds;
+      errorLine1 = this.texts.startTimeBeforeError.replace(
+        '$$',
+        this.formatStartTimeSecondsAsString(minStartTimeSecondsLocal)
+      );
+    } else if (periodicStartTimeSecondsUTC >= 24 * 3600) {
+      // Eg. 23:00 local time would be 04:00 next day with UTC-5 offset (New York)
+      if (
+        this.state.maintenanceType === MaintenanceType.Monthly &&
+        this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month &&
+        this.state.dayOfMonth < 31
+      ) {
+        // This case is ok; maintenance just moves one day later in UTC
+        return null;
+      }
+      const maxStartTimeSecondsLocal = 24 * 3600 + utcOffsetSeconds;
+      errorLine1 = this.texts.startTimeAfterError.replace(
+        '$$',
+        this.formatStartTimeSecondsAsString(maxStartTimeSecondsLocal)
+      );
+    }
+
+    if (errorLine1) {
+      if (this.state.maintenanceType === MaintenanceType.Daily) {
+        return errorLine1 + '\n' + this.texts.startTimeFixDaily;
+      }
+      if (this.state.maintenanceType === MaintenanceType.Weekly) {
+        return errorLine1 + '\n' + this.texts.startTimeFixWeekly;
+      }
+      if (
+        this.state.maintenanceType === MaintenanceType.Monthly &&
+        this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week
+      ) {
+        return errorLine1 + '\n' + this.texts.startTimeFixMonthlyNthWeekday;
+      }
+      if (
+        this.state.maintenanceType === MaintenanceType.Monthly &&
+        this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Month
+      ) {
+        return errorLine1 + '\n' + this.texts.startTimeFixMonthlyNthDayOfMonth;
+      }
+    }
+    return null;
+  }
+
+  // Format start time which is seconds from midnight to HH:mm format
+  formatStartTimeSecondsAsString(startTimeSeconds: number) {
+    const hour = Math.floor(startTimeSeconds / 3600);
+    const minute = Math.floor((startTimeSeconds - hour * 3600) / 60);
+    const hourWithLeadingZeros = '00' + hour;
+    const minutesWithLeadingZeros = '00' + minute;
+    const HHmm =
+      hourWithLeadingZeros.substring(hourWithLeadingZeros.length - 2) +
+      ':' +
+      minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
+    return HHmm;
   }
 
   // Check the validity of wizard phase 2 configuration;
@@ -1527,107 +1597,109 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     const previewDates = this.getMaintenanceDatesPreview();
     const validationErrors = this.checkWizardPhase1Errors();
     return (
-      <div className="maintenance-column-wrapper">
-        <div className="maintenance-column-left">
-          {/* Maintenance type */}
-          <div className="gf-form-group maintenance-row-container">
-            <label className="gf-form-label">{this.texts.maintenanceType}</label>
-            <div className="gf-form-select-wrapper iiris-fixed-width-select">
-              <select
-                className="gf-form-input"
-                value={this.state.maintenanceType}
-                onChange={(e) => this.setState({ maintenanceType: parseInt(e.target.value, 10) })}
-              >
-                {this.mTypeInputOptions.map((option) => (
-                  <option value={option.value} key={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+      <>
+        <div className="maintenance-column-wrapper">
+          <div className="maintenance-column-left">
+            {/* Maintenance type */}
+            <div className="gf-form-group maintenance-row-container">
+              <label className="gf-form-label">{this.texts.maintenanceType}</label>
+              <div className="gf-form-select-wrapper iiris-fixed-width-select">
+                <select
+                  className="gf-form-input"
+                  value={this.state.maintenanceType}
+                  onChange={(e) => this.setState({ maintenanceType: parseInt(e.target.value, 10) })}
+                >
+                  {this.mTypeInputOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* Repeating maintenance: how often the maintenance repeats */}
-          {this.state.maintenanceType !== MaintenanceType.OneTime ? this.renderRepeatSelection() : null}
+            {/* Repeating maintenance: how often the maintenance repeats */}
+            {this.state.maintenanceType !== MaintenanceType.OneTime ? this.renderRepeatSelection() : null}
 
-          {/* Maintenance start date & time or repeating maintenance start & stop dates */}
-          <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-            {this.state.maintenanceType === MaintenanceType.OneTime
-              ? this.renderSingleMaintenanceStartDateTime()
-              : this.renderRepeatingMaintenanceStartAndStopDates()}
-          </div>
-
-          {/* Maintenance duration (or strict end time) */}
-          {this.state.maintenanceType === MaintenanceType.OneTime ? (
-            <div className="gf-form-group maintenance-row-container">{this.renderSingleMaintenanceDuration()}</div>
-          ) : (
+            {/* Maintenance start date & time or repeating maintenance start & stop dates */}
             <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
-              {this.renderRepeatingMaintenanceStartTimeAndDuration()}
+              {this.state.maintenanceType === MaintenanceType.OneTime
+                ? this.renderSingleMaintenanceStartDateTime()
+                : this.renderRepeatingMaintenanceStartAndStopDates()}
             </div>
-          )}
 
-          {/* Selection of whether the end time is manually defined instead of selecting duration from a dropdown */}
-          <div className="gf-form-group maintenance-row-container">
-            <div className="iiris-checkbox">
-              <input
-                id="strict_end_time"
-                type="checkbox"
-                checked={this.state.strictEndTimeSelected}
-                onChange={(e) => this.setState({ strictEndTimeSelected: e.target.checked })}
-              />
-              <label className="checkbox-label" htmlFor="strict_end_time">
-                {this.texts.setPreciseEndTime}
-              </label>
+            {/* Maintenance duration (or strict end time) */}
+            {this.state.maintenanceType === MaintenanceType.OneTime ? (
+              <div className="gf-form-group maintenance-row-container">{this.renderSingleMaintenanceDuration()}</div>
+            ) : (
+              <div className="gf-form-group maintenance-row-container iiris-modal-column-container">
+                {this.renderRepeatingMaintenanceStartTimeAndDuration()}
+              </div>
+            )}
+
+            {/* Selection of whether the end time is manually defined instead of selecting duration from a dropdown */}
+            <div className="gf-form-group maintenance-row-container">
+              <div className="iiris-checkbox">
+                <input
+                  id="strict_end_time"
+                  type="checkbox"
+                  checked={this.state.strictEndTimeSelected}
+                  onChange={(e) => this.setState({ strictEndTimeSelected: e.target.checked })}
+                />
+                <label className="checkbox-label" htmlFor="strict_end_time">
+                  {this.texts.setPreciseEndTime}
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Wizard buttons */}
-          <div className="gf-form-button-row">
-            <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
-              {this.texts.cancel}
-            </button>
-            <button className="btn btn-primary" disabled={validationErrors !== null} onClick={() => this.goToNext()}>
-              {this.texts.next}
-            </button>
-
-            {/* Configuration error text */}
-            <div className="maintenance-config-error-text">{validationErrors}</div>
-          </div>
-        </div>
-
-        {/* Upcoming maintenances summary */}
-        <div className="maintenance-column-right maintenance-column-right-preview">
-          <h4>{this.texts.upcomingMaintenances}</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>
-                  <strong>{this.texts.startTime}</strong>
-                </td>
-                <td>
-                  <strong>{this.texts.endTime}</strong>
-                </td>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Show first 10 upcoming maintenance dates and times */}
-              {previewDates.slice(0, 10).map((dates: any, index: number) => (
-                <tr key={'preview-' + index} className={dates.ongoing ? 'iiris-colored-row' : ''}>
-                  <td>{dates.startTime.toFormat('dd.LL.yyyy HH:mm')}</td>
-                  <td>{dates.endTime.toFormat('dd.LL.yyyy HH:mm')}</td>
-                </tr>
-              ))}
-              {previewDates.length === 10 && (
-                <tr key="preview-more-rows">
-                  <td colSpan={2} className="td-end">
-                    ...
+          {/* Upcoming maintenances summary */}
+          <div className="maintenance-column-right maintenance-column-right-preview">
+            <h4>{this.texts.upcomingMaintenances}</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>
+                    <strong>{this.texts.startTime}</strong>
+                  </td>
+                  <td>
+                    <strong>{this.texts.endTime}</strong>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {/* Show first 10 upcoming maintenance dates and times */}
+                {previewDates.slice(0, 10).map((dates: any, index: number) => (
+                  <tr key={'preview-' + index} className={dates.ongoing ? 'iiris-colored-row' : ''}>
+                    <td>{dates.startTime.toFormat('dd.LL.yyyy HH:mm')}</td>
+                    <td>{dates.endTime.toFormat('dd.LL.yyyy HH:mm')}</td>
+                  </tr>
+                ))}
+                {previewDates.length === 10 && (
+                  <tr key="preview-more-rows">
+                    <td colSpan={2} className="td-end">
+                      ...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+
+        {/* Wizard buttons */}
+        <div className="gf-form-button-row">
+          <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
+            {this.texts.cancel}
+          </button>
+          <button className="btn btn-primary" disabled={validationErrors !== null} onClick={() => this.goToNext()}>
+            {this.texts.next}
+          </button>
+
+          {/* Configuration error text */}
+          <div className="maintenance-config-error-text">{validationErrors}</div>
+        </div>
+      </>
     );
   }
 

@@ -342,4 +342,5 @@ header .iiris-custom-toolbar {
 .maintenance-config-error-text {
   color: #e60f0f;
   display: inline-block;
+  white-space: pre-line; /* To display multi-line error texts properly */
 }

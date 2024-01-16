@@ -7,6 +7,10 @@ import { useTable } from 'react-table';
 
 import { contextSrv } from 'app/core/core';
 
+/*import {
+  Maintenance
+} from './IirisMaintenanceModel';*/
+
 interface Props {
   data: any[];
   onEditMaintenance: (maintenanceId: number) => void;

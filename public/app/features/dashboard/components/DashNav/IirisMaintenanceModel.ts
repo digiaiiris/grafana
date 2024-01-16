@@ -922,7 +922,7 @@ function encodeMonthDayStartTime(period: any, startTimeLocal: number, dayOfMonth
       dayOfMonth--;
     } else {
       // This should be prevented in the UI
-      throw new Error('Cannot convery start time and day of month from local to UTC');
+      throw new Error('Cannot convert start time and day of month from local to UTC');
     }
     periodicStartTimeSecondsUTC += 24 * 3600;
   } else if (periodicStartTimeSecondsUTC >= 24 * 3600) {
@@ -931,7 +931,7 @@ function encodeMonthDayStartTime(period: any, startTimeLocal: number, dayOfMonth
       dayOfMonth++;
     } else {
       // This should be prevented in the UI
-      throw new Error('Cannot convery start time and day of month from local to UTC');
+      throw new Error('Cannot convert start time and day of month from local to UTC');
     }
     periodicStartTimeSecondsUTC -= 24 * 3600;
   }
