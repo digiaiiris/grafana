@@ -3,110 +3,96 @@
  */
 
 import React from 'react';
-import { useTable } from 'react-table';
 
 import { contextSrv } from 'app/core/core';
 
-/*import {
-  Maintenance
-} from './IirisMaintenanceModel';*/
+import { Maintenance, MaintenanceType } from './IirisMaintenanceModel';
 
 interface Props {
-  data: any[];
+  data: Maintenance[];
   onEditMaintenance: (maintenanceId: number) => void;
   onStopMaintenance: (maintenanceId: number) => void;
 }
 
+/**
+ * Generate duration string from number of seconds
+ * @param {number} duration
+ * @returns {string}
+ */
+function generateDurationString(duration: number) {
+  let durationDays,
+    durationHours,
+    durationMinutes,
+    durationSeconds = 0;
+  let durationString = '';
+  if (duration >= 24 * 60 * 60) {
+    durationDays = Math.floor(duration / 60 / 60 / 24);
+    durationHours = Math.floor((duration - durationDays * 24 * 60 * 60) / 60 / 60);
+    durationString = durationDays + 'd ' + (durationHours > 0 ? durationHours + 'h' : '');
+  } else if (duration < 24 * 60 * 60 && duration >= 60 * 60) {
+    durationHours = Math.floor(duration / 60 / 60);
+    durationMinutes = Math.floor((duration - durationHours * 60 * 60) / 60);
+    durationString = durationHours + 'h ' + (durationMinutes > 0 ? durationMinutes + 'min' : '');
+  } else if (duration < 60 * 60 && duration > 60) {
+    durationMinutes = Math.floor(duration / 60);
+    durationString = durationMinutes + 'min';
+  } else {
+    durationSeconds = duration;
+    durationString = durationSeconds + 's';
+  }
+  return durationString;
+}
+
 export function IirisMaintenanceTable(props: Props) {
   const texts = contextSrv.getLocalizedTexts();
-  const columns = [
-    {
-      Header: texts.type,
-      accessor: 'maintenanceTypeString',
-    },
-    {
-      Header: texts.description,
-      accessor: 'description',
-    },
-    {
-      Header: texts.createdBy,
-      accessor: 'createdBy',
-    },
-    {
-      Header: texts.startTime,
-      accessor: 'startTimeString',
-    },
-    {
-      Header: texts.endTime,
-      accessor: 'endTimeString',
-    },
-    {
-      Header: texts.duration,
-      accessor: 'durationString',
-    },
-    {
-      Header: texts.repeatEnds,
-      accessor: 'repeatEndString',
-    },
-  ];
-
-  const data = props.data.map((item) => {
-    const obj: any = {};
-    columns.forEach((col) => {
-      obj[col.accessor] = item[col.accessor];
-    });
-    return obj;
-  });
-
-  // autoResetHiddenColumns is set to false to prevent infinity loop (see https://stackoverflow.com/questions/63549751/react-maximum-update-depth-exceeded-using-react-table)
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
-    columns,
-    data,
-    autoResetHiddenColumns: false,
-  });
 
   return (
-    <table {...getTableProps()} className="table">
+    <table className="table">
       <thead>
-        {headerGroups.map((headerGroup, i) => (
-          <tr {...headerGroup.getHeaderGroupProps()} key={`thead-tr-${i}`}>
-            {headerGroup.headers.map((column, i) => (
-              <th {...column.getHeaderProps()} key={`thead-th-${i}`}>
-                {column.render('Header')}
-              </th>
-            ))}
-            <th></th>
-          </tr>
-        ))}
+        <tr>
+          <th>{texts.type}</th>
+          <th>{texts.description}</th>
+          <th>{texts.createdBy}</th>
+          <th>{texts.startTime}</th>
+          <th>{texts.endTime}</th>
+          <th>{texts.duration}</th>
+          <th>{texts.repeatEnds}</th>
+        </tr>
       </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row) => {
-          prepareRow(row);
-          const maintenanceId = props.data[row.index].id;
+      <tbody>
+        {props.data.map((maintenance) => {
+          const maintenanceId = maintenance.id;
+          var maintenanceTypeString = '';
+          if (maintenance.maintenanceType === MaintenanceType.OneTime) {
+            maintenanceTypeString = texts.oneTimeAbbr;
+          } else if (maintenance.maintenanceType === MaintenanceType.Daily) {
+            maintenanceTypeString = texts.dailyAbbr;
+          } else if (maintenance.maintenanceType === MaintenanceType.Weekly) {
+            maintenanceTypeString = texts.weeklyAbbr;
+          } else if (maintenance.maintenanceType === MaintenanceType.Monthly) {
+            maintenanceTypeString = texts.monthlyAbbr;
+          }
+
           return (
-            <tr {...row.getRowProps()} key={`tbody-tr-${maintenanceId}`}>
-              {row.cells.map((cell, columnIndex) => {
-                return (
-                  <td
-                    {...cell.getCellProps()}
-                    className={'iiris-table-cell ' + (props.data[row.index].ongoing ? 'iiris-colored-row' : '')}
-                    key={`tbody-td-${maintenanceId}-${columnIndex}`}
-                  >
-                    {cell.render('Cell')}
-                  </td>
-                );
-              })}
-              <td className={'iiris-button-cell ' + (props.data[row.index].ongoing ? 'iiris-colored-row' : '')}>
+            <tr key={`tbody-tr-${maintenanceId}`} className={maintenance.ongoing ? 'iiris-ongoing-maintenance' : ''}>
+              <td>{maintenanceTypeString}</td>
+              <td>{maintenance.description}</td>
+              <td>{maintenance.createdBy}</td>
+              <td>{maintenance.startTimeString}</td>
+              <td>{maintenance.endTimeString}</td>
+              <td>{generateDurationString(maintenance.duration)}</td>
+              <td>{maintenance.repeatEndString}</td>
+              <td className="iiris-button-cell">
                 <div
                   className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button"
-                  onClick={() => props.onEditMaintenance(props.data[row.index].id)}
+                  onClick={() => props.onEditMaintenance(maintenanceId)}
                   title="Muokkaa huoltoa"
                 >
                   <span className="fa fa-edit"></span>
                 </div>
                 <div
                   className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button primary"
-                  onClick={() => props.onStopMaintenance(props.data[row.index].id)}
+                  onClick={() => props.onStopMaintenance(maintenanceId)}
                   title="Lopeta huolto"
                 >
                   <span className="fa fa-remove"></span>

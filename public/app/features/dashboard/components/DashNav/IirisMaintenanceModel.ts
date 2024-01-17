@@ -46,10 +46,7 @@ export type Maintenance = {
 
   startTimeString: string; // Maintenance start time formatted as string for the maintenance list
   endTimeString: string; // Maintenance end time formatted as string for the maintenance list
-  durationString: string; // Duration formatted as string for the maintenance list
   repeatEndString?: string; // Periodic maintenance end date formatted as string for the maintenance list
-  maintenanceTypeString?: string;
-  maintenanceTypeStringFull?: string;
 };
 
 // A single instance of periodic maintenance
@@ -459,39 +456,9 @@ function parseBasicMaintenanceFields(maintenance: any, timeperiod: any) {
     day: parseInt(timeperiod.day, 10),
     dayOfWeek: timeperiod.dayofweek,
     duration: duration,
-    durationString: getDurationString(duration),
     weekdays: weekdays,
     months: months,
   };
-}
-
-/**
- * Parse duration string from number of seconds
- * @param {number} duration
- * @returns {string}
- */
-function getDurationString(duration: number) {
-  let durationDays,
-    durationHours,
-    durationMinutes,
-    durationSeconds = 0;
-  let durationString = '';
-  if (duration >= 24 * 60 * 60) {
-    durationDays = Math.floor(duration / 60 / 60 / 24);
-    durationHours = Math.floor((duration - durationDays * 24 * 60 * 60) / 60 / 60);
-    durationString = durationDays + 'd ' + (durationHours > 0 ? durationHours + 'h' : '');
-  } else if (duration < 24 * 60 * 60 && duration >= 60 * 60) {
-    durationHours = Math.floor(duration / 60 / 60);
-    durationMinutes = Math.floor((duration - durationHours * 60 * 60) / 60);
-    durationString = durationHours + 'h ' + (durationMinutes > 0 ? durationMinutes + 'min' : '');
-  } else if (duration < 60 * 60 && duration > 60) {
-    durationMinutes = Math.floor(duration / 60);
-    durationString = durationMinutes + 'min';
-  } else {
-    durationSeconds = duration;
-    durationString = durationSeconds + 's';
-  }
-  return durationString;
 }
 
 // Parse periodic start time in case of daily maintenance

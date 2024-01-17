@@ -394,7 +394,6 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       groups: [],
       startTimeString: '',
       endTimeString: '',
-      durationString: '',
     };
     if (this.state.maintenanceType === MaintenanceType.OneTime) {
       m.oneTimeStartTimestamp = this.state.oneTimeStartTimestamp;
@@ -1670,7 +1669,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <tbody>
                 {/* Show first 10 upcoming maintenance dates and times */}
                 {previewDates.slice(0, 10).map((dates: any, index: number) => (
-                  <tr key={'preview-' + index} className={dates.ongoing ? 'iiris-colored-row' : ''}>
+                  <tr key={'preview-' + index} className={dates.ongoing ? 'iiris-ongoing-maintenance' : ''}>
                     <td>{dates.startTime.toFormat('dd.LL.yyyy HH:mm')}</td>
                     <td>{dates.endTime.toFormat('dd.LL.yyyy HH:mm')}</td>
                   </tr>
