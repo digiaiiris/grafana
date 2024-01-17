@@ -12,8 +12,10 @@ $iiris-table-horizontal-padding: 10px;
     tr {
       border-bottom: 1px solid #cccccc;
     }
-    td {
+    td:not(.iiris-cell-no-word-break) {
       word-break: break-word;
+    }
+    td {
       padding: $iiris-table-vertical-padding $iiris-table-horizontal-padding;
     }
     th {

@@ -73,29 +73,45 @@ export function IirisMaintenanceTable(props: Props) {
             maintenanceTypeString = texts.monthlyAbbr;
           }
 
+          var errorCells;
+          if (maintenance.periodicStartTimeNotCompatibleWithCurrentTimeZone) {
+            // Cannot show start and end dates because they have been configured with a different timezone
+            // so that if dates were converted to the current local timezone they would show maintenance
+            // repetition days incorrectly
+            errorCells = <td colSpan={4}>{texts.cannotShowDatesTimeZoneIssue}</td>;
+          }
+
           return (
             <tr key={`tbody-tr-${maintenanceId}`} className={maintenance.ongoing ? 'iiris-ongoing-maintenance' : ''}>
-              <td>{maintenanceTypeString}</td>
+              <td className="iiris-cell-no-word-break">{maintenanceTypeString}</td>
               <td>{maintenance.description}</td>
-              <td>{maintenance.createdBy}</td>
-              <td>{maintenance.startTimeString}</td>
-              <td>{maintenance.endTimeString}</td>
-              <td>{generateDurationString(maintenance.duration)}</td>
-              <td>{maintenance.repeatEndString}</td>
-              <td className="iiris-button-cell">
-                <div
-                  className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button"
-                  onClick={() => props.onEditMaintenance(maintenanceId)}
-                  title="Muokkaa huoltoa"
-                >
-                  <span className="fa fa-edit"></span>
-                </div>
-                <div
-                  className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button primary"
-                  onClick={() => props.onStopMaintenance(maintenanceId)}
-                  title="Lopeta huolto"
-                >
-                  <span className="fa fa-remove"></span>
+              <td className="iiris-cell-no-word-break">{maintenance.createdBy}</td>
+              {errorCells ? (
+                errorCells
+              ) : (
+                <>
+                  <td>{maintenance.startTimeString}</td>
+                  <td>{maintenance.endTimeString}</td>
+                  <td>{generateDurationString(maintenance.duration)}</td>
+                  <td>{maintenance.repeatEndString}</td>
+                </>
+              )}
+              <td>
+                <div className="iiris-button-cell">
+                  <div
+                    className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button"
+                    onClick={() => props.onEditMaintenance(maintenanceId)}
+                    title="Muokkaa huoltoa"
+                  >
+                    <span className="fa fa-edit"></span>
+                  </div>
+                  <div
+                    className="iiris-button iiris-button-condensed iiris-table-button iiris-table-icon-button primary"
+                    onClick={() => props.onStopMaintenance(maintenanceId)}
+                    title="Lopeta huolto"
+                  >
+                    <span className="fa fa-remove"></span>
+                  </div>
                 </div>
               </td>
             </tr>
