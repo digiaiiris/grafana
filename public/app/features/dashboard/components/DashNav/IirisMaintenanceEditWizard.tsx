@@ -952,10 +952,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
                     checked={this.state.dayOfMonthOrWeekSelected === MonthlyDayPeriodSelection.Week}
                     onChange={(e) => this.setState({ dayOfMonthOrWeekSelected: parseInt(e.target.value, 10) })}
                     value={MonthlyDayPeriodSelection.Week}
-                    id="dayOfWeekSelected"
+                    id="weekdayOfMonthSelected"
                   />
-                  <label className="gf-form-label checkbox-label width-12" htmlFor="dayOfWeekSelected">
-                    {this.texts.nthDayOfWeek}
+                  <label className="gf-form-label checkbox-label width-12" htmlFor="weekdayOfMonthSelected">
+                    {this.texts.nthWeekdayOfMonth}
                   </label>
                 </div>
               </label>
