@@ -34,6 +34,7 @@ export type Maintenance = {
   periodicActiveSinceTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat start timestamp; active_since property (includes also time part)
   periodicActiveTillTimestamp?: DateTime; // Periodic maintenance (daily, weekly or monthly): repeat end timestamp; active_till property (includes also time part)
   periodicStartTime?: number; // Periodic maintenance (daily, weekly or monthly): time of day when maintenance starts in seconds; start_time property
+  periodicStartTimeNotCompatibleWithCurrentTimeZone?: boolean; // True if periodic maintenance has been configured with another timezone so that start time cannot be represented with current timezone
   duration: number; // Maintenance duration in seconds; zabbix time period's period property
   every: number; // Periodic maintenance (daily, weekly or monthly): zabbix time period every property
   weekdays: WeekdaySelection; // Weekly and monthly maintenance: selected weekdays; zabbix time period dayofweek property
@@ -45,10 +46,7 @@ export type Maintenance = {
 
   startTimeString: string; // Maintenance start time formatted as string for the maintenance list
   endTimeString: string; // Maintenance end time formatted as string for the maintenance list
-  durationString: string; // Duration formatted as string for the maintenance list
   repeatEndString?: string; // Periodic maintenance end date formatted as string for the maintenance list
-  maintenanceTypeString?: string;
-  maintenanceTypeStringFull?: string;
 };
 
 // A single instance of periodic maintenance
@@ -240,7 +238,7 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
       const activeTill = DateTime.fromSeconds(parseInt(maintenance.active_till, 10));
       const periodStartDate = DateTime.fromSeconds(parseInt(timeperiod.start_date, 10));
       const duration = parseInt(timeperiod.period, 10);
-      const periodicStartTimeSeconds = parseInt(timeperiod.start_time, 10);
+      const periodicStartTimeSecondsUTC = parseInt(timeperiod.start_time, 10); // This is always UTC hours & minutes in Zabbix
 
       if (timeperiod.timeperiod_type === '0') {
         // One-time maintenance period
@@ -265,23 +263,32 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
       } else if (timeperiod.timeperiod_type === '2') {
         // Daily maintenance period
 
-        const parsedMaintenance = {
+        const parsedMaintenance: Maintenance = {
           ...parseBasicMaintenanceFields(maintenance, timeperiod),
           periodicActiveSinceTimestamp: activeSince,
           periodicActiveTillTimestamp: activeTill,
-          periodicStartTime: periodicStartTimeSeconds,
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
           repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
 
+        // Convert periodic start time from UTC to local time
+        var utcOffsetSeconds = DateTime.now().offset * 60;
+        var periodicStartTimeSecondsLocal = periodicStartTimeSecondsUTC - utcOffsetSeconds;
+        if (periodicStartTimeSecondsLocal < 0) {
+          periodicStartTimeSecondsLocal += 24 * 3600;
+        } else if (periodicStartTimeSecondsLocal >= 24 * 3600) {
+          periodicStartTimeSecondsLocal -= 24 * 3600;
+        }
+        parseDailyPeriodicStartTime(parsedMaintenance, periodicStartTimeSecondsUTC);
+
         // Figure out the next (or ongoing) maintenance time
         const nextMaintenances = getNextDailyMaintenances(
-          parsedMaintenance.periodicActiveSinceTimestamp,
-          parsedMaintenance.periodicActiveTillTimestamp,
+          parsedMaintenance.periodicActiveSinceTimestamp!,
+          parsedMaintenance.periodicActiveTillTimestamp!,
           parsedMaintenance.every,
-          parsedMaintenance.periodicStartTime,
+          parsedMaintenance.periodicStartTime!,
           parsedMaintenance.duration
         );
         if (nextMaintenances.length === 0) {
@@ -296,24 +303,26 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
       } else if (timeperiod.timeperiod_type === '3') {
         // Weekly maintenance period
 
-        const parsedMaintenance = {
+        const parsedMaintenance: Maintenance = {
           ...parseBasicMaintenanceFields(maintenance, timeperiod),
           periodicActiveSinceTimestamp: activeSince,
           periodicActiveTillTimestamp: activeTill,
-          periodicStartTime: periodicStartTimeSeconds,
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
           repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
 
+        // Convert periodic start time from UTC to local time
+        parseWeeklyPeriodicStartTime(parsedMaintenance, periodicStartTimeSecondsUTC);
+
         // Figure out the next (or ongoing) maintenance time
         const nextMaintenances = getNextWeeklyMaintenances(
-          parsedMaintenance.periodicActiveSinceTimestamp,
-          parsedMaintenance.periodicActiveTillTimestamp,
+          parsedMaintenance.periodicActiveSinceTimestamp!,
+          parsedMaintenance.periodicActiveTillTimestamp!,
           parsedMaintenance.every,
           parsedMaintenance.weekdays,
-          parsedMaintenance.periodicStartTime,
+          parsedMaintenance.periodicStartTime!,
           parsedMaintenance.duration
         );
         if (nextMaintenances.length === 0) {
@@ -332,12 +341,20 @@ export function parseMaintenances(maintenances: any[]): Maintenance[] {
           ...parseBasicMaintenanceFields(maintenance, timeperiod),
           periodicActiveSinceTimestamp: activeSince,
           periodicActiveTillTimestamp: activeTill,
-          periodicStartTime: periodicStartTimeSeconds,
           ongoing: false,
           startTimeString: '',
           endTimeString: '',
           repeatEndString: activeTill.minus({ seconds: duration }).toFormat('dd.LL.yyyy'),
         };
+
+        // Convert periodic start time from UTC to local time
+        const weekdaySet = parsedMaintenance.weekdays.some((weekdaySelected) => weekdaySelected);
+        if (weekdaySet) {
+          // Maintenance occurs of the selected weekday(s) and on the defined week of the month
+          parseWeeklyPeriodicStartTime(parsedMaintenance, periodicStartTimeSecondsUTC);
+        } else {
+          parseNthDayPerMonthPeriodicStartTime(parsedMaintenance, periodicStartTimeSecondsUTC);
+        }
 
         // Figure out the next (or ongoing) maintenance time
         const nextMaintenances = getNextMonthlyMaintenances(
@@ -439,39 +456,101 @@ function parseBasicMaintenanceFields(maintenance: any, timeperiod: any) {
     day: parseInt(timeperiod.day, 10),
     dayOfWeek: timeperiod.dayofweek,
     duration: duration,
-    durationString: getDurationString(duration),
     weekdays: weekdays,
     months: months,
   };
 }
 
-/**
- * Parse duration string from number of seconds
- * @param {number} duration
- * @returns {string}
- */
-function getDurationString(duration: number) {
-  let durationDays,
-    durationHours,
-    durationMinutes,
-    durationSeconds = 0;
-  let durationString = '';
-  if (duration >= 24 * 60 * 60) {
-    durationDays = Math.floor(duration / 60 / 60 / 24);
-    durationHours = Math.floor((duration - durationDays * 24 * 60 * 60) / 60 / 60);
-    durationString = durationDays + 'd ' + (durationHours > 0 ? durationHours + 'h' : '');
-  } else if (duration < 24 * 60 * 60 && duration >= 60 * 60) {
-    durationHours = Math.floor(duration / 60 / 60);
-    durationMinutes = Math.floor((duration - durationHours * 60 * 60) / 60);
-    durationString = durationHours + 'h ' + (durationMinutes > 0 ? durationMinutes + 'min' : '');
-  } else if (duration < 60 * 60 && duration > 60) {
-    durationMinutes = Math.floor(duration / 60);
-    durationString = durationMinutes + 'min';
-  } else {
-    durationSeconds = duration;
-    durationString = durationSeconds + 's';
+// Parse periodic start time in case of daily maintenance
+function parseDailyPeriodicStartTime(m: Maintenance, periodicStartTimeSecondsUTC: number) {
+  // Convert periodic start time from UTC to local time
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsLocal = periodicStartTimeSecondsUTC + utcOffsetSeconds;
+  if (periodicStartTimeSecondsLocal < 0) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    if (m.every !== 1) {
+      // The maintenance occurs every Nth day;
+      // however the first day of occurence varies on different timezones
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal += 24 * 3600;
+  } else if (periodicStartTimeSecondsLocal >= 24 * 3600) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    if (m.every !== 1) {
+      // The maintenance occurs every Nth day;
+      // however the first day of occurence varies on different timezones
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal -= 24 * 3600;
   }
-  return durationString;
+  m.periodicStartTime = periodicStartTimeSecondsLocal;
+}
+
+// Parse periodic start time in case of weekly maintenance
+// or monthly maintenance with Nth weekday(s) of month
+function parseWeeklyPeriodicStartTime(m: Maintenance, periodicStartTimeSecondsUTC: number) {
+  // Convert periodic start time from UTC to local time
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsLocal = periodicStartTimeSecondsUTC + utcOffsetSeconds;
+  if (periodicStartTimeSecondsLocal < 0) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    // Previous weekday time; shift weekdays left (eg. if Wed is selected => Tue will be selected)
+    if (m.every === 1) {
+      m.weekdays = m.weekdays.map((weekdaySelected, weekday) => {
+        var nextWeekdaySelected = m.weekdays[(weekday + 1) % 7];
+        return nextWeekdaySelected;
+      });
+    } else {
+      // The maintenance occurs every Nth week on the configured weekdays;
+      // however the first week of occurence may vary on different timezones if weekdays are shifted
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal += 24 * 3600;
+  } else if (periodicStartTimeSecondsLocal >= 24 * 3600) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    // Next weekday time; shift weekdays right (eg. if Tue is selected => Wed will be selected)
+    if (m.every === 1) {
+      m.weekdays = m.weekdays.map((weekdaySelected, weekday) => {
+        var previousWeekdaySelected = m.weekdays[(weekday - 1 + 7) % 7];
+        return previousWeekdaySelected;
+      });
+    } else {
+      // The maintenance occurs every Nth week on the configured weekdays;
+      // however the first week of occurence may vary on different timezones if weekdays were shifted
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal -= 24 * 3600;
+  }
+  m.periodicStartTime = periodicStartTimeSecondsLocal;
+}
+
+// Parse periodic start time in case of monthy maintenance with Nth day of month selected
+function parseNthDayPerMonthPeriodicStartTime(m: Maintenance, periodicStartTimeSecondsUTC: number) {
+  // Convert periodic start time from UTC to local time
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsLocal = periodicStartTimeSecondsUTC + utcOffsetSeconds;
+  if (periodicStartTimeSecondsLocal < 0) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    // Previous day; shift day left
+    if (m.day > 1) {
+      m.day--;
+    } else {
+      // Day would be zero; cannot be represented with the current local timezone
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal += 24 * 3600;
+  } else if (periodicStartTimeSecondsLocal >= 24 * 3600) {
+    // This may happen if the user configured maintenance in different local timezone then the one viewing it
+    // Next day; shift day right
+    if (m.day < 31) {
+      m.day++;
+    } else {
+      // Day would be zero; cannot be represented with the current local timezone
+      m.periodicStartTimeNotCompatibleWithCurrentTimeZone = true;
+    }
+    periodicStartTimeSecondsLocal -= 24 * 3600;
+  }
+  m.periodicStartTime = periodicStartTimeSecondsLocal;
 }
 
 // Calculate the next 10 maintenance periods of the given daily maintenance
@@ -702,7 +781,25 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
     } else {
       maintenanceObj.active_since = m.periodicActiveSinceTimestamp!.toUnixInteger();
       maintenanceObj.active_till = m.periodicActiveTillTimestamp!.toUnixInteger();
-      period.start_time = m.periodicStartTime;
+
+      const weekdaySet = m.weekdays.some((weekdaySelected) => weekdaySelected);
+
+      if (m.maintenanceType === MaintenanceType.Daily) {
+        // Daily maintenance
+        encodeDailyStartTime(period, m.periodicStartTime!);
+        period.every = m.every;
+      } else if (
+        m.maintenanceType === MaintenanceType.Weekly ||
+        (m.maintenanceType === MaintenanceType.Monthly && weekdaySet)
+      ) {
+        // Weekly maintenance or monethly maintenance on Nth weekday(s) of month
+        encodeWeekdaysStartTime(period, m.periodicStartTime!, m.weekdays);
+        period.every = m.every;
+      } else {
+        // Monthly maintenance on Nth day of month
+        encodeMonthDayStartTime(period, m.periodicStartTime!, m.day);
+      }
+
       if (m.maintenanceType === MaintenanceType.Monthly) {
         // Encode selected month(s) into binary format
         let monthBinary = '';
@@ -715,28 +812,6 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
         }
         period.month = parseInt(monthBinary, 2);
       }
-      if (m.maintenanceType === MaintenanceType.Daily || m.maintenanceType === MaintenanceType.Weekly) {
-        period.every = m.every;
-      }
-      if (
-        m.maintenanceType === MaintenanceType.Weekly ||
-        (m.maintenanceType === MaintenanceType.Monthly && m.weekdays.some((weekdaySelected) => weekdaySelected))
-      ) {
-        // Encode selected weekday(s) into binary format
-        let dayOfWeekBinary = '';
-        for (var weekday = 0; weekday < 7; weekday++) {
-          if (m.weekdays[weekday]) {
-            dayOfWeekBinary = '1' + dayOfWeekBinary;
-          } else {
-            dayOfWeekBinary = '0' + dayOfWeekBinary;
-          }
-        }
-        period.dayofweek = parseInt(dayOfWeekBinary, 2);
-        period.every = m.every;
-      } else if (m.maintenanceType === MaintenanceType.Monthly) {
-        // Every Nth day of month
-        period.day = m.day;
-      }
     }
 
     // Check if we are updating an existing maintenance
@@ -748,4 +823,85 @@ export async function saveMaintenance(m: Maintenance, zabbixDatasource: string) 
 
     return zabbix.zabbixAPI.request(apiCommand, maintenanceObj);
   });
+}
+
+// Encode the maintenance start time of daily maintenance for saving
+function encodeDailyStartTime(period: any, startTimeLocal: number) {
+  // Convert periodic start time from local time to UTC
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsUTC = startTimeLocal - utcOffsetSeconds;
+  if (periodicStartTimeSecondsUTC < 0) {
+    // Eg. 01:00 local time would be 23:00 previous day UTC time with UTC+2 offset (Finland winter time)
+    periodicStartTimeSecondsUTC += 24 * 3600;
+  } else if (periodicStartTimeSecondsUTC >= 24 * 3600) {
+    // Eg. 23:00 local time would be 04:00 next day with UTC-5 offset (New York)
+    periodicStartTimeSecondsUTC -= 24 * 3600;
+  }
+  period.start_time = periodicStartTimeSecondsUTC;
+}
+
+// Encode the selected weekday(s) and maintenance start time for saving
+function encodeWeekdaysStartTime(period: any, startTimeLocal: number, selectedWeekdays: WeekdaySelection) {
+  var weekdays = [...selectedWeekdays];
+
+  // Convert periodic start time from local time to UTC
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsUTC = startTimeLocal - utcOffsetSeconds;
+  if (periodicStartTimeSecondsUTC < 0) {
+    // Eg. 01:00 local time would be 23:00 previous day UTC time with UTC+2 offset (Finland winter time)
+    // Previous weekday time; shift weekdays left (eg. if Wed is selected => Tue will be selected)
+    weekdays = weekdays.map((weekdaySelected, weekday) => {
+      var nextWeekdaySelected = weekdays[(weekday + 1) % 7];
+      return nextWeekdaySelected;
+    });
+    periodicStartTimeSecondsUTC += 24 * 3600;
+  } else if (periodicStartTimeSecondsUTC >= 24 * 3600) {
+    // Eg. 23:00 local time would be 04:00 next day with UTC-5 offset (New York)
+    // Next weekday time; shift weekdays right (eg. if Tue is selected => Wed will be selected)
+    weekdays = weekdays.map((weekdaySelected, weekday) => {
+      var previousWeekdaySelected = weekdays[(weekday - 1 + 7) % 7];
+      return previousWeekdaySelected;
+    });
+    periodicStartTimeSecondsUTC -= 24 * 3600;
+  }
+  period.start_time = periodicStartTimeSecondsUTC;
+
+  // Encode selected weekday(s) into binary format
+  let dayOfWeekBinary = '';
+  for (var weekday = 0; weekday < 7; weekday++) {
+    if (weekdays[weekday]) {
+      dayOfWeekBinary = '1' + dayOfWeekBinary;
+    } else {
+      dayOfWeekBinary = '0' + dayOfWeekBinary;
+    }
+  }
+  period.dayofweek = parseInt(dayOfWeekBinary, 2);
+}
+
+// Encode the selected month(s) and maintenance start time for saving
+function encodeMonthDayStartTime(period: any, startTimeLocal: number, dayOfMonth: number) {
+  // Convert periodic start time from local time to UTC
+  var utcOffsetSeconds = DateTime.now().offset * 60;
+  var periodicStartTimeSecondsUTC = startTimeLocal - utcOffsetSeconds;
+  if (periodicStartTimeSecondsUTC < 0) {
+    // Previous day; shift day left
+    if (dayOfMonth > 1) {
+      dayOfMonth--;
+    } else {
+      // This should be prevented in the UI
+      throw new Error('Cannot convert start time and day of month from local to UTC');
+    }
+    periodicStartTimeSecondsUTC += 24 * 3600;
+  } else if (periodicStartTimeSecondsUTC >= 24 * 3600) {
+    // Next day; shift day right
+    if (dayOfMonth < 31) {
+      dayOfMonth++;
+    } else {
+      // This should be prevented in the UI
+      throw new Error('Cannot convert start time and day of month from local to UTC');
+    }
+    periodicStartTimeSecondsUTC -= 24 * 3600;
+  }
+  period.start_time = periodicStartTimeSecondsUTC;
+  period.day = dayOfMonth;
 }

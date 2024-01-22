@@ -75,28 +75,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         );
       })
       .then((maintenances: Maintenance[]) => {
-        // Decorate with localized texts of maintenance type for the table
-        var allMaintenances: Maintenance[] = [];
-        const texts = contextSrv.getLocalizedTexts();
-        maintenances.forEach((maintenance) => {
-          if (maintenance.maintenanceType === MaintenanceType.OneTime) {
-            maintenance.maintenanceTypeString = texts.oneTimeAbbr;
-            maintenance.maintenanceTypeStringFull = texts.oneTime + ' ' + texts.maintenance;
-          } else if (maintenance.maintenanceType === MaintenanceType.Daily) {
-            maintenance.maintenanceTypeString = texts.dailyAbbr;
-            maintenance.maintenanceTypeStringFull = texts.daily + ' ' + texts.maintenance;
-          } else if (maintenance.maintenanceType === MaintenanceType.Weekly) {
-            maintenance.maintenanceTypeString = texts.weeklyAbbr;
-            maintenance.maintenanceTypeStringFull = texts.weekly + ' ' + texts.maintenance;
-          } else if (maintenance.maintenanceType === MaintenanceType.Monthly) {
-            maintenance.maintenanceTypeString = texts.monthlyAbbr;
-            maintenance.maintenanceTypeStringFull = texts.monthly + ' ' + texts.maintenance;
-          } else {
-            maintenance.maintenanceTypeString = '';
-          }
-          allMaintenances.push(maintenance);
-        });
-        this.setState({ allMaintenances: allMaintenances });
+        this.setState({ allMaintenances: maintenances });
       })
       .catch((err: any) => {
         appEvents.emit(AppEvents.alertError, ['Failed to fetch hosts for maintenance management', err.toString()]);
@@ -214,14 +193,12 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
           className="modal modal-body"
         >
           <div className="modal-content">
-            <div className="iiris-table-container">
-              <div className="iiris-event-table">
-                <IirisMaintenanceTable
-                  data={this.state.allMaintenances}
-                  onEditMaintenance={(maintenanceId) => this.onEditMaintenance(maintenanceId)}
-                  onStopMaintenance={(maintenanceId) => this.onStopMaintenance(maintenanceId)}
-                />
-              </div>
+            <div className="iiris-maintenance-table">
+              <IirisMaintenanceTable
+                data={this.state.allMaintenances}
+                onEditMaintenance={(maintenanceId) => this.onEditMaintenance(maintenanceId)}
+                onStopMaintenance={(maintenanceId) => this.onStopMaintenance(maintenanceId)}
+              />
             </div>
             <div className="gf-form-button-row">
               <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>
