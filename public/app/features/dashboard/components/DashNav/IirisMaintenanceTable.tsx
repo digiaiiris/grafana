@@ -53,8 +53,8 @@ export function IirisMaintenanceTable(props: Props) {
           <th>{texts.type}</th>
           <th>{texts.description}</th>
           <th>{texts.createdBy}</th>
-          <th>{texts.startTime}</th>
-          <th>{texts.endTime}</th>
+          <th>{texts.maintenanceListStartTime}</th>
+          <th>{texts.maintenanceListEndTime}</th>
           <th>{texts.duration}</th>
           <th>{texts.repeatEnds}</th>
         </tr>
