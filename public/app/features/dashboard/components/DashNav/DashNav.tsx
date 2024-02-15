@@ -20,7 +20,7 @@ import { DashboardModel } from '../../state';
 
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
-import IirisMaintenance from './IirisMaintenance';
+import { IirisMaintenanceDashboardButton } from './IirisMaintenanceDashboardButton';
 import IirisServiceInfoWikiButton from './IirisServiceInfoWikiButton';
 
 const mapDispatchToProps = {
@@ -242,7 +242,7 @@ export const DashNav = React.memo<Props>((props) => {
     }
 
     if (props.dashboard.maintenanceHostGroup) {
-      buttons.push(<IirisMaintenance dashboard={dashboard} key={'iirismaintenance'} />);
+      buttons.push(<IirisMaintenanceDashboardButton dashboard={dashboard} key={'iirismaintenance'} />);
     }
     if (props.dashboard.serviceInfoWikiUrl) {
       buttons.push(<IirisServiceInfoWikiButton dashboard={dashboard} key={'iirisserviceinfowikibutton'} />);

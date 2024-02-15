@@ -29,7 +29,6 @@ import {
 } from 'app/types/events';
 
 import { PanelModelLibraryPanel } from '../../library-panels/types';
-import { getExpandedTemplateVariables } from '../components/DashNav/common_tools';
 import { PanelQueryRunner } from '../../query/state/PanelQueryRunner';
 import { getVariablesUrlParams } from '../../variables/getAllVariableValuesForUrl';
 import { getTimeSrv } from '../services/TimeSrv';
@@ -593,8 +592,7 @@ export class PanelModel implements DataConfigSource, IPanelModel {
    * If you need the raw title without interpolation use title property instead.
    * */
   getDisplayTitle(): string {
-    const tempScopedVars = Object.assign({}, this.scopedVars);
-    const title = getExpandedTemplateVariables(this.title || '', getTemplateSrv(), tempScopedVars);
+    const title = getTemplateSrv().replace(this.title || '', this.scopedVars);
     return title;
   }
 }
