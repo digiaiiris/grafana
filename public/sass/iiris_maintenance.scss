@@ -46,6 +46,9 @@ $iiris-table-horizontal-padding: 10px;
 .iiris-ongoing-maintenance {
   background-color: #f6d5d5;
 }
+.theme-dark .iiris-ongoing-maintenance {
+  background-color: #7B241C;
+}
 
 .iiris-button {
   min-width: 140px;

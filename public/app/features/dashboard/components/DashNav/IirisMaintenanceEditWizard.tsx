@@ -1040,7 +1040,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   renderSingleMaintenanceStartDateTime() {
     return (
       <div className="iiris-modal-column">
-        <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+        <label className="gf-form-label">{this.texts.maintenanceFormStartTime}</label>
         <div className="date-selection-row">
           <div className="date-selection-container">
             <div>{this.texts.day}</div>
@@ -1341,7 +1341,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     const maintenanceEnds = this.state.oneTimeStartTimestamp.plus({ seconds: this.state.duration });
     return (
       <>
-        <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
+        <label className="gf-form-label">{this.texts.maintenanceFormEndTime}</label>
         <div className="date-selection-row">
           <div className="date-selection-container">
             <div>{this.texts.day}</div>
@@ -1465,7 +1465,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
     return (
       <>
         <div className="iiris-modal-column">
-          <label className="gf-form-label">{this.texts.maintenanceStartTime}</label>
+          <label className="gf-form-label">{this.texts.maintenanceFormStartTime}</label>
           <div className="date-selection-row">
             {/* Hour input */}
             <div className="date-selection-container">
@@ -1534,7 +1534,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         {/* Maintenance strict end time */}
         {this.state.strictEndTimeSelected && (
           <div className="iiris-modal-column">
-            <label className="gf-form-label">{this.texts.maintenanceEndTime}</label>
+            <label className="gf-form-label">{this.texts.maintenanceFormEndTime}</label>
             <div className="date-selection-row">
               <div className="date-selection-container">
                 <div>{this.texts.hour}</div>
@@ -1659,10 +1659,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
               <thead>
                 <tr>
                   <td>
-                    <strong>{this.texts.startTime}</strong>
+                    <strong>{this.texts.maintenanceListStartTime}</strong>
                   </td>
                   <td>
-                    <strong>{this.texts.endTime}</strong>
+                    <strong>{this.texts.maintenanceListEndTime}</strong>
                   </td>
                 </tr>
               </thead>
@@ -1830,11 +1830,11 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         {this.state.maintenanceType === MaintenanceType.OneTime ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
-              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceFormStartTime}</div>
               <div className="iiris-maintenance-modal-text-normal">{summary.displayStartDate}</div>
             </div>
             <div className="iiris-maintenance-modal-text-row">
-              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceFormEndTime}</div>
               <div className="iiris-maintenance-modal-text-normal">{summary.displayStopDate}</div>
             </div>
           </div>
@@ -1895,11 +1895,11 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         {this.state.maintenanceType > 0 ? (
           <div>
             <div className="iiris-maintenance-modal-text-row">
-              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceStartTime}</div>
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceFormStartTime}</div>
               <div className="iiris-maintenance-modal-text-normal">{summary.displayStartDate}</div>
             </div>
             <div className="iiris-maintenance-modal-text-row">
-              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceEndTime}</div>
+              <div className="iiris-maintenance-modal-text-label">{this.texts.maintenanceFormEndTime}</div>
               <div className="iiris-maintenance-modal-text-normal">{summary.displayStopDate}</div>
             </div>
             <div className="iiris-maintenance-modal-text-row">
