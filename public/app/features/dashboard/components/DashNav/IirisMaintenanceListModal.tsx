@@ -3,6 +3,7 @@
  * the user to create a new maintenance, edit an existing one or stop an ongoing maintenance.
  */
 
+import { DateTime } from 'luxon';
 import React from 'react';
 
 import { AppEvents } from '@grafana/data';
@@ -122,10 +123,22 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
       .then((zabbix: any) => {
         // Set the active_till of selected maintenance to current time
         // That effectively prevents the maintenance from activating any more in the future
+        const now = DateTime.now();
         const options: any = {
           maintenanceid: this.state.selectedMaintenance!.id,
-          active_till: Math.floor(Date.now() / 1000),
+          active_till: now.toSeconds()
         };
+        if ((this.state.selectedMaintenance!.maintenanceType == MaintenanceType.OneTime &&
+             this.state.selectedMaintenance!.oneTimeStartTimestamp > now) ||
+            (this.state.selectedMaintenance!.maintenanceType != MaintenanceType.OneTime &&
+             this.state.selectedMaintenance!.periodicActiveSinceTimestamp > now)) {
+
+          // Maintenance starts in the future (active_since is in the future)
+          // Note that the future maintenances could be safely deleted altogether but
+          // zabbix data source issue https://github.com/grafana/grafana-zabbix/issues/1178 prevents it.
+          // As a workaround, change active_since as well because active_till cannot be less than active_since
+          options.active_since = now.toSeconds();
+        }
         return zabbix.zabbixAPI.request('maintenance.update', options).then((answer: any) => {
           // Prompt user that the maintenance has been deleted or canceled
           const texts = contextSrv.getLocalizedTexts();
