@@ -778,7 +778,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
     }
 
-    summaryData.displayHosts = this.state.selectedHosts.map((host) => host.name).join(', ');
+    summaryData.displayHosts = this.state.selectedHosts.filter((host) => host.selected).map((host) => host.name).join(', ');
     summaryData.displayWeeklyDays = this.state.weeklyWeekdays
       .map((weekdaySelected, weekday) => {
         return this.weekdayNames[weekday];
