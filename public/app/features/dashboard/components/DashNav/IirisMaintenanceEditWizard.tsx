@@ -481,7 +481,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   // Days for dropdown for the month of the given date
   getDaysForDropdown = (date: DateTime) => {
     var maxDay = date.endOf('month').day;
-    return Array.from(Array(maxDay + 1).keys()).map((day) => day + 1);
+    return Array.from(Array(maxDay).keys()).map((day) => day + 1);
   };
 
   // When the user has changed day, month, year, hour, or minute of when the maintenance ends
