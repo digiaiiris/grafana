@@ -126,13 +126,16 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         const now = DateTime.now();
         const options: any = {
           maintenanceid: this.state.selectedMaintenance!.id,
-          active_till: now.toUnixInteger()
+          active_till: now.toUnixInteger(),
         };
-        if ((this.state.selectedMaintenance!.maintenanceType == MaintenanceType.OneTime &&
-             this.state.selectedMaintenance!.oneTimeStartTimestamp > now) ||
-            (this.state.selectedMaintenance!.maintenanceType != MaintenanceType.OneTime &&
-             this.state.selectedMaintenance!.periodicActiveSinceTimestamp > now)) {
-
+        if (
+          (this.state.selectedMaintenance!.oneTimeStartTimestamp &&
+            this.state.selectedMaintenance!.maintenanceType === MaintenanceType.OneTime &&
+            this.state.selectedMaintenance!.oneTimeStartTimestamp > now) ||
+          (this.state.selectedMaintenance!.periodicActiveSinceTimestamp &&
+            this.state.selectedMaintenance!.maintenanceType !== MaintenanceType.OneTime &&
+            this.state.selectedMaintenance!.periodicActiveSinceTimestamp > now)
+        ) {
           // Maintenance starts in the future (active_since is in the future)
           // Note that the future maintenances could be safely deleted altogether but
           // zabbix data source issue https://github.com/grafana/grafana-zabbix/issues/1178 prevents it.
