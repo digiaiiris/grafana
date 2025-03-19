@@ -40,6 +40,7 @@ interface Props {
 
 interface State {
   allMaintenances: Maintenance[]; // All ongoing and future maintenances
+  isLoading: boolean;
   shownDialog: ShownDialog;
   selectedMaintenance: Maintenance | undefined; // Maintenance being edited, cancelled or removed
   hosts: Array<{ name: string; hostid: number }>; // Hosts of the configured group so that they can be shown in the create/edit maintenance wizard
@@ -49,6 +50,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
   // Initial state
   state: State = {
     allMaintenances: [],
+    isLoading: false,
     shownDialog: ShownDialog.None,
     selectedMaintenance: undefined,
     hosts: [],
@@ -57,6 +59,13 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
   // Component props/state update callback
   componentDidUpdate(prevProps: Props, prevState: State): void {
     if (!prevProps.show && this.props.show) {
+      // Dialog was opened, clear previous maintenance data
+      this.setState({
+        allMaintenances: [],
+        isLoading: true,
+        selectedMaintenance: undefined,
+        hosts: [],
+      });
       // Dialog was opened => start fetching data in the background
       this.fetchMaintenanceList();
     }
@@ -76,7 +85,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         );
       })
       .then((maintenances: Maintenance[]) => {
-        this.setState({ allMaintenances: maintenances });
+        this.setState({ isLoading: false, allMaintenances: maintenances });
       })
       .catch((err: any) => {
         appEvents.emit(AppEvents.alertError, ['Failed to fetch hosts for maintenance management', err.toString()]);
@@ -210,11 +219,15 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         >
           <div className="modal-content">
             <div className="iiris-maintenance-table">
-              <IirisMaintenanceTable
-                data={this.state.allMaintenances}
-                onEditMaintenance={(maintenanceId) => this.onEditMaintenance(maintenanceId)}
-                onStopMaintenance={(maintenanceId) => this.onStopMaintenance(maintenanceId)}
-              />
+              {this.state.isLoading ? (
+                <div className="iiris-loader"></div>
+              ) : (
+                <IirisMaintenanceTable
+                  data={this.state.allMaintenances}
+                  onEditMaintenance={(maintenanceId) => this.onEditMaintenance(maintenanceId)}
+                  onStopMaintenance={(maintenanceId) => this.onStopMaintenance(maintenanceId)}
+                />
+              )}
             </div>
             <div className="gf-form-button-row">
               <a className="btn btn-secondary" onClick={() => this.props.onDismiss()}>

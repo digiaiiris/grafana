@@ -45,6 +45,7 @@ interface Props {
 }
 
 interface State {
+  isLoading: boolean; // When true, wizard buttons are disabled. Used when saving maintenance to Zabbix.
   wizardPhase: WizardPhase;
   maintenanceType: MaintenanceType;
   everyNDays: number; // Daily maintenance: repeat every N days; NaN if input field is empty
@@ -81,6 +82,7 @@ interface State {
 export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
   // Initial state
   state: State = {
+    isLoading: false,
     wizardPhase: WizardPhase.FirstDates,
     maintenanceType: MaintenanceType.OneTime,
     everyNDays: 1,
@@ -375,6 +377,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
    * Save changes (either creating a new maintenance or editing an old one)
    */
   onSaveChanges = () => {
+    // Disable the wizards buttons
+    this.setState({ isLoading: true });
+
     // Create a new Maintenance object (even if we're editing an existing maintenance)
     // to make sure it gets 100% correct
     let m: Maintenance = {
@@ -456,6 +461,9 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         setTimeout(() => {
           document.dispatchEvent(new Event('iiris-maintenance-update'));
         }, 2 * 60 * 1000);
+
+        // Enable the wizards buttons again
+        this.setState({ isLoading: false });
 
         // Close wizard dialog
         this.props.onCloseMaintenanceEditWizard();
@@ -778,7 +786,10 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         minutesWithLeadingZeros.substring(minutesWithLeadingZeros.length - 2);
     }
 
-    summaryData.displayHosts = this.state.selectedHosts.filter((host) => host.selected).map((host) => host.name).join(', ');
+    summaryData.displayHosts = this.state.selectedHosts
+      .filter((host) => host.selected)
+      .map((host) => host.name)
+      .join(', ');
     summaryData.displayWeeklyDays = this.state.weeklyWeekdays
       .map((weekdaySelected, weekday) => {
         return this.weekdayNames[weekday];
@@ -1915,13 +1926,17 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
 
         {/* Wizard buttons */}
         <div className="gf-form-button-row">
-          <button className="btn btn-secondary" onClick={() => this.goToPrevious()}>
+          <button className="btn btn-secondary" disabled={this.state.isLoading} onClick={() => this.goToPrevious()}>
             {this.texts.back}
           </button>
-          <button className="btn btn-secondary" onClick={() => this.props.onCloseMaintenanceEditWizard()}>
+          <button
+            className="btn btn-secondary"
+            disabled={this.state.isLoading}
+            onClick={() => this.props.onCloseMaintenanceEditWizard()}
+          >
             {this.texts.cancel}
           </button>
-          <button className="btn btn-primary" onClick={() => this.onSaveChanges()}>
+          <button className="btn btn-primary" disabled={this.state.isLoading} onClick={() => this.onSaveChanges()}>
             {this.props.selectedMaintenance ? this.texts.saveChanges : this.texts.createMaintenance}
           </button>
         </div>
