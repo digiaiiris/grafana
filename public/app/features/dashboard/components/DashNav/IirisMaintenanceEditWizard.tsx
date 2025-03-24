@@ -469,6 +469,7 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
         this.props.onCloseMaintenanceEditWizard();
       })
       .catch((err: any) => {
+        this.setState({ isLoading: false }); // Enable the wizards buttons again
         appEvents.emit(AppEvents.alertError, ['Failed to save a maintenance', err.toString()]);
       });
   };

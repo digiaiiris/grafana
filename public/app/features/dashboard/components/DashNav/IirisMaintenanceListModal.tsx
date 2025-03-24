@@ -88,6 +88,7 @@ export class IirisMaintenanceListModal extends React.PureComponent<Props, State>
         this.setState({ isLoading: false, allMaintenances: maintenances });
       })
       .catch((err: any) => {
+        this.setState({ isLoading: false, allMaintenances: [] });
         appEvents.emit(AppEvents.alertError, ['Failed to fetch hosts for maintenance management', err.toString()]);
       });
   }
