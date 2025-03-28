@@ -1,6 +1,6 @@
 FROM node:16-alpine3.15 AS js-builder
 
-ENV NODE_OPTIONS --max_old_space_size=8000
+ENV NODE_OPTIONS="--max_old_space_size=8000"
 
 WORKDIR /grafana
 
@@ -17,7 +17,7 @@ COPY tools tools
 COPY scripts scripts
 COPY emails emails
 
-ENV NODE_ENV production
+ENV NODE_ENV="production"
 RUN yarn build
 
 FROM golang:1.19.2-alpine3.15 as go-builder
