@@ -1,6 +1,6 @@
-FROM node:16-alpine3.15 as js-builder
+FROM node:16-alpine3.15 AS js-builder
 
-ENV NODE_OPTIONS=--max_old_space_size=8000
+ENV NODE_OPTIONS --max_old_space_size=8000
 
 WORKDIR /grafana
 
