@@ -108,6 +108,8 @@ const mustKeepProps: { [str: string]: boolean } = {
   pluginVersion: true,
   queryRunner: true,
   transformations: true,
+  isTabPanel: true,
+  allTabsCollapsed: true,
   fieldConfig: true,
   maxDataPoints: true,
   interval: true,
@@ -193,6 +195,9 @@ export class PanelModel implements DataConfigSource, IPanelModel {
   declare transparent: boolean;
 
   libraryPanel?: LibraryPanelRef | LibraryPanel;
+
+  isTabPanel?: boolean;
+  allTabsCollapsed?: boolean;
 
   autoMigrateFrom?: string;
 
@@ -684,7 +689,7 @@ export class PanelModel implements DataConfigSource, IPanelModel {
    * If you need the raw title without interpolation use title property instead.
    * */
   getDisplayTitle(): string {
-    return this.replaceVariables(this.title, undefined, 'text');
+    return title = getTemplateSrv().replace(this.title || '', this.scopedVars);
   }
 
   initLibraryPanel(libPanel: LibraryPanel) {
