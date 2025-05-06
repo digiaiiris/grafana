@@ -1,4 +1,4 @@
-import { useCallback, ChangeEvent, useState } from 'react';
+import { useCallback, ChangeEvent, useState, useEffect } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 
 import { TimeZone } from '@grafana/data';
@@ -14,6 +14,8 @@ import {
   Box,
   Stack,
   WeekStart,
+  Select,
+  Switch
 } from '@grafana/ui';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
@@ -35,6 +37,44 @@ const GRAPH_TOOLTIP_OPTIONS = [
   { value: 2, label: 'Shared Tooltip' },
 ];
 
+/* eslint-disable */
+/* tslint:disable */
+const getZabbix = (availableDatasources: string[], datasourceSrv: any) => {
+  return new Promise<any>((resolve: any, reject: any) => {
+    if (availableDatasources.length > 0) {
+      datasourceSrv
+        .get(availableDatasources[0])
+        .then((datasource: any) => {
+          if (datasource.zabbix) {
+            resolve(datasource.zabbix);
+          } else {
+            reject('');
+          }
+        })
+        .catch((err: any) => {
+          reject(err);
+        });
+    } else {
+      reject('');
+    }
+  }) as any;
+};
+
+const getHostGroups = (availableDatasources: string[], datasourceSrv: any) => {
+  return new Promise<any>((resolve: any, reject: any) => {
+    getZabbix(availableDatasources, datasourceSrv)
+      .then((zabbix: any) => {
+        // Get all host group ids
+        zabbix.getAllGroups().then((groups: any) => {
+          resolve(groups.map((group: any) => group.name));
+        });
+      })
+      .catch((err: any) => {
+        reject(err);
+      });
+  }) as any;
+};
+
 export function GeneralSettingsUnconnected({
   dashboard,
   updateTimeZone,
@@ -45,6 +85,22 @@ export function GeneralSettingsUnconnected({
   const [dashboardTitle, setDashboardTitle] = useState(dashboard.title);
   const [dashboardDescription, setDashboardDescription] = useState(dashboard.description);
   const pageNav = sectionNav.node.parentItem;
+  const [datasourceOptions, setDatasourceOptions] = useState<string[]>([]);
+  const [hostGroupOptions, setHostGroupOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const datasourceSrv = getDatasourceSrv();
+    const datasources: any[] = [];
+    datasourceSrv.getMetricSources().map((datasource: { name: string }) => datasources.push(datasource.name));
+    datasources.unshift('');
+    setDatasourceOptions(datasources);
+    const availableDatasources = datasourceSrv
+      .getMetricSources()
+      .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
+      .map((ds: any) => ds.name);
+    const dsPointer = dashboard.selectedDatasource ? [dashboard.selectedDatasource] : availableDatasources;
+    getHostGroups(dsPointer, datasourceSrv).then((groups: string[]) => setHostGroupOptions(groups));
+  }, []);
 
   const onFolderChange = (newUID: string | undefined, newTitle: string | undefined) => {
     dashboard.meta.folderUid = newUID;
@@ -114,6 +170,51 @@ export function GeneralSettingsUnconnected({
     setRenderCounter(renderCounter + 1);
   };
 
+  const onMaintenanceDatasourceChange = (datasource: any) => {
+    if (datasource != null) {
+      dashboard.selectedDatasource = datasource.value;
+      setRenderCounter(renderCounter + 1);
+      const datasourceSrv = getDatasourceSrv();
+      if (datasourceOptions.indexOf(dashboard.selectedDatasource) > -1) {
+        getHostGroups([dashboard.selectedDatasource], datasourceSrv)
+          .then((groups: string[]) => setHostGroupOptions(groups))
+          .catch((err: any) => {
+            setHostGroupOptions([]);
+          });
+      }
+    } else {
+      dashboard.selectedDatasource = '';
+      dashboard.maintenanceHostGroup = '';
+      setRenderCounter(renderCounter + 1);
+      setHostGroupOptions([]);
+    }
+  };
+
+  const onMaintenanceHostGroupChange = (hostgroup: any) => {
+    dashboard.maintenanceHostGroup = hostgroup.value;
+    setRenderCounter(renderCounter + 1);
+  };
+
+  const onServiceInfoWikiUrlIsExternalChange = (event: any) => {
+    dashboard.serviceInfoWikiUrlIsExternal = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
+  const onHideIirisBreadcrumbChange = (event: any) => {
+    dashboard.hideIirisBreadcrumb = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
+  const onHideGrafanaTopBarChange = (event: any) => {
+    dashboard.hideGrafanaTopBar = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
+  const onTransparentBackgroundChange = (event: any) => {
+    dashboard.transparentBackground = event.target.checked;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const editableOptions = [
     { label: 'Editable', value: true },
     { label: 'Read-only', value: false },
@@ -122,6 +223,68 @@ export function GeneralSettingsUnconnected({
   return (
     <Page navModel={sectionNav} pageNav={pageNav}>
       <div style={{ maxWidth: '600px' }}>
+
+        <Box marginBottom={5}>
+          <Field label="Maintenance Datasource">
+            <Select
+              className="width-24"
+              options={datasourceOptions.map((item: string) => ({ label: item, value: item }))}
+              placeholder="Select datasource"
+              value={dashboard.selectedDatasource}
+              onChange={onMaintenanceDatasourceChange}
+              isClearable={true}
+            />
+          </Field>
+          <Field label="Maintenance Host Group">
+            <Select
+              className="width-24"
+              options={hostGroupOptions.map((item: string) => ({ label: item, value: item }))}
+              placeholder="Select host group"
+              value={dashboard.maintenanceHostGroup}
+              onChange={onMaintenanceHostGroupChange}
+            />
+          </Field>
+          <Field label="Dashboard Logo">
+            <Input id="dashboardLogo-input" name="dashboardLogo" onBlur={onBlur} defaultValue={dashboard.dashboardLogo} />
+          </Field>
+          <Field label="Service Info Wiki URL">
+            <Input
+              id="serviceInfoWikiUrl-input"
+              name="serviceInfoWikiUrl"
+              onBlur={onBlur}
+              defaultValue={dashboard.serviceInfoWikiUrl}
+            />
+          </Field>
+          <Field label="Service Info Wiki URL is External">
+            <Switch
+              id="serviceInfoWikiUrlIsExternal-toggle"
+              value={!!dashboard.serviceInfoWikiUrlIsExternal}
+              onChange={onServiceInfoWikiUrlIsExternalChange}
+            />
+          </Field>
+          <Field label="Hide Iiris Breadrumb with This Dashboard">
+            <Switch
+              id="hideIirisBreadcrumb-toggle"
+              value={!!dashboard.hideIirisBreadcrumb}
+              onChange={onHideIirisBreadcrumbChange}
+            />
+          </Field>
+          <Field label="Hide Grafana Top Bar with This Dashboard">
+            <Switch
+              id="hideGrafanaTopBar-toggle"
+              value={!!dashboard.hideGrafanaTopBar}
+              onChange={onHideGrafanaTopBarChange}
+            />
+          </Field>
+          <Field label="Set Dashboard Background To Transparent">
+            <Switch
+              id="transparentBackground-toggle"
+              value={!!dashboard.transparentBackground}
+              onChange={onTransparentBackgroundChange}
+            />
+          </Field>
+        </Box>
+
         <Box marginBottom={5}>
           <Field
             label={
