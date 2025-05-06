@@ -63,6 +63,14 @@ export interface ScopeMeta {
 }
 
 export class DashboardModel implements TimeModel {
+  maintenanceHostGroup: string;
+  selectedDatasource: string;
+  serviceInfoWikiUrl: string;
+  serviceInfoWikiUrlIsExternal: boolean;
+  hideIirisBreadcrumb: boolean;
+  hideGrafanaTopBar: boolean;
+  transparentBackground: boolean;
+  dashboardLogo: string;
   /** @deprecated use UID */
   id: any;
   // TODO: use propert type and fix all the places where uid is set to null
@@ -143,6 +151,14 @@ export class DashboardModel implements TimeModel {
     this.uid = data.uid || null;
     this.revision = data.revision ?? undefined;
     this.title = data.title ?? 'No Title';
+    this.maintenanceHostGroup = data.maintenanceHostGroup;
+    this.selectedDatasource = data.selectedDatasource;
+    this.serviceInfoWikiUrl = data.serviceInfoWikiUrl;
+    this.serviceInfoWikiUrlIsExternal = data.serviceInfoWikiUrlIsExternal;
+    this.hideIirisBreadcrumb = data.hideIirisBreadcrumb;
+    this.hideGrafanaTopBar = data.hideGrafanaTopBar;
+    this.transparentBackground = data.transparentBackground;
+    this.dashboardLogo = data.dashboardLogo;
     this.description = data.description;
     this.tags = data.tags ?? [];
     this.timezone = data.timezone ?? '';
@@ -300,7 +316,7 @@ export class DashboardModel implements TimeModel {
 
   private getPanelSaveModels() {
     return this.panels
-      .filter((panel) => this.isSnapshotTruthy() || !(panel.repeatPanelId || panel.repeatedByRow))
+      .filter((panel) => this.isSnapshotTruthy() || !(panel.isTabPanel || panel.repeatPanelId || panel.repeatedByRow))
       .map((panel) => {
         // Clean libarary panels on save
         if (panel.libraryPanel) {
@@ -509,12 +525,20 @@ export class DashboardModel implements TimeModel {
     return data;
   }
 
-  getNextPanelId() {
-    let max = 0;
+  getNextPanelId(previousMaxId?: number) {
+    let max = previousMaxId || 0;
 
     for (const panel of this.panelIterator()) {
       if (panel.id > max) {
         max = panel.id;
+      }
+    }
+
+    if (panel.collapsed || (panel.type === 'iiris-tab-row-panel' && panel.panels)) {
+      for (const rowPanel of panel.panels) {
+        if (rowPanel.id > max) {
+          max = rowPanel.id;
+        }
       }
     }
 
@@ -565,7 +589,14 @@ export class DashboardModel implements TimeModel {
   }
 
   addPanel(panelData: any) {
-    panelData.id = this.getNextPanelId();
+    let nextPanelId = this.getNextPanelId();
+    panelData.id = nextPanelId;
+    if (panelData.type === 'iiris-tab-row-panel' && panelData.panels && panelData.panels.length > 0) {
+      panelData.panels.map((tabRowPanel: any, index: number) => {
+        nextPanelId = this.getNextPanelId(nextPanelId);
+        panelData.panels[index].id = nextPanelId;
+      });
+    }
 
     this.panels.unshift(new PanelModel(panelData));
 
@@ -631,6 +662,20 @@ export class DashboardModel implements TimeModel {
     deleteScopeVars(this.panels);
 
     const panelsToRemove = this.panels.filter((p) => (!p.repeat || p.repeatedByRow) && p.repeatPanelId);
+
+    for (let i = 0; i < this.panels.length; i++) {
+      const panel = this.panels[i];
+      /* eslint-disable */
+      /* tslint:disable */
+      if (
+        (!panel.repeat || panel.repeatedByRow) &&
+        panel.repeatPanelId &&
+        panel.repeatIteration !== this.iteration &&
+        !panel.isTabPanel
+      ) {
+        panelsToRemove.push(panel);
+      }
+    }
 
     // remove panels
     pull(this.panels, ...panelsToRemove);
@@ -983,10 +1028,16 @@ export class DashboardModel implements TimeModel {
     const rowIndex = indexOf(this.panels, row);
 
     if (!row.collapsed) {
-      const rowPanels = this.getRowPanels(rowIndex);
+      let rowPanels = this.getRowPanels(rowIndex);
 
       // remove panels
       pull(this.panels, ...rowPanels);
+
+      // Filter out tab panels under regular row
+      if (row.type === 'row') {
+        rowPanels = rowPanels.filter((panel: any) => !panel.isTabPanel);
+      }
+
       // save panel models inside row panel
       row.panels = rowPanels.map((panel: PanelModel) => panel.getSaveModel());
       row.collapsed = true;
