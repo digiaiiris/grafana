@@ -1,5 +1,8 @@
+/* eslint-disable */
+/* tslint:disable */
 import { isNumber } from 'lodash';
 import { PureComponent } from 'react';
+import { connect, MapDispatchToProps, MapStateToProps } from 'react-redux';
 
 import {
   DisplayValueAlignmentFactors,
@@ -10,6 +13,7 @@ import {
   NumericRange,
   PanelProps,
 } from '@grafana/data';
+import { getTemplateSrv } from '@grafana/runtime';
 import { findNumericFieldMinMax } from '@grafana/data/src/field/fieldOverrides';
 import { BigValueTextMode, BigValueGraphMode } from '@grafana/schema';
 import { BigValue, DataLinksContextMenu, VizRepeater, VizRepeaterRenderValueProps } from '@grafana/ui';
@@ -18,7 +22,141 @@ import { config } from 'app/core/config';
 
 import { Options } from './panelcfg.gen';
 
+interface Props extends PanelProps<StatPanelOptions> {
+  dashboard: any;
+}
+
+interface State {
+  tooltipVisible: boolean;
+  tooltipX: number;
+  tooltipY: number;
+  hoveredTileUrl: string;
+  hoveredTileTitle: string;
+  tooltipRef: any;
+}
+
 export class StatPanel extends PureComponent<PanelProps<Options>> {
+  panel: any;
+  linkUrl: string = '';
+  linkTitle: string = '';
+
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      tooltipVisible: false,
+      tooltipX: -1000,
+      tooltipY: 0,
+      hoveredTileUrl: '',
+      hoveredTileTitle: '',
+      tooltipRef: undefined,
+    };
+  }
+
+  componentDidMount() {
+    const { dashboard, id } = this.props;
+    this.panel = dashboard.panels.find((panel: any) => panel.id === id);
+    if (!this.panel && dashboard.panelInEdit.id === id) {
+      this.panel = dashboard.panels.find((panel: any) => panel.id === dashboard.panelInEdit.editSourceId);
+    }
+    // Set link title and url to class attributes
+    // Check first for regular Grafana panel links and if that doesn't exist then check for data links
+    // Also check for override links if there is only one override (can't add tooltips for multiple links)
+    if (this.hasFieldConfigOverrides()) {
+      this.linkUrl = this.panel.fieldConfig.overrides[0].properties[0].value[0].url;
+      this.linkTitle = this.panel.fieldConfig.overrides[0].properties[0].value[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
+    } else if (this.hasFieldConfigLinks()) {
+      this.linkUrl = this.panel.fieldConfig.defaults.links[0].url;
+      this.linkTitle = this.panel.fieldConfig.defaults.links[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
+    } else if (this.hasPanelLinks()) {
+      this.linkUrl = this.panel.links[0].url;
+      this.linkTitle = this.panel.links[0].title;
+      this.expandVariables(this.linkUrl, this.linkTitle);
+    }
+  }
+
+  hasPanelLinks = () => {
+    return this.panel && this.panel.links && this.panel.links.length > 0;
+  };
+
+  hasFieldConfigLinks = () => {
+    return (
+      this.panel &&
+      this.panel.fieldConfig &&
+      this.panel.fieldConfig.defaults &&
+      this.panel.fieldConfig.defaults.links &&
+      this.panel.fieldConfig.defaults.links.length > 0
+    );
+  };
+
+  hasFieldConfigOverrides = () => {
+    return (
+      this.panel &&
+      this.panel.fieldConfig &&
+      this.panel.fieldConfig.overrides &&
+      this.panel.fieldConfig.overrides.length === 1 &&
+      this.panel.fieldConfig.overrides[0].properties &&
+      this.panel.fieldConfig.overrides[0].properties.length > 0 &&
+      this.panel.fieldConfig.overrides[0].properties[0].value &&
+      this.panel.fieldConfig.overrides[0].properties[0].value.length > 0 &&
+      this.panel.fieldConfig.overrides[0].properties[0].value[0].url
+    );
+  };
+
+  expandVariables = (linkUrl: string, linkTitle: string) => {
+    this.linkUrl = getTemplateSrv().replace(linkUrl, this.panel.scopedVars);
+    this.linkTitle = getTemplateSrv().replace(linkTitle, this.panel.scopedVars);
+  };
+
+  onPanelClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    event.stopPropagation();
+    if (this.linkUrl) {
+      window.location.href = this.linkUrl;
+    }
+  };
+
+  onMouseEnterPanel = () => {
+    if (this.linkUrl) {
+      this.setState({ tooltipVisible: true });
+    }
+  };
+
+  onMouseLeavePanel = () => {
+    this.setState({ tooltipVisible: false });
+  };
+
+  onMouseMoveOver(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const { tooltipRef } = this.state;
+    const url = this.linkUrl;
+    let title = this.linkTitle;
+    if (this.linkUrl) {
+      if (!title) {
+        title = url;
+      }
+      if (tooltipRef) {
+        const xpos = this.getTooltipXPos(tooltipRef.offsetWidth, event.pageX);
+        this.setState({
+          tooltipX: xpos,
+          tooltipY: event.pageY - 50,
+          hoveredTileUrl: url,
+          hoveredTileTitle: title,
+          tooltipVisible: !!url,
+        });
+      }
+    }
+  }
+
+  getTooltipXPos = (tooltipWidth: any, pageX: number) => {
+    const totalWidth = pageX + tooltipWidth;
+    const xpos = totalWidth > window.innerWidth ? window.innerWidth - tooltipWidth : pageX;
+    return xpos;
+  };
+
+  getTooltipRef = (tooltipRef: any) => {
+    this.setState({ tooltipRef });
+  };
+
   renderComponent = (
     valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>,
     menuProps: DataLinksContextMenuApi
@@ -120,20 +258,49 @@ export class StatPanel extends PureComponent<PanelProps<Options>> {
 
   render() {
     const { height, options, width, data, renderCounter } = this.props;
+    const { tooltipVisible, tooltipX, tooltipY, hoveredTileTitle } = this.state;
 
     return (
-      <VizRepeater
-        getValues={this.getValues}
-        getAlignmentFactors={getDisplayValueAlignmentFactors}
-        renderValue={this.renderValue}
-        width={width}
-        height={height}
-        source={data}
-        itemSpacing={3}
-        renderCounter={renderCounter}
-        autoGrid={true}
-        orientation={options.orientation}
-      />
+      <div
+        className={'iiris-stat-panel' + (tooltipVisible ? ' has-link' : '')}
+        onClick={(event) => this.onPanelClick(event)}
+        onMouseEnter={this.onMouseEnterPanel}
+        onMouseLeave={this.onMouseLeavePanel}
+        onMouseMove={(event) => this.onMouseMoveOver(event)}
+      >
+        <VizRepeater
+          getValues={this.getValues}
+          getAlignmentFactors={getDisplayValueAlignmentFactors}
+          renderValue={this.renderValue}
+          width={width}
+          height={height}
+          source={data}
+          itemSpacing={3}
+          renderCounter={renderCounter}
+          autoGrid={true}
+          orientation={options.orientation}
+        />
+        {tooltipVisible ? (
+          <div
+            className="grafana-tooltip iiris-maintenance-tooltip"
+            id="iirisstatustooltip"
+            ref={this.getTooltipRef}
+            style={{ top: tooltipY + 'px', left: tooltipX + 'px' }}
+          >
+            {hoveredTileTitle}
+          </div>
+        ) : null}
+      </div>
     );
   }
 }
+
+
+const mapStateToProps: MapStateToProps<any, any> = (state: any, props: any) => {
+  const dashboard = state.dashboard.getModel();
+  return { dashboard };
+};
+
+const mapDispatchToProps: MapDispatchToProps<any, any> = {};
+
+export const StatPanel = connect(mapStateToProps, mapDispatchToProps)(StatPanelUnconnected);
