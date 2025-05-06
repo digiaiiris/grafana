@@ -1,0 +1,118 @@
+$iiris-priority-label-height: 25px;
+$iiris-priority-label-width: 110px;
+$iiris-table-vertical-padding: 6px;
+$iiris-table-horizontal-padding: 10px;
+
+/* Maintenances list table */
+.iiris-maintenance-table {
+  max-height: calc(90vh - 180px);
+  overflow-y: auto;
+  .table {
+    width: 100%;
+    tr {
+      border-bottom: 1px solid #cccccc;
+    }
+    td:not(.iiris-cell-no-word-break) {
+      word-break: break-word;
+    }
+    td {
+      padding: $iiris-table-vertical-padding $iiris-table-horizontal-padding;
+    }
+    th {
+      padding: 5px 10px;
+      white-space: nowrap;
+      user-select: none;
+      font-weight: 600;
+    }
+    .iiris-button-cell {
+      display: flex;
+      justify-content: flex-end;
+      height: $iiris-priority-label-height + ($iiris-table-vertical-padding * 2);
+      border-bottom: none;
+      padding: 6px 10px 4px 0;
+    }
+  }
+}
+
+.theme-light .iiris-maintenance-table .table {
+  .iiris-inner-table {
+    td {
+      background-color: #efefef;
+      border: 1px solid #ffffff;
+    }
+  }
+}
+
+.iiris-ongoing-maintenance {
+  background-color: #f6d5d5;
+}
+.theme-dark .iiris-ongoing-maintenance {
+  background-color: #7b241c;
+}
+
+.iiris-button {
+  min-width: 140px;
+  min-height: 30px;
+  background-color: #505050;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.1;
+  cursor: pointer;
+  text-align: center;
+  &.iiris-button-condensed {
+    min-height: 24px;
+    border-radius: 2px;
+    padding: 4px 10px;
+  }
+  &.active {
+    background-color: #337ab7;
+  }
+  &.primary {
+    background-color: #d01d04;
+  }
+  &.iiris-table-button {
+    height: 100%;
+  }
+  &.iiris-table-icon-button {
+    width: 24px;
+    height: 24px;
+    min-width: auto;
+    display: inline-block;
+    padding: 4px;
+    margin-right: 5px;
+  }
+  &.iiris-table-icon-button:last-child {
+    margin-right: 0;
+  }
+  &.iiris-icon-link-button {
+    padding: 6px 4px 2px 4px;
+  }
+}
+
+.iiris-search-icon {
+  width: 20px;
+  height: 20px;
+  margin: 5px 3px 0 5px;
+  svg {
+    fill: #505050;
+  }
+}
+
+.iiris-loader {
+  animation: iiris-loader-spin 1s linear infinite;
+  border: 7px solid #666;
+  border-top: 7px solid #007fff;
+  border-radius: 50%;
+  height: 25px;
+  width: 25px;
+}
+
+@keyframes iiris-loader-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,849 @@
+// sass-lint:disable-all
+$text-font-family: 'Titillium Web';
+$page-background-color: #dfdfdf;
+$dashboard-title-color: #000000;
+$panel-background-color: #ffffff;
+$panel-title-background-color: #ffffff;
+$panel-title-text-color: #000000;
+$breadcrumb-background-color: #ffffff;
+$breadcrumb-text-color: #000000;
+$breadcrumb-hover-text-color: #333333;
+$button-background-color: #d01d00;
+$button-background-secondary-color: #505050;
+$button-text-color: #ffffff;
+$tooltip-text-color: #ffffff;
+$login-box-background-color: #e5e5e5;
+$table-line-color: #cccccc;
+
+// Hide unnecessary parts of Grafana top bar
+body.iiris-full-screen .iiris-custom-toolbar,
+body.iiris-hide-grafana-top-bar .iiris-custom-toolbar {
+  display: none;
+}
+
+.grafana-app .sidemenu {
+  display: none;
+}
+
+.navbar-buttons--tv {
+  display: none;
+}
+
+.navbar,
+.user-activity-low .navbar,
+.view-mode--inactive .navbar,
+.playlist-active .navbar,
+header .page-toolbar {
+  background: $panel-background-color;
+  padding-left: 10px;
+  border-bottom: none;
+  padding: 5px 10px;
+}
+
+header .page-toolbar {
+  & > div:first-child {
+    display: none;
+  }
+  nav a {
+    font-size: 24px;
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+  }
+}
+
+.page-dashboard .grafana-app .main-view {
+  background: $page-background-color;
+}
+
+.iiris-transparent-background.page-dashboard.theme-light .grafana-app .main-view {
+  background: transparent;
+}
+
+// Hide unnecessary parts of Grafana top bar
+.navbar .navbar-brand-btn,
+.navbar .navbar-page-btn .icon-gf,
+.navbar .navbar-page-btn .gicon,
+.navbar .navbar-page-btn .fa-caret-down,
+.navbar .navbar-page-btn svg,
+.navbar .dashnav-action-icons,
+.navbar-buttons--actions {
+  display: none !important;
+}
+
+.navbar .navbar-page-btn,
+.navbar .navbar-page-btn:hover,
+.user-activity-low .navbar .navbar-page-btn,
+.view-mode--inactive .navbar .navbar-page-btn {
+  border-right-style: none;
+  font-size: 1.75rem;
+  font-weight: 400;
+  padding-left: 16px !important;
+  color: $dashboard-title-color;
+  background-color: transparent;
+  cursor: default;
+  transform: none;
+  pointer-events: none;
+}
+
+.navbar .navbar-inner,
+.user-activity-low .navbar .navbar-inner,
+.view-mode--inactive .navbar .navbar-inner {
+  border-bottom-style: none;
+  background-color: $breadcrumb-background-color;
+  color: $dashboard-title-color;
+  transition: none;
+}
+
+.navbar .dashnav-move-timeframe {
+  top: 3px;
+}
+
+.navbar .dashnav-zoom-out {
+  font-size: 1rem;
+}
+
+.user-activity-low .navbar,
+.view-mode--inactive .navbar {
+  .dashnav-move-timeframe,
+  .dashnav-refresh-action,
+  .dashnav-zoom-out,
+  .dashnav-action-icons,
+  .gf-timepicker-nav-btn,
+  .navbar-inner .fa,
+  .navbar-buttons--zoom,
+  .navbar-button--refresh,
+  .navbar-page-btn {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+.navbar .navbar .nav li a,
+.navbar .navbar .nav li a:hover {
+  color: $dashboard-title-color;
+}
+
+.navbar .nav.gf-timepicker-nav,
+.dashnav-back-to-dashboard {
+  margin-top: 4px;
+}
+
+.navbar .gf-timepicker-time-control a {
+  padding-top: 17px !important;
+}
+
+.dashboard-container .search-container {
+  display: none;
+}
+
+.navbar .navbar-buttons {
+  margin-right: 10px;
+}
+
+.navbar .navbar-button,
+.navbar .navbar-button:hover,
+header .page-toolbar .toolbar-button {
+  color: $button-text-color;
+  background-image: none;
+  background-color: $button-background-secondary-color;
+  border: none;
+  text-shadow: none;
+  border-radius: 3px;
+  svg {
+    color: $button-text-color;
+  }
+}
+
+.navbar .navbar-button--tight {
+  padding: 6px 4px 8px;
+  margin-left: 4px;
+}
+
+.iiris-grafana-back-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  .navbar-button {
+    width: 30px;
+  }
+}
+
+// General styling
+body.page-dashboard {
+  font-family: $text-font-family;
+  background-color: $page-background-color;
+}
+
+body.iiris-transparent-background.page-dashboard.theme-light {
+  background: transparent;
+}
+
+.theme-light {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .h1,
+  .h2,
+  .h3,
+  .h4,
+  .h5,
+  .h6 {
+    font-family: $text-font-family;
+  }
+}
+
+h2,
+.h2 {
+  color: $panel-title-text-color !important;
+  font-size: 2.1rem;
+  margin-bottom: 0;
+  margin-top: 10px;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: $text-font-family;
+}
+
+.dashboard-header {
+  font-family: $text-font-family;
+}
+
+.grafana-app .scroll-canvas .dashboard-container {
+  padding: 0;
+  .dashboard-content {
+    padding: 10px 15px 15px 10px;
+  }
+}
+
+.grafana-row .panel-container,
+.dash-row .panel-container,
+grafana-panel .panel-container,
+.panel-wrapper .panel-container {
+  background-color: $panel-background-color;
+  border: none;
+  border-radius: 0;
+  &.panel-transparent,
+  &.panel-container--transparent {
+    background-color: transparent;
+    & .panel-title-container,
+    .panel-info-corner,
+    .panel-header:hover {
+      background-color: transparent;
+    }
+  }
+}
+
+.grafana-row,
+.panels-wrapper {
+  min-height: auto !important;
+}
+
+grafana-panel .panel-info-corner,
+.panel-wrapper .panel-info-corner {
+  left: auto;
+  right: 0;
+}
+
+grafana-panel .panel-info-corner .fa,
+grafana-panel .panel-info-corner--links .fa,
+.panel-wrapper .panel-info-corner .fa,
+.panel-wrapper .panel-info-corner--links .fa {
+  color: $panel-title-text-color;
+  font-size: 100%;
+  top: 4px;
+  right: 4px;
+}
+
+.dash-edit-view .tabbed-view {
+  margin-bottom: 1rem;
+  background-image: none;
+}
+
+.flot-x-axis .flot-tick-label {
+  line-height: 1.2;
+  padding: 1px 0 4px 0;
+}
+
+.navbar-button--tight {
+  padding: 6px 4px 7px 4px;
+}
+
+// Scrollbar
+.scroll-canvas .custom-scrollbar .track-vertical {
+  width: 15px !important;
+  .thumb-vertical {
+    background-color: #505050;
+    background-image: none;
+    border: 1px solid #dfdfdf;
+    border-radius: 4px;
+  }
+}
+
+// Panel tooltip
+.drop-content .markdown-html ul {
+  list-style-type: none;
+  padding-left: 0;
+  a {
+    text-decoration: none;
+  }
+}
+
+.drop-element.drop-help .drop-content {
+  margin-right: 20px;
+}
+
+// Login view
+.login-box-logo,
+.login-inner-box .login-tab-header,
+.login-box .password-recovery,
+.footer,
+panel-plugin-pluginlist,
+.login-branding,
+.login-button-group .login-button-forgot-password {
+  display: none;
+}
+
+.login.container {
+  background-image: none;
+  background-color: $panel-title-background-color;
+}
+
+.login-content {
+  max-width: 415px;
+}
+
+.login-inner-box {
+  padding-top: 3rem;
+  padding-bottom: 2rem;
+}
+
+.login-inner-box .login-form .gf-form-label,
+.login-inner-box .login-form .gf-form-input,
+.login-inner-box .login-form-group .gf-form-input {
+  font-family: $text-font-family;
+  font-size: 1rem;
+  font-weight: 600;
+  color: $panel-title-text-color;
+  background-color: $panel-background-color;
+}
+
+.login-inner-box .login-form .gf-form-label {
+  background-color: transparent;
+}
+
+.login-inner-box .login-form .gf-form-input,
+.login-inner-box .login-form input.gf-form-input:-webkit-autofill {
+  border: none;
+  background-color: #ffffff;
+}
+
+.login-inner-box .login-form .gf-form-button-row button,
+.login-inner-box .login-form-group .login-button-group button {
+  font-family: $text-font-family;
+  font-weight: 400;
+  text-transform: uppercase;
+  background-color: $button-background-color;
+  background-image: none;
+  border: none;
+  color: $button-text-color;
+  text-shadow: none;
+  box-shadow: none;
+  border-radius: 2px;
+  font-size: 1rem;
+}
+
+.login-box {
+  max-width: 500px;
+}
+
+.login-inner-box {
+  background-color: $login-box-background-color;
+}
+
+// Panel styling
+.panel-title-text {
+  color: $panel-title-text-color;
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.panel-container {
+  .panel-title-container,
+  .panel-info-corner {
+    background-color: $panel-title-background-color;
+  }
+  &.panel-container--no-title {
+    .panel-title-container,
+    .panel-info-corner {
+      background-color: transparent;
+    }
+    .panel-header {
+      width: 10%;
+      left: 45%;
+      padding-right: 20px;
+    }
+  }
+}
+
+.panel-header .panel-info-corner--links .panel-info-corner-inner,
+.panel-header .panel-info-corner--info .panel-info-corner-inner {
+  border: none;
+}
+
+.panel-header .panel-info-corner--error {
+  .panel-info-corner-inner {
+    border-right: 28px solid #e02f44;
+    border-left: none;
+  }
+  .fa {
+    left: 18px;
+    top: 0;
+    color: #ffffff;
+  }
+}
+
+// Breadcrumb
+panel-plugin-breadcrumb a,
+panel-plugin-breadcrumb a:focus,
+panel-plugin-breadcrumb a:active {
+  color: $breadcrumb-text-color;
+}
+
+panel-plugin-breadcrumb a:hover {
+  color: $breadcrumb-hover-text-color;
+}
+
+panel-plugin-breadcrumb .breadcrumb > li > svg {
+  fill: $breadcrumb-text-color;
+}
+
+.iiris-error-popup {
+  background-color: #d01d00;
+  color: #ffffff;
+  border-radius: 3px;
+  padding: 5px 10px;
+  position: fixed;
+  top: 0px;
+  right: 10px;
+  z-index: 1111;
+  cursor: pointer;
+}
+
+.maintenance-host-list {
+  max-height: 347px;
+  overflow-y: scroll;
+  padding: 5px 10px;
+  border: 1px solid #dde4ed;
+  border-radius: 3px;
+  .iiris-checkbox {
+    display: flex;
+    align-items: center;
+    label {
+      margin-left: 5px;
+      font-size: 1rem;
+    }
+  }
+}
+
+.action-panel-cb {
+  align-self: center;
+  margin: 0 0 2px 20px;
+}
+
+.checkbox-container .action-panel-cb {
+  margin: 0;
+}
+
+.remove-maintenance-confirmation-text {
+  font-weight: 600;
+  font-size: 18px;
+  white-space: pre-wrap;
+}
+
+// Grafana Diagram
+.diagram g.nodes g.label div,
+.diagram g.nodes g.label div a,
+.diagram g.edgeLabels g.edgeLabel div {
+  text-shadow: none;
+  color: 000;
+}
+
+.diagram g.node rect {
+  height: 43px;
+}
+
+// Zabbix Triggers
+.alert-rule-item__icon {
+  display: none;
+}
+
+li[style*='rgb(215, 0, 0)'] // Critical - Kriittinen häiriö
+{
+  background: #ed7e7e !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #a51a00;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #ed7e7e;
+  }
+}
+
+li[style*='rgb(255, 101, 72)'] // High - Vakava häiriö
+{
+  background: #f9a7a7 !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #c50027;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #f9a7a7;
+  }
+}
+
+li[style*='rgb(255, 137, 30)'] // Average - Keskitason häiriö
+{
+  background: #ffd4b8 !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #e03f25;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #ffd4b8;
+  }
+}
+
+li[style*='rgb(175, 180, 36)'] // Warning - Matala häiriö
+{
+  background: #ffeeac !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #e98600;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #ffeeac;
+  }
+}
+
+li[style*='rgb(120, 158, 183)'] // Information - Tiedote
+{
+  background: #c9e7c5 !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #18a109;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #c9e7c5;
+  }
+}
+
+li[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
+{
+  background: #dae6f3 !important;
+  box-shadow: none;
+  .alert-rule-item__text .zbx-trigger-severity,
+  .alert-rule-item__header .alert-rule-item__time {
+    color: #2f5fb8;
+  }
+  &.iiris-active-test-incident {
+    background: #ffffff !important;
+    border: 5px solid #dae6f3;
+  }
+}
+
+.alert-rule-item .alert-rule-item__name {
+  font-size: 16px !important;
+}
+
+.alert-rule-item .alert-rule-item__body .alert-rule-item__text .zbx-trigger-severity {
+  font-size: 16px !important;
+}
+
+.alert-rule-item .alert-rule-item__time {
+  font-size: 14px !important;
+}
+
+.alert-rule-item .zbx-description {
+  font-size: 14px !important;
+}
+
+.alert-rule-item .alert-rule-item__body .alert-rule-item__header .alert-rule-item__text:first-of-type {
+  order: -1;
+}
+
+.alert-rule-item .alert-rule-item__body .alert-rule-item__header .zabbix-hostname .zbx-maintenance-icon {
+  color: #505050;
+}
+
+.alert-rule-item .zbx-trigger-lastchange .trigger-info-block.zbx-status-icons {
+  justify-content: flex-end;
+  a,
+  span {
+    color: #ffffff !important;
+    background-color: #505050;
+    padding: 5px;
+    border-radius: 2px;
+    font-size: 20px !important;
+    height: 32px;
+    width: 32px;
+    display: block;
+    i {
+      color: #ffffff !important;
+      vertical-align: top;
+      margin: 2px 0 0 0;
+      &[class~='fa-comments'] {
+        background-color: #337ab7;
+        margin: -5px;
+        padding: 5px;
+        border-radius: 2px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+  }
+  span {
+    margin-right: 5px;
+    i {
+      margin: 0 2px 0 2px;
+    }
+  }
+}
+
+.panel-problems .rt-table .rt-thead.-header {
+  background: #ffffff;
+  border-top: none;
+  border-bottom: 1px solid #b3b3b3;
+  .rt-th {
+    font-weight: 600;
+    color: #000000;
+  }
+}
+
+.panel-problems .rt-table .rt-tbody .rt-tr-group,
+.panel-problems .rt-table .rt-tbody .rt-tr-group:last-child {
+  border-bottom: 1px solid #b3b3b3;
+  &:hover .rt-tr,
+  &:hover .rt-tr.-even,
+  &:hover .rt-tr.-odd {
+    background: none;
+  }
+  .rt-tr.-even {
+    background: #ffffff;
+  }
+  .problem-details-container {
+    background: #f1f1f1;
+    box-shadow: none;
+    border-top: 1px solid #b3b3b3;
+    .problem-ack-container {
+      background: #ffffff;
+    }
+  }
+  .rt-td.problem-severity {
+    .severity-cell {
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .severity-cell[style*='rgb(215, 0, 0)'] // Critical - Kriittinen häiriö
+    {
+      background: #99023b !important;
+    }
+    .severity-cell[style*='rgb(255, 101, 72)'] // High - Vakava häiriö
+    {
+      background: #d53a3a !important;
+    }
+    .severity-cell[style*='rgb(255, 137, 30)'] // Average - Keskitason häiriö
+    {
+      background: #ff914a !important;
+      color: #000000;
+    }
+    .severity-cell[style*='rgb(175, 180, 36)'] // Warning - Matala häiriö
+    {
+      background: #ffd350 !important;
+      color: #000000;
+    }
+    .severity-cell[style*='rgb(120, 158, 183)'] // Information - Tiedote
+    {
+      background: #559f4c !important;
+    }
+    .severity-cell[style*='rgb(108, 108, 108)'] // Not classified - Tuntematon
+    {
+      background: #3982cc !important;
+    }
+  }
+}
+
+.panel-problems .ReactTable .-pagination .-btn {
+  background: #505050;
+  color: #ffffff;
+}
+
+.drop.drop-popover.drop-element .drop-content,
+.popper.ack-tooltip {
+  color: #000000;
+  background: #e6e6e6;
+  border-color: #aeaeae;
+  box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.3);
+  .popper__arrow {
+    border-color: #e6e6e6;
+  }
+  .btn.btn-mini.btn-inverse {
+    background: #505050;
+    color: #ffffff;
+    border: none;
+    box-shadow: none;
+    text-shadow: none;
+  }
+}
+
+.triggers-panel-filters {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
+  margin-left: 2px;
+  input,
+  select {
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    width: auto;
+    min-width: 150px;
+    margin-right: 10px;
+    &:focus {
+      outline: none;
+    }
+  }
+  input {
+    padding: 3px 6px;
+    &:focus-visible {
+      border: 1px solid #cccccc;
+      box-shadow: none;
+    }
+  }
+}
+
+// Table panel
+// This is a fix to Grafana table content scroll and paging visiblity.
+// When table content is gotten directly with SQL then Grafana is unable to count the content height
+.panel-container {
+  .table-panel-container {
+    // Set container height to panel height minus paging
+    height: calc(100% - 25px);
+    .table-panel-scroll {
+      height: 100%;
+    }
+  }
+}
+
+// Organisations panel
+panel-plugin-organisations {
+  .panel-content {
+    padding: 0 10px 10px;
+  }
+}
+
+// PictureIt panel
+@mixin pictureit-background-style() {
+  height: 100% !important;
+  background-position: center;
+  background-size: contain;
+}
+panel-plugin-bessler-pictureit-panel {
+  .panel-content {
+    padding: 0 10px 10px 10px;
+    & > .panel-height-helper > div {
+      @include pictureit-background-style();
+    }
+  }
+  grafana-panel div {
+    @include pictureit-background-style();
+  }
+}
+
+// Fonts
+/* titillium-web-200 - latin */
+@font-face {
+  font-family: 'Titillium Web';
+  font-style: normal;
+  font-weight: 200;
+  src: url('../fonts/titillium/titillium-web-v5-latin-200.eot'); /* IE9 Compat Modes */
+  src: local('Titillium Web ExtraLight'), local('TitilliumWeb-ExtraLight'),
+    url('../fonts/titillium/titillium-web-v5-latin-200.eot?#iefix') format('embedded-opentype'),
+    /* IE6-IE8 */ url('../fonts/titillium/titillium-web-v5-latin-200.woff2') format('woff2'),
+    /* Super Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-200.woff') format('woff'),
+    /* Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-200.ttf') format('truetype'),
+    /* Safari, Android, iOS */ url('../fonts/titillium/titillium-web-v5-latin-200.svg#TitilliumWeb') format('svg'); /* Legacy iOS */
+}
+
+/* titillium-web-300 - latin */
+@font-face {
+  font-family: 'Titillium Web';
+  font-style: normal;
+  font-weight: 300;
+  src: url('../fonts/titillium/titillium-web-v5-latin-300.eot'); /* IE9 Compat Modes */
+  src: local('Titillium Web Light'), local('TitilliumWeb-Light'),
+    url('../fonts/titillium/titillium-web-v5-latin-300.eot?#iefix') format('embedded-opentype'),
+    /* IE6-IE8 */ url('../fonts/titillium/titillium-web-v5-latin-300.woff2') format('woff2'),
+    /* Super Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-300.woff') format('woff'),
+    /* Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-300.ttf') format('truetype'),
+    /* Safari, Android, iOS */ url('../fonts/titillium/titillium-web-v5-latin-300.svg#TitilliumWeb') format('svg'); /* Legacy iOS */
+}
+
+/* titillium-web-regular - latin */
+@font-face {
+  font-family: 'Titillium Web';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/titillium/titillium-web-v5-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Titillium Web Regular'), local('TitilliumWeb-Regular'),
+    url('../fonts/titillium/titillium-web-v5-latin-regular.eot?#iefix') format('embedded-opentype'),
+    /* IE6-IE8 */ url('../fonts/titillium/titillium-web-v5-latin-regular.woff2') format('woff2'),
+    /* Super Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-regular.woff') format('woff'),
+    /* Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-regular.ttf') format('truetype'),
+    /* Safari, Android, iOS */ url('../fonts/titillium/titillium-web-v5-latin-regular.svg#TitilliumWeb') format('svg'); /* Legacy iOS */
+}
+
+/* titillium-web-600 - latin */
+@font-face {
+  font-family: 'Titillium Web';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../fonts/titillium/titillium-web-v5-latin-600.eot'); /* IE9 Compat Modes */
+  src: local('Titillium Web SemiBold'), local('TitilliumWeb-SemiBold'),
+    url('../fonts/titillium/titillium-web-v5-latin-600.eot?#iefix') format('embedded-opentype'),
+    /* IE6-IE8 */ url('../fonts/titillium/titillium-web-v5-latin-600.woff2') format('woff2'),
+    /* Super Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-600.woff') format('woff'),
+    /* Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-600.ttf') format('truetype'),
+    /* Safari, Android, iOS */ url('../fonts/titillium/titillium-web-v5-latin-600.svg#TitilliumWeb') format('svg'); /* Legacy iOS */
+}
+
+/* titillium-web-700 - latin */
+@font-face {
+  font-family: 'Titillium Web';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../fonts/titillium/titillium-web-v5-latin-700.eot'); /* IE9 Compat Modes */
+  src: local('Titillium Web Bold'), local('TitilliumWeb-Bold'),
+    url('../fonts/titillium/titillium-web-v5-latin-700.eot?#iefix') format('embedded-opentype'),
+    /* IE6-IE8 */ url('../fonts/titillium/titillium-web-v5-latin-700.woff2') format('woff2'),
+    /* Super Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-700.woff') format('woff'),
+    /* Modern Browsers */ url('../fonts/titillium/titillium-web-v5-latin-700.ttf') format('truetype'),
+    /* Safari, Android, iOS */ url('../fonts/titillium/titillium-web-v5-latin-700.svg#TitilliumWeb') format('svg'); /* Legacy iOS */
+}
