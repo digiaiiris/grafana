@@ -19,6 +19,7 @@ import { updateNavIndex } from 'app/core/actions';
 import { AppChromeUpdate } from 'app/core/components/AppChrome/AppChromeUpdate';
 import { NavToolbarSeparator } from 'app/core/components/AppChrome/NavToolbar/NavToolbarSeparator';
 import config from 'app/core/config';
+import { contextSrv } from 'app/core/core';
 import { useAppNotification } from 'app/core/copy/appNotification';
 import { appEvents } from 'app/core/core';
 import { useBusEvent } from 'app/core/hooks/useBusEvent';
@@ -44,6 +45,8 @@ import {
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
 import { ShareButton } from './ShareButton';
+import { IirisMaintenanceDashboardButton } from './IirisMaintenanceDashboardButton';
+import IirisServiceInfoWikiButton from './IirisServiceInfoWikiButton';
 
 const mapDispatchToProps = {
   removeNavIndex,
@@ -190,12 +193,13 @@ export const DashNav = memo<Props>((props) => {
     const { dashboard, kioskMode } = props;
     const { canStar, isStarred } = dashboard.meta;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
 
     if (kioskMode || isPlaylistRunning()) {
       return [];
     }
 
-    if (canStar) {
+    if (canStar && !isLightTheme) {
       let desc = isStarred
         ? t('dashboard.toolbar.unmark-favorite', 'Unmark as favorite')
         : t('dashboard.toolbar.mark-favorite', 'Mark as favorite');
@@ -280,9 +284,17 @@ export const DashNav = memo<Props>((props) => {
     const { snapshot } = dashboard;
     const snapshotUrl = snapshot && snapshot.originalUrl;
     const buttons: ReactNode[] = [];
+    const isLightTheme = contextSrv.user.lightTheme;
 
     if (isPlaylistRunning()) {
       return [renderPlaylistControls(), renderTimeControls()];
+    }
+
+    if (props.dashboard.maintenanceHostGroup) {
+      buttons.push(<IirisMaintenanceDashboardButton dashboard={dashboard} key={'iirismaintenance'} />);
+    }
+    if (props.dashboard.serviceInfoWikiUrl) {
+      buttons.push(<IirisServiceInfoWikiButton dashboard={dashboard} key={'iirisserviceinfowikibutton'} />);
     }
 
     if (snapshotUrl) {
@@ -296,7 +308,7 @@ export const DashNav = memo<Props>((props) => {
       );
     }
 
-    if (canSave && !isFullscreen) {
+    if (canSave && !isFullscreen && !isLightTheme) {
       buttons.push(
         <ModalsController key="button-save">
           {({ showModal, hideModal }) => (
@@ -317,7 +329,7 @@ export const DashNav = memo<Props>((props) => {
 
     addCustomContent(dynamicDashNavActions.right, buttons);
 
-    if (showSettings) {
+    if (showSettings && !isLightTheme) {
       buttons.push(
         <ToolbarButton
           tooltip={t('dashboard.toolbar.settings', 'Dashboard settings')}
@@ -328,7 +340,7 @@ export const DashNav = memo<Props>((props) => {
       );
     }
 
-    if (canEdit && !isFullscreen) {
+    if (canEdit && !isFullscreen && !isLightTheme) {
       buttons.push(
         <AddPanelButton
           onToolbarAddMenuOpen={DashboardInteractions.toolbarAddClick}
@@ -338,7 +350,7 @@ export const DashNav = memo<Props>((props) => {
       );
     }
 
-    if (canShare) {
+    if (canShare && !isLightTheme) {
       buttons.push(<ShareButton key="button-share" dashboard={dashboard} />);
     }
 
