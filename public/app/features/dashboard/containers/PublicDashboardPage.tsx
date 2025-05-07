@@ -37,21 +37,30 @@ const selectors = e2eSelectors.pages.PublicDashboard;
 const Toolbar = ({ dashboard }: { dashboard: DashboardModel }) => {
   const dispatch = useDispatch();
   const conf = useGetPublicDashboardConfig();
+  const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
 
   const onChangeTimeZone = (timeZone: TimeZone) => {
     dispatch(updateTimeZoneForSession(timeZone));
   };
 
   return (
+    <div className="iiris-custom-toolbar">
+    {props.dashboard.dashboardLogo ? (
+      <div className="iiris-customer-logo">
+        <img src={props.dashboard.dashboardLogo} />
+      </div>
+    ) : null}
     <PageToolbar
       title={dashboard.title}
       pageIcon={!conf.headerLogoHide ? 'grafana' : undefined}
+      parent={folderTitleByTheme}
       buttonOverflowAlignment="right"
     >
       {!dashboard.timepicker.hidden && (
         <DashNavTimeControls dashboard={dashboard} onChangeTimeZone={onChangeTimeZone} />
       )}
     </PageToolbar>
+  </div>
   );
 };
 
