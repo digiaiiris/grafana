@@ -35,7 +35,7 @@ interface State {
   tooltipRef: any;
 }
 
-export class StatPanel extends PureComponent<PanelProps<Options>> {
+export class StatPanelUnconnected extends PureComponent<Props, State> {
   panel: any;
   linkUrl: string = '';
   linkTitle: string = '';
@@ -294,7 +294,6 @@ export class StatPanel extends PureComponent<PanelProps<Options>> {
     );
   }
 }
-
 
 const mapStateToProps: MapStateToProps<any, any> = (state: any, props: any) => {
   const dashboard = state.dashboard.getModel();
