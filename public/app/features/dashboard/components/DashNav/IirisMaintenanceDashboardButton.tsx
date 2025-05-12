@@ -10,7 +10,7 @@ import { ToolbarButton } from '@grafana/ui';
 import appEvents from 'app/core/app_events';
 import { contextSrv } from 'app/core/core';
 
-import { DashboardModel } from '../../state';
+import { DashboardModel } from '../../state/DashboardModel';
 
 import { IirisMaintenanceListModal } from './IirisMaintenanceListModal';
 

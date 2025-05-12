@@ -689,7 +689,7 @@ export class PanelModel implements DataConfigSource, IPanelModel {
    * If you need the raw title without interpolation use title property instead.
    * */
   getDisplayTitle(): string {
-    return title = getTemplateSrv().replace(this.title || '', this.scopedVars);
+    return getTemplateSrv().replace(this.title || '', this.scopedVars);
   }
 
   initLibraryPanel(libPanel: LibraryPanel) {

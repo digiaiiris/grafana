@@ -17,6 +17,7 @@ import {
   Select,
   Switch
 } from '@grafana/ui';
+import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
 import { t, Trans } from 'app/core/internationalization';
@@ -101,6 +102,10 @@ export function GeneralSettingsUnconnected({
     const dsPointer = dashboard.selectedDatasource ? [dashboard.selectedDatasource] : availableDatasources;
     getHostGroups(dsPointer, datasourceSrv).then((groups: string[]) => setHostGroupOptions(groups));
   }, []);
+
+  const onBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    dashboard[event.currentTarget.name as 'title' | 'description'] = event.currentTarget.value;
+  };
 
   const onFolderChange = (newUID: string | undefined, newTitle: string | undefined) => {
     dashboard.meta.folderUid = newUID;

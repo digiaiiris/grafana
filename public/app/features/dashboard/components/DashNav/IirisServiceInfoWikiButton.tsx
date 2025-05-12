@@ -4,7 +4,7 @@ import React from 'react';
 import { ToolbarButton } from '@grafana/ui';
 
 // Types
-import { DashboardModel } from '../../state';
+import { DashboardModel } from '../../state/DashboardModel';
 
 interface Props {
   dashboard: DashboardModel;

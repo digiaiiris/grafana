@@ -19,9 +19,8 @@ import { updateNavIndex } from 'app/core/actions';
 import { AppChromeUpdate } from 'app/core/components/AppChrome/AppChromeUpdate';
 import { NavToolbarSeparator } from 'app/core/components/AppChrome/NavToolbar/NavToolbarSeparator';
 import config from 'app/core/config';
-import { contextSrv } from 'app/core/core';
 import { useAppNotification } from 'app/core/copy/appNotification';
-import { appEvents } from 'app/core/core';
+import { appEvents, contextSrv } from 'app/core/core';
 import { useBusEvent } from 'app/core/hooks/useBusEvent';
 import { t, Trans } from 'app/core/internationalization';
 import { ID_PREFIX, setStarred } from 'app/core/reducers/navBarTree';
@@ -44,9 +43,9 @@ import {
 
 import { DashNavButton } from './DashNavButton';
 import { DashNavTimeControls } from './DashNavTimeControls';
-import { ShareButton } from './ShareButton';
 import { IirisMaintenanceDashboardButton } from './IirisMaintenanceDashboardButton';
 import IirisServiceInfoWikiButton from './IirisServiceInfoWikiButton';
+import { ShareButton } from './ShareButton';
 
 const mapDispatchToProps = {
   removeNavIndex,
@@ -193,7 +192,7 @@ export const DashNav = memo<Props>((props) => {
     const { dashboard, kioskMode } = props;
     const { canStar, isStarred } = dashboard.meta;
     const buttons: ReactNode[] = [];
-    const isLightTheme = contextSrv.user.lightTheme;
+    const isLightTheme = contextSrv.user.theme === 'light' ? true : false;
 
     if (kioskMode || isPlaylistRunning()) {
       return [];
@@ -284,7 +283,7 @@ export const DashNav = memo<Props>((props) => {
     const { snapshot } = dashboard;
     const snapshotUrl = snapshot && snapshot.originalUrl;
     const buttons: ReactNode[] = [];
-    const isLightTheme = contextSrv.user.lightTheme;
+    const isLightTheme = contextSrv.user.theme === 'light' ? true : false;
 
     if (isPlaylistRunning()) {
       return [renderPlaylistControls(), renderTimeControls()];

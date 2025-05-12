@@ -8,6 +8,7 @@ import { selectors as e2eSelectors } from '@grafana/e2e-selectors/src';
 import { PageToolbar, useStyles2 } from '@grafana/ui';
 import { Page } from 'app/core/components/Page/Page';
 import { useGrafana } from 'app/core/context/GrafanaContext';
+import { contextSrv } from 'app/core/core';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import {
   PublicDashboardPageRouteParams,
@@ -37,7 +38,7 @@ const selectors = e2eSelectors.pages.PublicDashboard;
 const Toolbar = ({ dashboard }: { dashboard: DashboardModel }) => {
   const dispatch = useDispatch();
   const conf = useGetPublicDashboardConfig();
-  const folderTitleByTheme = contextSrv.user.lightTheme ? '' : folderTitle;
+  const folderTitleByTheme = contextSrv.user.theme === 'light' ? '' : dashboard.meta.folderTitle;
 
   const onChangeTimeZone = (timeZone: TimeZone) => {
     dispatch(updateTimeZoneForSession(timeZone));
@@ -45,9 +46,9 @@ const Toolbar = ({ dashboard }: { dashboard: DashboardModel }) => {
 
   return (
     <div className="iiris-custom-toolbar">
-    {props.dashboard.dashboardLogo ? (
+    {dashboard.dashboardLogo ? (
       <div className="iiris-customer-logo">
-        <img src={props.dashboard.dashboardLogo} />
+        <img src={dashboard.dashboardLogo} />
       </div>
     ) : null}
     <PageToolbar

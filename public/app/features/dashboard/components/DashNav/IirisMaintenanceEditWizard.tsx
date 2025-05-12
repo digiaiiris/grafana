@@ -4,7 +4,7 @@
  */
 
 import { DateTime } from 'luxon';
-import React, { PureComponent } from 'react';
+import { PureComponent } from 'react';
 
 import { AppEvents } from '@grafana/data';
 import { Modal } from '@grafana/ui';
