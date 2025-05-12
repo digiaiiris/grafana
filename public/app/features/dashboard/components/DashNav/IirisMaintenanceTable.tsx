@@ -1,9 +1,6 @@
 /**
  * Simple function component used to show maintenance table in the maintenance list modal dialog
  */
-
-import React from 'react';
-
 import { contextSrv } from 'app/core/core';
 
 import { Maintenance, MaintenanceType } from './IirisMaintenanceModel';
@@ -62,7 +59,7 @@ export function IirisMaintenanceTable(props: Props) {
       <tbody>
         {props.data.map((maintenance) => {
           const maintenanceId = maintenance.id;
-          var maintenanceTypeString = '';
+          let maintenanceTypeString = '';
           if (maintenance.maintenanceType === MaintenanceType.OneTime) {
             maintenanceTypeString = texts.oneTimeAbbr;
           } else if (maintenance.maintenanceType === MaintenanceType.Daily) {
@@ -73,7 +70,7 @@ export function IirisMaintenanceTable(props: Props) {
             maintenanceTypeString = texts.monthlyAbbr;
           }
 
-          var errorCells;
+          let errorCells;
           if (maintenance.periodicStartTimeNotCompatibleWithCurrentTimeZone) {
             // Cannot show start and end dates because they have been configured with a different timezone
             // so that if dates were converted to the current local timezone they would show maintenance

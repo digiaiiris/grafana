@@ -2,7 +2,7 @@
  * This is the Manage Maintenances button that is shown in the dashboard navigation header (DashNav).
  * It also contains the other react components (such as modal dialogs) related to managing maintenances.
  */
-import React, { PureComponent } from 'react';
+import { PureComponent } from 'react';
 
 import { AppEvents } from '@grafana/data';
 import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
