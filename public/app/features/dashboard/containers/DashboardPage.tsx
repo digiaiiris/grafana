@@ -246,9 +246,9 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
       const db = this.props.dashboard;
       const messageObj = {
-        url: `/d/${this.props.match.params.uid}/${this.props.match.params.slug}`,
+        url: `/d/${this.props.params.uid}/${this.props.params.slug}`,
         name: db.title,
-        uid: this.props.match.params.uid,
+        uid: this.props.params.uid,
         orgName: contextSrv.user.orgName,
         isGrafanaAdmin: contextSrv.user.isGrafanaAdmin,
         hideIirisBreadcrumb: db.hideIirisBreadcrumb,
