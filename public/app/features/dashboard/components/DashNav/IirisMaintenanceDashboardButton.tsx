@@ -102,7 +102,7 @@ export class IirisMaintenanceDashboardButton extends PureComponent<Props, State>
     }
 
     // Host group name comes from dashboard configuration
-    var hostGroupName = dashboard.maintenanceHostGroup; // This cannot be empty because button is not shown if host group has not been configured
+    let hostGroupName = dashboard.maintenanceHostGroup; // This cannot be empty because button is not shown if host group has not been configured
     hostGroupName = templateSrv.replace(hostGroupName); // Replace dashboard variables
 
     this.setState({
