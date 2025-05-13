@@ -532,12 +532,12 @@ export class DashboardModel implements TimeModel {
       if (panel.id > max) {
         max = panel.id;
       }
-    }
 
-    if (panel.collapsed || (panel.type === 'iiris-tab-row-panel' && panel.panels)) {
-      for (const rowPanel of panel.panels) {
-        if (rowPanel.id > max) {
-          max = rowPanel.id;
+      if ((panel.collapsed || panel.type === 'iiris-tab-row-panel') && panel.panels) {
+        for (const rowPanel of panel.panels) {
+          if (rowPanel.id > max) {
+            max = rowPanel.id;
+          }
         }
       }
     }
@@ -661,21 +661,7 @@ export class DashboardModel implements TimeModel {
     // cleanup scopedVars
     deleteScopeVars(this.panels);
 
-    const panelsToRemove = this.panels.filter((p) => (!p.repeat || p.repeatedByRow) && p.repeatPanelId);
-
-    for (let i = 0; i < this.panels.length; i++) {
-      const panel = this.panels[i];
-      /* eslint-disable */
-      /* tslint:disable */
-      if (
-        (!panel.repeat || panel.repeatedByRow) &&
-        panel.repeatPanelId &&
-        panel.repeatIteration !== this.iteration &&
-        !panel.isTabPanel
-      ) {
-        panelsToRemove.push(panel);
-      }
-    }
+    const panelsToRemove = this.panels.filter((p) => (!p.repeat || p.repeatedByRow) && p.repeatPanelId && !p.isTabPanel);
 
     // remove panels
     pull(this.panels, ...panelsToRemove);
