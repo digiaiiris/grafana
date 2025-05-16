@@ -30,6 +30,14 @@ export interface Dashboard extends Omit<raw.Dashboard, 'templating' | 'annotatio
   templating?: {
     list?: VariableModel[];
   };
+  maintenanceHostGroup?: string;
+  selectedDatasource?: string | DataSourceRef | null | undefined;
+  serviceInfoWikiUrl?: string;
+  serviceInfoWikiUrlIsExternal?: boolean;
+  hideIirisBreadcrumb?: boolean;
+  hideGrafanaTopBar?: boolean;
+  transparentBackground?: boolean;
+  dashboardLogo?: string;
 }
 
 export interface AnnotationQuery<TQuery extends DataQuery = DataQuery>

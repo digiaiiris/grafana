@@ -180,7 +180,7 @@ div[role='dialog'].modal-body > div:nth-child(2) {
   }
 }
 
-@include media-breakpoint-down(md) {
+@media(max-width:991px) {
   .modal-body .modal-content {
     .maintenance-column-wrapper {
       .maintenance-column-left {

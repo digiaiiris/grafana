@@ -99,6 +99,14 @@ export interface DashboardDataDTO extends Dashboard {
   title: string;
   uid: string;
   panels?: any[];
+  maintenanceHostGroup?: string;
+  selectedDatasource?: string | DataSourceRef | null | undefined;
+  serviceInfoWikiUrl?: string;
+  serviceInfoWikiUrlIsExternal?: boolean;
+  hideIirisBreadcrumb?: boolean;
+  hideGrafanaTopBar?: boolean;
+  transparentBackground?: boolean;
+  dashboardLogo?: string;
 }
 
 export enum DashboardRoutes {

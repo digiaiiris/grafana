@@ -19,7 +19,7 @@ import {
 } from '@grafana/data';
 import { PromQuery } from '@grafana/prometheus';
 import { RefreshEvent, TimeRangeUpdatedEvent, config } from '@grafana/runtime';
-import { Dashboard, DashboardLink, VariableModel } from '@grafana/schema';
+import { Dashboard, DashboardLink, DataSourceRef, VariableModel } from '@grafana/schema';
 import { DEFAULT_ANNOTATION_COLOR } from '@grafana/ui';
 import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN, GRID_COLUMN_COUNT, REPEAT_DIR_VERTICAL } from 'app/core/constants';
 import { contextSrv } from 'app/core/services/context_srv';
@@ -63,14 +63,14 @@ export interface ScopeMeta {
 }
 
 export class DashboardModel implements TimeModel {
-  maintenanceHostGroup: string;
-  selectedDatasource: string;
-  serviceInfoWikiUrl: string;
-  serviceInfoWikiUrlIsExternal: boolean;
-  hideIirisBreadcrumb: boolean;
-  hideGrafanaTopBar: boolean;
-  transparentBackground: boolean;
-  dashboardLogo: string;
+  maintenanceHostGroup?: string;
+  selectedDatasource?: string | DataSourceRef | null | undefined;
+  serviceInfoWikiUrl?: string;
+  serviceInfoWikiUrlIsExternal?: boolean;
+  hideIirisBreadcrumb?: boolean;
+  hideGrafanaTopBar?: boolean;
+  transparentBackground?: boolean;
+  dashboardLogo?: string;
   /** @deprecated use UID */
   id: any;
   // TODO: use propert type and fix all the places where uid is set to null
