@@ -22,7 +22,7 @@ import { config } from 'app/core/config';
 
 import { Options } from './panelcfg.gen';
 
-interface Props extends PanelProps<StatPanelOptions> {
+interface Props extends PanelProps<Options> {
   dashboard: any;
 }
 

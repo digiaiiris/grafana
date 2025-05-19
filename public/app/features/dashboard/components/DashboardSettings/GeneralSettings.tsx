@@ -17,11 +17,11 @@ import {
   Select,
   Switch
 } from '@grafana/ui';
-import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderPicker } from 'app/core/components/Select/FolderPicker';
 import { t, Trans } from 'app/core/internationalization';
 import { updateTimeZoneDashboard, updateWeekStartDashboard } from 'app/features/dashboard/state/actions';
+import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
 import { DeleteDashboardButton } from '../DeleteDashboard/DeleteDashboardButton';
 import { GenAIDashDescriptionButton } from '../GenAI/GenAIDashDescriptionButton';
@@ -188,7 +188,7 @@ export function GeneralSettingsUnconnected({
           });
       }
     } else {
-      dashboard.selectedDatasource = '';
+      dashboard.selectedDatasource = null;
       dashboard.maintenanceHostGroup = '';
       setRenderCounter(renderCounter + 1);
       setHostGroupOptions([]);
