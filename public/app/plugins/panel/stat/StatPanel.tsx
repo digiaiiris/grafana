@@ -295,7 +295,7 @@ export class StatPanelUnconnected extends PureComponent<Props, State> {
   }
 }
 
-const mapStateToProps: MapStateToProps<any, any> = (state: any, props: any) => {
+const mapStateToProps: MapStateToProps<any, any, any> = (state: any, props: any) => {
   const dashboard = state.dashboard.getModel();
   return { dashboard };
 };
