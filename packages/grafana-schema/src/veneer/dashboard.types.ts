@@ -31,7 +31,7 @@ export interface Dashboard extends Omit<raw.Dashboard, 'templating' | 'annotatio
     list?: VariableModel[];
   };
   maintenanceHostGroup?: string;
-  selectedDatasource?: string | DataSourceRef | null | undefined;
+  selectedDatasource?: string;
   serviceInfoWikiUrl?: string;
   serviceInfoWikiUrlIsExternal?: boolean;
   hideIirisBreadcrumb?: boolean;

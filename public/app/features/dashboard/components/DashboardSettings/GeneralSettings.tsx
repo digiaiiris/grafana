@@ -40,11 +40,11 @@ const GRAPH_TOOLTIP_OPTIONS = [
 
 /* eslint-disable */
 /* tslint:disable */
-const getZabbix = (availableDatasources: string[], datasourceSrv: any) => {
+const getZabbix = (datasourceSrv: any, datasourcename?: string) => {
   return new Promise<any>((resolve: any, reject: any) => {
-    if (availableDatasources.length > 0) {
+    if (datasourcename) {
       datasourceSrv
-        .get(availableDatasources[0])
+        .get(datasourcename)
         .then((datasource: any) => {
           if (datasource.zabbix) {
             resolve(datasource.zabbix);
@@ -61,9 +61,9 @@ const getZabbix = (availableDatasources: string[], datasourceSrv: any) => {
   }) as any;
 };
 
-const getHostGroups = (availableDatasources: string[], datasourceSrv: any) => {
+const getHostGroups = (datasourceSrv: any, datasourcename?: string) => {
   return new Promise<any>((resolve: any, reject: any) => {
-    getZabbix(availableDatasources, datasourceSrv)
+    getZabbix(datasourceSrv, datasourcename)
       .then((zabbix: any) => {
         // Get all host group ids
         zabbix.getAllGroups().then((groups: any) => {
@@ -95,12 +95,18 @@ export function GeneralSettingsUnconnected({
     datasourceSrv.getMetricSources().map((datasource: { name: string }) => datasources.push(datasource.name));
     datasources.unshift('');
     setDatasourceOptions(datasources);
-    const availableDatasources = datasourceSrv
-      .getMetricSources()
-      .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
-      .map((ds: any) => ds.name);
-    const dsPointer = dashboard.selectedDatasource ? [dashboard.selectedDatasource] : availableDatasources;
-    getHostGroups(dsPointer, datasourceSrv).then((groups: string[]) => setHostGroupOptions(groups));
+    let dsPointer: string;
+    if (dashboard.selectedDatasource) {
+      dsPointer = dashboard.selectedDatasource;
+    }
+    else {
+      const availableDatasources = datasourceSrv
+        .getMetricSources()
+        .filter((datasource: any) => datasource.meta.id.indexOf('zabbix-datasource') > -1 && datasource.value)
+        .map((ds: any) => ds.name);
+      dsPointer = availableDatasources[0];
+    }
+    getHostGroups(datasourceSrv, dsPointer).then((groups: string[]) => setHostGroupOptions(groups));
   }, []);
 
   const onBlur = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -180,18 +186,18 @@ export function GeneralSettingsUnconnected({
       dashboard.selectedDatasource = datasource.value;
       setRenderCounter(renderCounter + 1);
       const datasourceSrv = getDatasourceSrv();
-      if (datasourceOptions.indexOf(dashboard.selectedDatasource) > -1) {
-        getHostGroups([dashboard.selectedDatasource], datasourceSrv)
+      if (dashboard.selectedDatasource != undefined && datasourceOptions.indexOf(dashboard.selectedDatasource) > -1) {
+        getHostGroups(datasourceSrv, dashboard.selectedDatasource)
           .then((groups: string[]) => setHostGroupOptions(groups))
           .catch((err: any) => {
             setHostGroupOptions([]);
           });
+      } else {
+        dashboard.selectedDatasource = undefined;
+        dashboard.maintenanceHostGroup = '';
+        setRenderCounter(renderCounter + 1);
+        setHostGroupOptions([]);
       }
-    } else {
-      dashboard.selectedDatasource = null;
-      dashboard.maintenanceHostGroup = '';
-      setRenderCounter(renderCounter + 1);
-      setHostGroupOptions([]);
     }
   };
 
