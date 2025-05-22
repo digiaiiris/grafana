@@ -1,0 +1,34 @@
+#!/bin/bash
+# Builds Grafana frontend with Iiris modifications in Ubuntu container and exports build in tar file.
+set -eo pipefail
+
+# Parse options
+OPTS=`getopt -o rt: --long release,tar: -n 'parse-options' -- "$@"`
+
+if [ $? != 0 ] ; then
+  echo "Failed parsing options." >&2
+  exit 1
+fi
+
+eval set -- "$OPTS"
+
+TARFILE=""
+
+while true; do
+  case "$1" in
+    -r | --release ) TARFILE="grafana-build.tar.gz"; shift;;
+    -t | --tar ) TARFILE="$2"; shift 2;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
+
+# Build in container
+docker build -f Dockerfile.ubuntu --target js-builder -t grafana-build .
+
+# Export build files
+if [ ! -z "$TARFILE" ]; then
+  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views fonts/titillium" >$TARFILE
+else
+  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views" | tar x -C public
+fi
