@@ -1,5 +1,6 @@
 import { isNumber } from 'lodash';
 import { PureComponent } from 'react';
+import { connect, ConnectedProps } from 'react-redux';
 
 import {
   DisplayValueAlignmentFactors,
@@ -13,12 +14,40 @@ import {
 import { findNumericFieldMinMax } from '@grafana/data/src/field/fieldOverrides';
 import { BigValueTextMode, BigValueGraphMode } from '@grafana/schema';
 import { BigValue, DataLinksContextMenu, VizRepeater, VizRepeaterRenderValueProps } from '@grafana/ui';
+import { StoreState } from 'app/types';
+import { PanelModel } from 'app/features/dashboard/state/PanelModel';
+import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import { DataLinksContextMenuApi } from '@grafana/ui/src/components/DataLinks/DataLinksContextMenu';
 import { config } from 'app/core/config';
+import { initDashboard } from '../../../features/dashboard/state/initDashboard';
 
 import { Options } from './panelcfg.gen';
 
-export class StatPanel extends PureComponent<PanelProps<Options>> {
+export interface DashboardPageRouteParams {
+  uid?: string;
+  type?: string;
+  slug?: string;
+}
+
+const mapStateToProps = (state: StoreState) => ({
+  dashboard: state.dashboard.getModel(),
+});
+
+const mapDispatchToProps = {
+  initDashboard,
+};
+
+const connector = connect(mapStateToProps, mapDispatchToProps);
+
+export type Props = GrafanaRouteComponentProps<DashboardPageRouteParams, { panelId: string; timezone?: string }> &
+  ConnectedProps<typeof connector>;
+
+export interface State {
+  panel: PanelModel | null;
+  notFound: boolean;
+}
+
+export class StatPanel extends PureComponent<PanelProps<Options>, State> {
   renderComponent = (
     valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>,
     menuProps: DataLinksContextMenuApi
@@ -137,3 +166,5 @@ export class StatPanel extends PureComponent<PanelProps<Options>> {
     );
   }
 }
+
+export default connector(StatPanel);
