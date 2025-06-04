@@ -1,6 +1,6 @@
 import { isNumber } from 'lodash';
 import { PureComponent } from 'react';
-import { connect, ConnectedProps } from 'react-redux';
+import { connect } from 'react-redux';
 
 import {
   DisplayValueAlignmentFactors,
@@ -24,10 +24,8 @@ import { initDashboard } from '../../../features/dashboard/state/initDashboard';
 
 import { Options } from './panelcfg.gen';
 
-export interface DashboardPageRouteParams {
-  uid?: string;
-  type?: string;
-  slug?: string;
+interface Props extends Options {
+  dashboard: DashboardModel | null;
 }
 
 const mapStateToProps = (state: StoreState) => ({
@@ -40,15 +38,15 @@ const mapDispatchToProps = {
 
 const connector = connect(mapStateToProps, mapDispatchToProps);
 
-export type Props = PanelProps<Options, { dashboard: DashboardModel | null }> &
-  ConnectedProps<typeof connector>;
+//export type Props = PanelProps<Options, { dashboard: DashboardModel | null }> &
+//  ConnectedProps<typeof connector>;
 
 export interface State {
   panel: PanelModel | null;
   notFound: boolean;
 }
 
-export class StatPanel extends PureComponent<Props, State> {
+export class StatPanel extends PureComponent<PanelProps<Props>, State> {
   renderComponent = (
     valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>,
     menuProps: DataLinksContextMenuApi
