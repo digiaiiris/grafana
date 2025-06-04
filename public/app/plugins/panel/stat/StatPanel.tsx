@@ -14,11 +14,12 @@ import {
 import { findNumericFieldMinMax } from '@grafana/data/src/field/fieldOverrides';
 import { BigValueTextMode, BigValueGraphMode } from '@grafana/schema';
 import { BigValue, DataLinksContextMenu, VizRepeater, VizRepeaterRenderValueProps } from '@grafana/ui';
-import { StoreState } from 'app/types';
-import { PanelModel } from 'app/features/dashboard/state/PanelModel';
-import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import { DataLinksContextMenuApi } from '@grafana/ui/src/components/DataLinks/DataLinksContextMenu';
 import { config } from 'app/core/config';
+import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
+import { PanelModel } from 'app/features/dashboard/state/PanelModel';
+import { StoreState } from 'app/types';
+
 import { initDashboard } from '../../../features/dashboard/state/initDashboard';
 
 import { Options } from './panelcfg.gen';
@@ -39,7 +40,7 @@ const mapDispatchToProps = {
 
 const connector = connect(mapStateToProps, mapDispatchToProps);
 
-export type Props = GrafanaRouteComponentProps<DashboardPageRouteParams, { panelId: string; timezone?: string }> &
+export type Props = PanelProps<Options, { dashboard: DashboardModel | null }> &
   ConnectedProps<typeof connector>;
 
 export interface State {
@@ -47,7 +48,7 @@ export interface State {
   notFound: boolean;
 }
 
-export class StatPanel extends PureComponent<PanelProps<Options>, State> {
+export class StatPanel extends PureComponent<Props, State> {
   renderComponent = (
     valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>,
     menuProps: DataLinksContextMenuApi
@@ -148,6 +149,7 @@ export class StatPanel extends PureComponent<PanelProps<Options>, State> {
   };
 
   render() {
+    console.log('StatPanel, this.props:', this.props);
     const { height, options, width, data, renderCounter } = this.props;
 
     return (
