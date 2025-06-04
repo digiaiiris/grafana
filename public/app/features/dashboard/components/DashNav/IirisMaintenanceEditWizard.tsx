@@ -791,10 +791,8 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       .filter((host) => host.selected)
       .map((host) => host.name)
       .join(', ');
-    summaryData.displayWeeklyDays = this.state.weeklyWeekdays
-      .map((weekdaySelected, weekday) => {
-        return this.weekdayNames[weekday];
-      })
+    summaryData.displayWeeklyDays = this.weekdayNames
+      .filter((value, index) => this.state.weeklyWeekdays[index])
       .join(', ');
     summaryData.displayMonths = this.state.months
       .map((monthSelected, month) => {
@@ -805,10 +803,8 @@ export class IirisMaintenanceEditWizard extends PureComponent<Props, State> {
       (option) => option.value === this.state.monthlyWeekNumberInput
     );
     summaryData.displayMonthlyWeekdayNumber = monthlyWeekNumberInputOption ? monthlyWeekNumberInputOption.label : '';
-    summaryData.displayMonthlyWeekdayNames = this.state.monthlyWeekdays
-      .map((weekdaySelected, weekday) => {
-        return this.weekdayNames[weekday];
-      })
+    summaryData.displayMonthlyWeekdayNames = this.weekdayNames
+      .filter((value, index) => this.state.monthlyWeekdays[index])
       .join(', ');
     return summaryData;
   }
