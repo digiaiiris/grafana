@@ -1,6 +1,5 @@
 import { isNumber } from 'lodash';
 import { PureComponent } from 'react';
-import { connect } from 'react-redux';
 
 import {
   DisplayValueAlignmentFactors,
@@ -16,37 +15,10 @@ import { BigValueTextMode, BigValueGraphMode } from '@grafana/schema';
 import { BigValue, DataLinksContextMenu, VizRepeater, VizRepeaterRenderValueProps } from '@grafana/ui';
 import { DataLinksContextMenuApi } from '@grafana/ui/src/components/DataLinks/DataLinksContextMenu';
 import { config } from 'app/core/config';
-import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
-import { PanelModel } from 'app/features/dashboard/state/PanelModel';
-import { StoreState } from 'app/types';
-
-import { initDashboard } from '../../../features/dashboard/state/initDashboard';
 
 import { Options } from './panelcfg.gen';
 
-interface Props extends Options {
-  dashboard: DashboardModel | null;
-}
-
-const mapStateToProps = (state: StoreState) => ({
-  dashboard: state.dashboard.getModel(),
-});
-
-const mapDispatchToProps = {
-  initDashboard,
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-//export type Props = PanelProps<Options, { dashboard: DashboardModel | null }> &
-//  ConnectedProps<typeof connector>;
-
-export interface State {
-  panel: PanelModel | null;
-  notFound: boolean;
-}
-
-export class StatPanel extends PureComponent<PanelProps<Props>, State> {
+export class StatPanel extends PureComponent<PanelProps<Options>> {
   renderComponent = (
     valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>,
     menuProps: DataLinksContextMenuApi
@@ -147,8 +119,8 @@ export class StatPanel extends PureComponent<PanelProps<Props>, State> {
   };
 
   render() {
-    console.log('StatPanel, this.props:', this.props);
     const { height, options, width, data, renderCounter } = this.props;
+    console.log('StatPanel, render, this.props', this.props);
 
     return (
       <VizRepeater
@@ -166,5 +138,3 @@ export class StatPanel extends PureComponent<PanelProps<Props>, State> {
     );
   }
 }
-
-export default connector(StatPanel);

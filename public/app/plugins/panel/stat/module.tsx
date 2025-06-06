@@ -7,7 +7,6 @@ import {
   PercentChangeColorMode,
 } from '@grafana/schema';
 import { commonOptionsBuilder, sharedSingleStatMigrationHandler } from '@grafana/ui';
-import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
 
 import { statPanelChangedHandler } from './StatMigrations';
 import { StatPanel } from './StatPanel';
@@ -15,11 +14,7 @@ import { addStandardDataReduceOptions, addOrientationOption } from './common';
 import { defaultOptions, Options } from './panelcfg.gen';
 import { StatSuggestionsSupplier } from './suggestions';
 
-interface Props extends Options {
-  dashboard: DashboardModel | null;
-}
-
-export const plugin = new PanelPlugin<Props>(StatPanel)
+export const plugin = new PanelPlugin<Options>(StatPanel)
   .useFieldConfig()
   .setPanelOptions((builder) => {
     const mainCategory = ['Stat styles'];
