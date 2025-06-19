@@ -23,6 +23,7 @@ Installing and switching Node version and running the frontend:
 ```
 nvm install lts/jod
 nvm use lts/jod
+npm install -g yarn
 yarn install --immutable
 yarn start
 ```
