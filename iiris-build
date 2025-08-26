@@ -24,7 +24,7 @@ while true; do
 done
 
 # Build in container
-docker build -f Dockerfile.ubuntu --target js-builder -t grafana-build .
+docker build -f Dockerfile --target js-builder -t grafana-build .
 
 # Export build files
 if [ ! -z "$TARFILE" ]; then
