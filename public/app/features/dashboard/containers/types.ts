@@ -20,6 +20,8 @@ export type DashboardPageRouteSearchParams = {
   kiosk?: string | true;
   scenes?: boolean;
   shareView?: string;
+  relaytarget?: string;
+  relayparams?: string;
 };
 
 export type PublicDashboardPageRouteParams = {
