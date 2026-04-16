@@ -170,7 +170,7 @@
     "@typescript-eslint/parser": "5.16.0",
     "@wojtekmaj/enzyme-adapter-react-17": "0.6.6",
     "autoprefixer": "10.4.4",
-    "axios": "0.26.1",
+    "axios": "0.31.0",
     "babel-jest": "27.5.1",
     "babel-loader": "8.2.4",
     "babel-plugin-angularjs-annotate": "0.10.0",
@@ -402,6 +402,7 @@
     "@storybook/react/webpack": "5.70.0",
     "node-fetch": "2.6.7",
     "@types/slate": "0.47.9",
+    "wait-on/axios": "0.31.0",
     "slate-dev-environment@^0.2.2": "patch:slate-dev-environment@npm:0.2.5#.yarn/patches/slate-dev-environment-npm-0.2.5-9aeb7da7b5.patch"
   },
   "workspaces": {
