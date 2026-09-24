@@ -41,7 +41,7 @@ header .page-toolbar {
 }
 
 header .page-toolbar {
-  & > div:first-child {
+  > div:first-child {
     display: none;
   }
   nav a {
@@ -58,6 +58,13 @@ header .page-toolbar {
 
 .iiris-transparent-background.page-dashboard.theme-light .grafana-app .main-view {
   background: transparent;
+}
+
+// Keep panel-specific navigation actions out of the light-theme menu.
+.theme-light .panel-menu > li:has(> a > .dropdown-item-text[aria-label='Panel header item View']),
+.theme-light .panel-menu > li:has(> a > .dropdown-item-text[aria-label='Panel header item Share']),
+.theme-light .panel-menu > li:has(> a > .dropdown-item-text[aria-label='Panel header item Explore']) {
+  display: none;
 }
 
 // Hide unnecessary parts of Grafana top bar
@@ -234,7 +241,7 @@ grafana-panel .panel-container,
   &.panel-transparent,
   &.panel-container--transparent {
     background-color: transparent;
-    & .panel-title-container,
+    .panel-title-container,
     .panel-info-corner,
     .panel-header:hover {
       background-color: transparent;
@@ -768,7 +775,7 @@ panel-plugin-organisations {
 panel-plugin-bessler-pictureit-panel {
   .panel-content {
     padding: 0 10px 10px 10px;
-    & > .panel-height-helper > div {
+    > .panel-height-helper > div {
       @include pictureit-background-style();
     }
   }
