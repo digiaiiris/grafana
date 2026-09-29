@@ -23,8 +23,8 @@ while true; do
   esac
 done
 
-# Build in container
-docker build -f Dockerfile.ubuntu --target js-builder -t grafana-build .
+# Build in container from a clean archive of HEAD (committed files only)
+git archive --format=tar HEAD | docker build -f Dockerfile.ubuntu --target js-builder -t grafana-build -
 
 # Export build files
 if [ ! -z "$TARFILE" ]; then
