@@ -2,15 +2,17 @@ import { css, cx } from '@emotion/css';
 import { PureComponent } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 
-import { NavModel, NavModelItem, TimeRange, PageLayoutType, locationUtil, GrafanaTheme2 } from '@grafana/data';
+import { NavModel, NavModelItem, TimeRange, PageLayoutType, locationUtil, GrafanaTheme2, AppEvents } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, locationService } from '@grafana/runtime';
 import { Themeable2, withTheme2 } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
+import appEvents from 'app/core/app_events';
 import { ScrollRefElement } from 'app/core/components/NativeScrollbar';
 import { Page } from 'app/core/components/Page/Page';
 import { GrafanaContext, GrafanaContextType } from 'app/core/context/GrafanaContext';
 import { createErrorNotification } from 'app/core/copy/appNotification';
+import { contextSrv } from 'app/core/core';
 import { getKioskMode } from 'app/core/navigation/kiosk';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import { ID_PREFIX } from 'app/core/reducers/navBarTree';
@@ -134,9 +136,29 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     };
   }
 
+  sendError(errorText: string) {
+    const dashboard = (this.props.dashboard || {}).title + '|' + (this.props.dashboard || {}).uid;
+    const messageObj = {
+      errorText,
+      dashboard,
+    };
+    window.top?.postMessage(messageObj, '*');
+  }
+
   componentDidMount() {
     this.initDashboard();
     this.forceRouteReloadCounter = (this.props.location.state as any)?.routeReloadCounter || 0;
+    appEvents.on(AppEvents.alertError, (response: any) => {
+      const errorText = Object.keys(response)
+        .map((key: string) => response[key])
+        .join(' ');
+      this.sendError(errorText);
+    });
+    const sendErrorFunc = this.sendError.bind(this);
+    window.onerror = function (message: any) {
+      sendErrorFunc(message);
+      return false;
+    };
   }
 
   componentWillUnmount() {
@@ -172,6 +194,116 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
+    function notifyContainerWindow(messageObj: any, queryObj: any) {
+      let orgId = '';
+      if (queryObj.orgId) {
+        orgId = queryObj.orgId;
+        delete queryObj.orgId;
+      }
+      let queryParams = '';
+      Object.keys(queryObj).map((pKey) => {
+        if (
+          pKey !== 'breadcrumb' &&
+          pKey !== 'dashboard' &&
+          pKey !== 'orgId' &&
+          pKey !== 'random' &&
+          queryObj[pKey] &&
+          queryObj[pKey] !== 'null'
+        ) {
+          queryParams += '&' + pKey + '=' + queryObj[pKey];
+        }
+      });
+      messageObj.breadcrumb = true;
+      messageObj.params = queryParams;
+      messageObj.orgId = orgId;
+      window.top?.postMessage(messageObj, '*');
+    }
+
+    function isInsideIframe() {
+      try {
+        return window.self !== window.top;
+      } catch (error) {
+        return true;
+      }
+    }
+
+    // Add CSS class for fullScreen
+    if (window.location.search.indexOf('iirisFullScreen=') > -1) {
+      document.body.classList.add('iiris-full-screen');
+    }
+
+    // Add CSS class for hiding Grafana top bar
+    if (this.props.dashboard && this.props.dashboard.hideGrafanaTopBar) {
+      document.body.classList.add('iiris-hide-grafana-top-bar');
+    }
+
+    // Add CSS class for transparent background
+    if (this.props.dashboard && this.props.dashboard.transparentBackground) {
+      document.body.classList.add('iiris-transparent-background');
+    }
+
+    // Update breadcrumb when dashboard is loaded
+    if (this.props.dashboard && this.props.dashboard !== prevProps.dashboard) {
+      const db = this.props.dashboard;
+      const messageObj = {
+        url: `/d/${this.props.params.uid}/${this.props.params.slug}`,
+        name: db.title,
+        uid: this.props.params.uid,
+        orgName: contextSrv.user.orgName,
+        isGrafanaAdmin: contextSrv.user.isGrafanaAdmin,
+        hideIirisBreadcrumb: db.hideIirisBreadcrumb,
+      };
+      const query = Object.assign({}, this.props.queryParams);
+      if (db.uid) {
+        notifyContainerWindow(messageObj, query);
+      }
+    }
+
+    // Check if Grafana is inside iFrame
+    if (!isInsideIframe()) {
+      let url = '';
+      if (window.location.hostname === 'localhost') {
+        // Using local version of Grafana for testing purposes
+        url = 'http://localhost:8080/';
+      } else {
+        // Assume that Pulssi frontend is in the domain root of Grafana url
+        url = window.location.protocol + '//' + window.location.hostname + '/';
+      }
+      const pathArray = window.location.pathname.split('/');
+      const dashboardId = pathArray.length > 1 ? pathArray[pathArray.length - 2] : '';
+      url += '?dashboard=' + dashboardId;
+      const queryParams = window.location.search;
+      if (queryParams.indexOf('?') > -1) {
+        url += '&' + queryParams.substr(1, queryParams.length);
+      }
+      window.location.href = url;
+    }
+
+    // Adding a mechanism for telling parent frame to navigate to new url
+    // Listen for location changes: If route has relaytarget-parameter then
+    // tell parent window to navigate to given target
+    // e.g. setting following url-link in some Grafana dashboard: ?relaytarget=logs
+    // relayparams-parameter sets the path and possible query-params which are given to iFrame under parent
+    // e.g. relaytarget=logs&relayparams=search%3Foption%3Dtest
+    if (this.props.queryParams && this.props.queryParams.relaytarget) {
+      const messageObj: any = {
+        relaytarget: this.props.queryParams.relaytarget,
+        relayparams: this.props.queryParams.relayparams,
+      };
+      // Add possible url params as their own keys to messageObj
+      if (messageObj.relayparams && messageObj.relayparams.indexOf('?') > -1) {
+        const queryString = messageObj.relayparams.split('?')[1];
+        const queryObj: any = {};
+        queryString.split('&').map((item: any) => (queryObj[item.split('=')[0]] = item.split('=')[1]));
+        Object.keys(queryObj).map((param: any) => {
+          messageObj[param] = queryObj[param];
+        });
+        messageObj.relayparams = messageObj.relayparams.split('?')[0];
+      }
+      // Send messageObj to parent window
+      window.top?.postMessage(messageObj, '*');
+    }
+
     const { dashboard, params, templateVarsChangedInUrl } = this.props;
     const routeReloadCounter = (this.props.location.state as any)?.routeReloadCounter;
 
