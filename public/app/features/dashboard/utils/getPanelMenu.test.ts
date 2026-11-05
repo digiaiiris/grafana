@@ -3,6 +3,7 @@ import { Store } from 'redux';
 import { PanelMenuItem, PluginExtensionLink, PluginExtensionTypes } from '@grafana/data';
 import { AngularComponent, usePluginLinks } from '@grafana/runtime';
 import config from 'app/core/config';
+import { contextSrv } from 'app/core/services/context_srv';
 import { grantUserPermissions } from 'app/features/alerting/unified/mocks';
 import * as actions from 'app/features/explore/state/main';
 import { setStore } from 'app/store/store';
@@ -17,6 +18,7 @@ jest.mock('app/core/services/context_srv', () => ({
   contextSrv: {
     hasAccessToExplore: () => true,
     hasPermission: jest.fn(),
+    user: { theme: 'dark' },
   },
 }));
 
@@ -299,6 +301,30 @@ describe('getPanelMenu()', () => {
           }),
         ])
       );
+    });
+  });
+
+  describe('when user has light theme', () => {
+    beforeEach(() => {
+      contextSrv.user.theme = 'light';
+    });
+
+    afterEach(() => {
+      contextSrv.user.theme = 'dark';
+    });
+
+    it('should not contain View, Share or Explore', () => {
+      const panel = new PanelModel({});
+      const dashboard = createDashboardModelFixture({});
+
+      const menuItems = getPanelMenu(dashboard, panel, []);
+      const texts = menuItems.map((item) => item.text);
+
+      expect(texts).not.toContain('View');
+      expect(texts).not.toContain('Share');
+      expect(texts).not.toContain('Explore');
+      expect(texts).toContain('Edit');
+      expect(texts).toContain('Inspect');
     });
   });
 

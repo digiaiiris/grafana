@@ -162,6 +162,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
   }
 
   componentWillUnmount() {
+    document.body.classList.remove('iiris-hide-grafana-top-bar');
     this.closeDashboard();
   }
 
@@ -232,9 +233,9 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
       document.body.classList.add('iiris-full-screen');
     }
 
-    // Add CSS class for hiding Grafana top bar
-    if (this.props.dashboard && this.props.dashboard.hideGrafanaTopBar) {
-      document.body.classList.add('iiris-hide-grafana-top-bar');
+    // Add CSS class for hiding Grafana top bar, and remove it when moving to a dashboard without the setting
+    if (this.props.dashboard) {
+      document.body.classList.toggle('iiris-hide-grafana-top-bar', Boolean(this.props.dashboard.hideGrafanaTopBar));
     }
 
     // Add CSS class for transparent background
@@ -632,8 +633,14 @@ function updateStatePageNavFromProps(props: Props, state: State): State {
 
   let pageNav = state.pageNav;
   let sectionNav = state.sectionNav;
+  // Iiris: light theme users don't see the folder in the breadcrumb
+  const showFolder = contextSrv.user.theme !== 'light';
 
-  if (!pageNav || dashboard.title !== pageNav.text || dashboard.meta.folderUrl !== pageNav.parentItem?.url) {
+  if (
+    !pageNav ||
+    dashboard.title !== pageNav.text ||
+    (showFolder && dashboard.meta.folderUrl !== pageNav.parentItem?.url)
+  ) {
     pageNav = {
       text: dashboard.title,
       url: locationUtil.getUrlForPartial(props.location, {
@@ -647,7 +654,7 @@ function updateStatePageNavFromProps(props: Props, state: State): State {
   sectionNav = getNavModel(props.navIndex, ID_PREFIX + dashboard.uid, getNavModel(props.navIndex, 'dashboards/browse'));
 
   const { folderUid } = dashboard.meta;
-  if (folderUid && pageNav && sectionNav.main.id !== 'starred') {
+  if (showFolder && folderUid && pageNav && sectionNav.main.id !== 'starred') {
     const folderNavModel = getNavModel(navIndex, `folder-dashboards-${folderUid}`).main;
     // If the folder hasn't loaded (maybe user doesn't have permission on it?) then
     // don't show the "page not found" breadcrumb

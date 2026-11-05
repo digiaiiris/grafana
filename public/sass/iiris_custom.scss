@@ -16,9 +16,23 @@ $login-box-background-color: #e5e5e5;
 $table-line-color: #cccccc;
 
 // Hide unnecessary parts of Grafana top bar
+// Full screen hides the whole top bar. Hiding the top bar only hides its first row
+// (menu, breadcrumb, search, profile) and keeps the dashboard actions row (time range, refresh).
 body.iiris-full-screen .iiris-custom-toolbar,
-body.iiris-hide-grafana-top-bar .iiris-custom-toolbar {
+body.iiris-hide-grafana-top-bar .iiris-custom-toolbar,
+body.iiris-full-screen .main-view > header,
+body.iiris-hide-grafana-top-bar .main-view > header > div:first-child {
   display: none;
+}
+
+// The top bar is fixed, so also shrink the space reserved for it above the page content
+// (one row is 40px, TOP_BAR_LEVEL_HEIGHT in AppChrome/types.ts)
+body.iiris-full-screen .main-view > header + div {
+  padding-top: 0;
+}
+
+body.iiris-hide-grafana-top-bar .main-view > header + div {
+  padding-top: 40px;
 }
 
 .grafana-app .sidemenu {
