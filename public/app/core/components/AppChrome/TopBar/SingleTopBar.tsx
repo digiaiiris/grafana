@@ -52,6 +52,8 @@ export const SingleTopBar = memo(function SingleTopBar({
   const homeNav = useSelector((state) => state.navIndex)[HOME_NAV_ID];
   const breadcrumbs = buildBreadcrumbs(sectionNav, pageNav, homeNav);
   const unifiedHistoryEnabled = config.featureToggles.unifiedHistory;
+  // Iiris: light theme users don't get the kiosk mode toggle
+  const isLightTheme = contextSrv.user.theme === 'light';
 
   return (
     <div className={styles.layout}>
@@ -81,12 +83,14 @@ export const SingleTopBar = memo(function SingleTopBar({
             <ToolbarButton iconOnly icon="question-circle" aria-label="Help" />
           </Dropdown>
         )}
-        <ToolbarButton
-          icon="monitor"
-          className={styles.kioskToggle}
-          onClick={onToggleKioskMode}
-          tooltip="Enable kiosk mode"
-        />
+        {!isLightTheme && (
+          <ToolbarButton
+            icon="monitor"
+            className={styles.kioskToggle}
+            onClick={onToggleKioskMode}
+            tooltip="Enable kiosk mode"
+          />
+        )}
         {!contextSrv.user.isSignedIn && <SignInLink />}
         {config.featureToggles.inviteUserExperimental && <InviteUserButton />}
         {profileNode && <ProfileButton profileNode={profileNode} />}

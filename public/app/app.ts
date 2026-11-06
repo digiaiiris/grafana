@@ -118,6 +118,13 @@ if (process.env.NODE_ENV === 'development') {
 
 export class GrafanaApp {
   context!: GrafanaContextType;
+  storedLanguage: string;
+
+  constructor() {
+    // Check for Iiris language
+    this.storedLanguage = localStorage.getItem('iiris_language') || 'fi';
+    contextSrv.setStoredLanguage(this.storedLanguage);
+  }
 
   async init() {
     try {

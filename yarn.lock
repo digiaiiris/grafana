@@ -10149,6 +10149,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/luxon@npm:^3":
+  version: 3.7.6
+  resolution: "@types/luxon@npm:3.7.6"
+  checksum: 10/2bc7a58b2cf231455085314821fe9b05a8e97cef2447d8da50be0a8794f0ddfa6d4bbd18eb6259ee881be0da0d08843ce66830a30d5926a25981f91bd5f588a9
+  languageName: node
+  linkType: hard
+
 "@types/mailparser@npm:^3.4.0":
   version: 3.4.4
   resolution: "@types/mailparser@npm:3.4.4"
@@ -18545,6 +18552,7 @@ __metadata:
     "@types/lodash": "npm:4.17.15"
     "@types/logfmt": "npm:^1.2.3"
     "@types/lucene": "npm:^2"
+    "@types/luxon": "npm:^3"
     "@types/node": "npm:22.12.0"
     "@types/node-forge": "npm:^1"
     "@types/ol-ext": "npm:@siedlerchr/types-ol-ext@3.3.0"
@@ -18676,6 +18684,7 @@ __metadata:
     lru-cache: "npm:11.0.2"
     lru-memoize: "npm:^1.1.0"
     lucene: "npm:^2.1.1"
+    luxon: "npm:3.6.1"
     marked: "npm:15.0.6"
     memoize-one: "npm:6.0.0"
     micro-memoize: "npm:^4.1.2"
@@ -22493,6 +22502,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"luxon@npm:3.6.1":
+  version: 3.6.1
+  resolution: "luxon@npm:3.6.1"
+  checksum: 10/35aad425607708c87af110a52c949190bc35b987770079ec8007ef2365cd29639413db3360d2883777aa01cb3ca5bdb37f42ee3e8e5a0dd277fe22e90cc8a786
+  languageName: node
+  linkType: hard
+
 "lz-string@npm:^1.5.0":
   version: 1.5.0
   resolution: "lz-string@npm:1.5.0"
@@ -26205,12 +26221,12 @@ __metadata:
   linkType: hard
 
 "proxy-addr@npm:~2.0.7":
-  version: 2.0.7
-  resolution: "proxy-addr@npm:2.0.7"
+  version: 2.0.8
+  resolution: "proxy-addr@npm:2.0.8"
   dependencies:
     forwarded: "npm:0.2.0"
     ipaddr.js: "npm:1.9.1"
-  checksum: 10/f24a0c80af0e75d31e3451398670d73406ec642914da11a2965b80b1898ca6f66a0e3e091a11a4327079b2b268795f6fa06691923fef91887215c3d0e8ea3f68
+  checksum: 10/6922b732c5625a9ba174c053bf3a750a80c87f19b7c62919f88ff01834eb80e2467834cfa72fc48b3a7ed6b3d18daadf773f6efb21db1c5fcc76d784509fcf1f
   languageName: node
   linkType: hard
 
