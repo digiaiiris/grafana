@@ -135,8 +135,17 @@ function setup(propOverrides?: Partial<Props>) {
 }
 
 describe('DashboardPage', () => {
+  const originalSelf = Object.getOwnPropertyDescriptor(window, 'self')!;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Iiris: Grafana runs inside the Iiris frontend iframe. Outside an iframe DashboardPage redirects to
+    // the frontend via window.location.href, which jsdom can't do, so make the page look embedded.
+    Object.defineProperty(window, 'self', { configurable: true, value: {} });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'self', originalSelf);
   });
 
   it('Should call initDashboard on mount', () => {

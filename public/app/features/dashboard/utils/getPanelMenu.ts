@@ -107,8 +107,10 @@ export function getPanelMenu(
   };
 
   const menu: PanelMenuItem[] = [];
+  // Iiris: light theme users don't get panel navigation actions (View, Share, Explore)
+  const isLightTheme = contextSrv.user.theme === 'light';
 
-  if (!panel.isEditing) {
+  if (!panel.isEditing && !isLightTheme) {
     menu.push({
       text: t('panel.header-menu.view', `View`),
       iconClassName: 'eye',
@@ -126,14 +128,17 @@ export function getPanelMenu(
     });
   }
 
-  menu.push({
-    text: t('panel.header-menu.share', `Share`),
-    iconClassName: 'share-alt',
-    onClick: onSharePanel,
-    shortcut: 'p s',
-  });
+  if (!isLightTheme) {
+    menu.push({
+      text: t('panel.header-menu.share', `Share`),
+      iconClassName: 'share-alt',
+      onClick: onSharePanel,
+      shortcut: 'p s',
+    });
+  }
 
   if (
+    !isLightTheme &&
     contextSrv.hasAccessToExplore() &&
     !(panel.plugin && panel.plugin.meta.skipDataQuery) &&
     panel.datasource?.uid !== SHARED_DASHBOARD_QUERY

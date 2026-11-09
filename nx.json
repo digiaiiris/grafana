@@ -12,5 +12,6 @@
       "outputs": ["{projectRoot}/dist"]
     }
   },
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "analytics": false
 }
