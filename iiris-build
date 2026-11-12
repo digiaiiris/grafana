@@ -1,34 +1,51 @@
 #!/bin/bash
 # Builds Grafana frontend with Iiris modifications in Ubuntu container and exports build in tar file.
-set -eo pipefail
+
+# Exit on errors, unset variables and failures inside pipelines
+set -euo pipefail
+
+# Exit if a required command is missing
+check_cmd() {
+  local CMD_NAME="${1}"
+  if ! command -v "${CMD_NAME}" >/dev/null 2>&1; then
+    echo "ERROR: Required command '${CMD_NAME}' not found. Please install it and try again." >&2
+    exit 1
+  fi
+}
+
+# Check for required build commands
+check_cmd docker
+check_cmd git
+check_cmd tar
 
 # Parse options
-OPTS=`getopt -o rt: --long release,tar: -n 'parse-options' -- "$@"`
-
-if [ $? != 0 ] ; then
+if ! OPTS=$(getopt -o rt: --long release,tar: -n 'parse-options' -- "${@}"); then
   echo "Failed parsing options." >&2
   exit 1
 fi
 
-eval set -- "$OPTS"
+# Replace the script arguments with the normalized options from getopt
+eval set -- "${OPTS}"
 
+# Name of the release tarball (empty = extract the build into ./public instead)
 TARFILE=""
 
+# Handle parsed options
 while true; do
-  case "$1" in
+  case "${1}" in
     -r | --release ) TARFILE="grafana-build.tar.gz"; shift;;
-    -t | --tar ) TARFILE="$2"; shift 2;;
+    -t | --tar ) TARFILE="${2}"; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
 
 # Build in container from a clean archive of HEAD (committed files only)
-git archive --format=tar HEAD | docker build -f Dockerfile.ubuntu --target js-builder -t grafana-build -
+git archive --format=tar HEAD | docker build --network=host -f Dockerfile.ubuntu --target js-builder -t grafana-build -
 
 # Export build files
-if [ ! -z "$TARFILE" ]; then
-  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views fonts/titillium" >$TARFILE
+if [ ! -z "${TARFILE}" ]; then
+  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views fonts/titillium" >"${TARFILE}"
 else
-  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views" | tar x -C public
+  docker run --rm -i --entrypoint sh grafana-build -c "cd public; tar cz build views" | tar xz -C public
 fi
